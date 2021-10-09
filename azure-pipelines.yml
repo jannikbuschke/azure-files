@@ -1,0 +1,99 @@
+trigger:
+- master
+- refactor-odata
+
+pool:
+  vmImage: 'windows-2019'
+
+variables:
+  buildConfiguration: 'Release'
+
+steps:
+- checkout: self
+  submodules: true
+
+- task: NuGetToolInstaller@1
+  inputs:
+    versionSpec: '5.x'
+
+
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet restore'
+  inputs:
+    command: 'restore'
+
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet build'
+  inputs:
+    command: 'build'
+    publishWebProjects: false
+    arguments: --configuration $(buildConfiguration)
+
+# - task: DotNetCoreCLI@2
+#   inputs:
+#     command: test
+#     projects: ./test/test.csproj
+#     arguments: -c $(buildConfiguration) --collect:"XPlat Code Coverage" -- RunConfiguration.DisableAppDomain=true
+#   displayName: dotnet test
+
+# - task: DotNetCoreCLI@2
+#   inputs:
+#     command: custom
+#     custom: tool
+#     arguments: install --tool-path . dotnet-reportgenerator-globaltool
+#   displayName: dotnet tool install dotnet-reportgenerator
+
+# - script: reportgenerator -reports:$(Agent.TempDirectory)/**/coverage.cobertura.xml -targetdir:$(Build.SourcesDirectory)/coverlet/reports -reporttypes:"Cobertura"
+#   displayName: generate reports
+
+# - task: PublishCodeCoverageResults@1
+#   displayName: 'publish code coverage'
+#   inputs:
+#     codeCoverageTool: Cobertura
+#     summaryFileLocation: $(Build.SourcesDirectory)/coverlet/reports/Cobertura.xml
+
+- task: Npm@1
+  displayName: 'npm install'
+  inputs:
+    customCommand: 'run install --legacy-peer-deps'
+
+- task: Npm@1
+  displayName: 'npm run bootstrap'
+  inputs:
+    command: 'custom'
+    customCommand: 'run bootstrap'
+
+- task: Npm@1
+  displayName: 'npm run tsc'
+  inputs:
+    command: 'custom'
+    customCommand: 'run tsc'
+
+- task: Npm@1
+  displayName: 'npm run build (app/web)'
+  env:
+    REACT_APP_BUILD_BUILDID: $(Build.BuildId)
+    REACT_APP_BUILD_BUILDNUMBER: $(Build.BuildNumber)
+    REACT_APP_BUILD_SOURCEVERSION: $(Build.SourceVersion)
+  inputs:
+    command: 'custom'
+    workingDir: 'app/web'
+    customCommand: 'run build'
+
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet publish'
+  inputs:
+    command: 'publish'
+    publishWebProjects: false # mutually exclusive with 'projects'
+    projects: ./app/app.csproj
+    arguments: --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    pathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    artifactName: 'drop'
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    pathtoPublish: 'deploy'
+    artifactName: 'arm-template'
