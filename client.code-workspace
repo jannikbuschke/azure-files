@@ -6,8 +6,10 @@
     },
     {
       "name": "glow",
-      "path": "glow\\core\\web"
-    }
+      "path": "glow\\core-web"
+    },
+{"path":"glow.azure-web"},
+{"path":"glow.beta-web"}
   ],
   "settings": {}
 }

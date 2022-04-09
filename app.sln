@@ -1,11 +1,23 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29318.209
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "app", "app\app.csproj", "{40AC4A95-1724-4DDC-AE55-9E541A02E2C1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "app", "app\app.fsproj", "{40AC4A95-1724-4DDC-AE55-9E541A02E2C1}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "test", "test\test.csproj", "{302F2CC3-2134-44F7-BCD0-93AB0BA9948E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "glow.azure", "glow\glow.azure\glow.azure.csproj", "{40F19DB2-3B9F-478A-9A62-5093C05C96A2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "glow.meta", "glow\glow.meta\glow.meta.csproj", "{C0F45484-A40D-4824-AA42-1BB26D9DB9BF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "glow.core", "glow\core\glow.core.csproj", "{28A347E3-F754-4C20-A1AB-4FF32F20648E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "glow.beta", "glow\glow.beta\glow.beta.csproj", "{97C9F5B6-E4BA-4A98-A111-BB9685E45F36}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "glow.ts", "glow\glow.ts\glow.ts.csproj", "{96F8095E-C7BF-4539-8926-8A297D5DF6D2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "glow.azdo", "glow\glow.azdo\glow.azdo.csproj", "{5E495D18-5AD8-42B1-AEDA-871B78CB8C98}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +33,30 @@ Global
 		{302F2CC3-2134-44F7-BCD0-93AB0BA9948E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{302F2CC3-2134-44F7-BCD0-93AB0BA9948E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{302F2CC3-2134-44F7-BCD0-93AB0BA9948E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{40F19DB2-3B9F-478A-9A62-5093C05C96A2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{40F19DB2-3B9F-478A-9A62-5093C05C96A2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{40F19DB2-3B9F-478A-9A62-5093C05C96A2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{40F19DB2-3B9F-478A-9A62-5093C05C96A2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C0F45484-A40D-4824-AA42-1BB26D9DB9BF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C0F45484-A40D-4824-AA42-1BB26D9DB9BF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C0F45484-A40D-4824-AA42-1BB26D9DB9BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C0F45484-A40D-4824-AA42-1BB26D9DB9BF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{28A347E3-F754-4C20-A1AB-4FF32F20648E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{28A347E3-F754-4C20-A1AB-4FF32F20648E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{28A347E3-F754-4C20-A1AB-4FF32F20648E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{28A347E3-F754-4C20-A1AB-4FF32F20648E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{97C9F5B6-E4BA-4A98-A111-BB9685E45F36}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{97C9F5B6-E4BA-4A98-A111-BB9685E45F36}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{97C9F5B6-E4BA-4A98-A111-BB9685E45F36}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{97C9F5B6-E4BA-4A98-A111-BB9685E45F36}.Release|Any CPU.Build.0 = Release|Any CPU
+		{96F8095E-C7BF-4539-8926-8A297D5DF6D2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{96F8095E-C7BF-4539-8926-8A297D5DF6D2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{96F8095E-C7BF-4539-8926-8A297D5DF6D2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{96F8095E-C7BF-4539-8926-8A297D5DF6D2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5E495D18-5AD8-42B1-AEDA-871B78CB8C98}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5E495D18-5AD8-42B1-AEDA-871B78CB8C98}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5E495D18-5AD8-42B1-AEDA-871B78CB8C98}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5E495D18-5AD8-42B1-AEDA-871B78CB8C98}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
