@@ -19,6 +19,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "glow.ts", "glow\glow.ts\glo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "glow.azdo", "glow\glow.azdo\glow.azdo.csproj", "{5E495D18-5AD8-42B1-AEDA-871B78CB8C98}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "test.fs", "test.fs\test.fs.fsproj", "{09DDB554-6733-42D4-855F-B5944805F412}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "test.expecto", "test.expecto\test.expecto.fsproj", "{774E4F1F-2402-4603-88ED-E17552AD1A85}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -57,6 +61,14 @@ Global
 		{5E495D18-5AD8-42B1-AEDA-871B78CB8C98}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5E495D18-5AD8-42B1-AEDA-871B78CB8C98}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5E495D18-5AD8-42B1-AEDA-871B78CB8C98}.Release|Any CPU.Build.0 = Release|Any CPU
+		{09DDB554-6733-42D4-855F-B5944805F412}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{09DDB554-6733-42D4-855F-B5944805F412}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{09DDB554-6733-42D4-855F-B5944805F412}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{09DDB554-6733-42D4-855F-B5944805F412}.Release|Any CPU.Build.0 = Release|Any CPU
+		{774E4F1F-2402-4603-88ED-E17552AD1A85}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{774E4F1F-2402-4603-88ED-E17552AD1A85}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{774E4F1F-2402-4603-88ED-E17552AD1A85}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{774E4F1F-2402-4603-88ED-E17552AD1A85}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

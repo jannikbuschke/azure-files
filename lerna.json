@@ -1,6 +1,8 @@
 {
   "packages": [
-    "glow/core/web",
+    "glow/core-web",
+    "glow/glow.beta-web",
+    "glow/glow.azure-web",
     "app/web"
   ],
   "version": "0.0.0",

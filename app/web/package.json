@@ -1,5 +1,5 @@
 {
-  "name": "az-ciles-client",
+  "name": "az-files-client",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
@@ -20,7 +20,13 @@
     "mitt": "1.2.0",
     "@ant-design/icons": "4.6.2",
     "react-scripts": "4.0.3",
-    "glow-react": "0.24.0-beta.0"
+    "glow-core": "0.24.0-beta.0",
+    "glow-beta": "0.24.0-beta.0",
+    "@mantine/dropzone": "4.1.3",
+    "@mantine/core": "4.1.3",
+    "@mantine/hooks": "4.1.3",
+    "@mantine/notifications": "4.1.3",
+    "@mantine/rte": "4.1.3"
   },
   "scripts": {
     "start": "react-scripts start",

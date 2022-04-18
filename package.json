@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "first-start": "npm install && npm run bootstrap && npm run tsc && npm run start",
-    "bootstrap": "lerna bootstrap --hoist -- --legacy-peer-deps",
+    "bootstrap": "lerna bootstrap --hoist",
     "start": "lerna run start --stream",
     "watch": "lerna run watch --stream",
     "tsc": "lerna run tsc --stream",
