@@ -8,8 +8,9 @@ open System.Threading.Channels
 open Microsoft.AspNetCore.Mvc
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
+open Microsoft.Extensions.DependencyInjection
 
-type UnitOfWork = Func<CancellationToken, ValueTask>
+type UnitOfWork = Func<IServiceProvider, CancellationToken, ValueTask>
 
 
 type FileUploadTask = { FilePath: string }
@@ -66,7 +67,7 @@ type BackgroundTaskQueue(capacity: int) =
 type IsAlreadyUploaded = string -> Stream -> ValueTask<bool>
 
 
-type QueuedHostedService(logger: ILogger<QueuedHostedService>, reader: ChannelReader<string>, reader2: ChannelReader<UnitOfWork>) =
+type QueuedHostedService(logger: ILogger<QueuedHostedService>, reader: ChannelReader<string>, reader2: ChannelReader<UnitOfWork>, services: IServiceProvider) =
   inherit BackgroundService()
 
   override this.ExecuteAsync(token) =
@@ -77,7 +78,9 @@ type QueuedHostedService(logger: ILogger<QueuedHostedService>, reader: ChannelRe
         //        logger.LogInformation("wait for item to be dequed")
 
         let! unitOfWork = reader2.ReadAsync(token)
-        let! workResult = unitOfWork.Invoke(token)
+        use scope = services.CreateScope()
+        
+        let! workResult = unitOfWork.Invoke(scope.ServiceProvider, token)
         //
 //        let! workItem = reader.ReadAsync(token)
 //        logger.LogInformation("Got a dequed item, starting work")

@@ -53,22 +53,24 @@ module ScanFiles =
           fun (e: FileSystemEventArgs) ->
             logger.LogInformation(sprintf "File %s: %s" eventType e.FullPath)
 
-            use scope = serviceProvider.CreateScope()
-
             writer2.TryWrite
-              (fun token ->
+              (fun services cancellationToken ->
                 task {
                   // next, inject service or scoped service
                   // use mediator to create a new FileUploadRequest
                   // handler should check if file already uploaded
-
-                  logger.LogInformation("Uploading file " + e.FullPath)
-                  do! Task.Delay(10_000)
-                  logger.LogInformation("Upload file " + e.FullPath + " done")
+                  logger.LogInformation("send with mediator the file " + e.FullPath)
+                  let mediator = services.GetService<IMediator>()
+                  let files = ResizeArray [e.FullPath] 
+                  let! result = mediator.Send(UploadSystemFiles(FilePaths=files))
+                  // do! Task.Delay(10_000)
+                  logger.LogInformation("mediatr returned for file " + e.FullPath + " done")
                   return ()
                 }
                 |> ValueTask)
+                
             |> ignore
+            logger.LogInformation("Work is scheduled, file event is handled")
 
             ()
 

@@ -7,10 +7,11 @@ open Domain
 open System.Linq
 
 module BlobService =
+  open System.Threading.Tasks
 
   let checkFileAlreadyUploaded (client: BlobServiceClient) (filename: string) (content: System.IO.Stream) =
     task {
-      let searchQuery = @$"""original_filename"" '{filename}"
+      let searchQuery = $"\"original_filename\" = '{filename}'"
       let result = client.FindBlobsByTagsAsync(searchQuery)
       let! r0 = result.AsAsyncEnumerable().ToListAsync()
       // check for content/mdf5
@@ -39,6 +40,7 @@ module BlobService =
 
       return e
     }
+ 
 
   let getBlobServiceClient (configuration: IConfiguration) =
     let section = configuration.GetSection("AzureBlob")
@@ -69,4 +71,42 @@ module BlobService =
 
       let! container = blobContainerClient.CreateIfNotExistsAsync()
       return blobContainerClient
+    }
+
+  let NoneAsync():Task<string option>=
+    Task.FromResult(None)
+
+  let addFileIfNotYetExists (configuration: IConfiguration) (filename: string) (content: System.IO.Stream) =
+    task{
+      let blobServiceClient = getBlobServiceClient configuration
+      let! blobInboxContainerClient = getBlobContainerClient configuration
+      let! fileAlreadyUploaded = checkFileAlreadyUploaded blobServiceClient filename content
+
+      let bar = async {      
+        match 1 with
+        | 1 ->
+            let! num = async.Return 12345 
+            return 1
+        | _ -> 
+            return 2 }    
+
+      let fileAdded = task { 
+        match fileAlreadyUploaded with
+        | true -> 
+               Task.FromResult(None)
+        | false -> 
+               let! result = addFile blobInboxContainerClient filename content
+               Some result    
+      }
+
+      // let fileAdded: FileAdded option = 
+      //   if fileAlreadyUploaded
+      //   then NoneAsync
+      //   else addFile blobInboxContainerClient filename content
+
+      do match fileAdded with
+        | Some x -> Serilog.Log.Logger.Information("SOME")
+        | None -> Serilog.Log.Logger.Information("NONE")
+
+      return fileAdded
     }

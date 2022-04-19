@@ -13,6 +13,7 @@ open MediatR
 open System.Linq
 open System.Collections.Generic
 open Marten
+open System.IO
 
 [<Action(Route = "api/blob/get-files", AllowAnonymous = true)>]
 type GetFiles() =
@@ -82,6 +83,35 @@ type GetBlobContainersHandler(configuration: IConfiguration, logger: ILogger<Get
         let! y = asyncPageable.AsAsyncEnumerable().ToListAsync()
 
         return y
+      }
+  interface IRequestHandler<UploadSystemFiles, MediatR.Unit> with
+    member this.Handle(request,token)=
+      task {
+        try
+          logger.LogInformation($"mediatr handle request")
+
+          // let client = getBlobServiceClient configuration
+          let! blobContainerClient = getBlobContainerClient configuration
+          logger.LogInformation($"got blob client")
+
+          for pathName in request.FilePaths do
+            logger.LogInformation($"handle {pathName}")
+
+            let fileName = Path.GetFileName(pathName)
+
+            use stream = File.Open(pathName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
+            logger.LogInformation($"opened filestream")
+
+            logger.LogInformation($"Upload system file {fileName}")
+            // let! e = addFile blobContainerClient fileName f
+            let! e = addFileIfNotYetExists configuration fileName stream
+            logger.LogInformation("file upload result {@a}", e)
+            ()
+          
+          logger.LogInformation($"handle done")
+        with :? System.Exception as e -> logger.LogInformation("DIDNT WORK " + e.Message)
+
+        return MediatR.Unit.Value
       }
 
 

@@ -11,6 +11,9 @@
     },
     {
       "path": "test.expecto"
+    },
+    {
+      "path": "glow\\glow.ts"
     }
   ],
   "settings": {}
