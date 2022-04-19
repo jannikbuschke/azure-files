@@ -40,13 +40,12 @@ module BlobService =
 
       return e
     }
- 
+
 
   let getBlobServiceClient (configuration: IConfiguration) =
     let section = configuration.GetSection("AzureBlob")
 
-    let connectionString =
-      section.GetValue<string>("ConnectionString")
+    let connectionString = section.GetValue<string>("ConnectionString")
 
     let rawUri = section.GetValue<string>("Uri")
 
@@ -66,47 +65,40 @@ module BlobService =
     task {
       let blobServiceClient = getBlobServiceClient configuration
 
-      let blobContainerClient =
-        blobServiceClient.GetBlobContainerClient("inbox")
+      let blobContainerClient = blobServiceClient.GetBlobContainerClient("inbox")
 
       let! container = blobContainerClient.CreateIfNotExistsAsync()
       return blobContainerClient
     }
 
-  let NoneAsync():Task<string option>=
-    Task.FromResult(None)
+  let NoneAsync () : Task<string option> = Task.FromResult(None)
+
+  let NoneFileAsync () : Task<FileAdded option> = Task.FromResult(None)
+
+  let SomeFileAsync
+    (blobInboxContainerClient: BlobContainerClient)
+    (filename: string)
+    (content: System.IO.Stream)
+    : Task<FileAdded option> =
+    task {
+      let! result = addFile blobInboxContainerClient filename content
+      return Some result
+    }
 
   let addFileIfNotYetExists (configuration: IConfiguration) (filename: string) (content: System.IO.Stream) =
-    task{
+    task {
       let blobServiceClient = getBlobServiceClient configuration
       let! blobInboxContainerClient = getBlobContainerClient configuration
       let! fileAlreadyUploaded = checkFileAlreadyUploaded blobServiceClient filename content
 
-      let bar = async {      
-        match 1 with
-        | 1 ->
-            let! num = async.Return 12345 
-            return 1
-        | _ -> 
-            return 2 }    
+      let addBlob (alreadyUploaded: bool) =
+        task {
+          match alreadyUploaded with
+          | true -> return! NoneFileAsync()
+          | false -> return! SomeFileAsync blobInboxContainerClient filename content
+        }
 
-      let fileAdded = task { 
-        match fileAlreadyUploaded with
-        | true -> 
-               Task.FromResult(None)
-        | false -> 
-               let! result = addFile blobInboxContainerClient filename content
-               Some result    
-      }
-
-      // let fileAdded: FileAdded option = 
-      //   if fileAlreadyUploaded
-      //   then NoneAsync
-      //   else addFile blobInboxContainerClient filename content
-
-      do match fileAdded with
-        | Some x -> Serilog.Log.Logger.Information("SOME")
-        | None -> Serilog.Log.Logger.Information("NONE")
+      let! fileAdded = addBlob fileAlreadyUploaded
 
       return fileAdded
     }
