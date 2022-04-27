@@ -56,27 +56,23 @@ module ScanFiles =
             writer2.TryWrite
               (fun services cancellationToken ->
                 task {
-                  // next, inject service or scoped service
-                  // use mediator to create a new FileUploadRequest
-                  // handler should check if file already uploaded
-                  logger.LogInformation("send with mediator the file " + e.FullPath)
                   let mediator = services.GetService<IMediator>()
-                  let files = ResizeArray [e.FullPath] 
-                  let! result = mediator.Send(UploadSystemFiles(FilePaths=files))
-                  // do! Task.Delay(10_000)
-                  logger.LogInformation("mediatr returned for file " + e.FullPath + " done")
+                  let files = ResizeArray [ e.FullPath ]
+                  let! result = mediator.Send(UploadSystemFiles(FilePaths = files))
+                  let result = ResizeArray(result |> Seq.choose id |> Seq.map (fun v-> v.Id,v.Filename ))
+
+                  logger.LogInformation "rename files"
+                  let! result = mediator.Send(RenameSystemFiles(Files = result, FolderName = "handled"))
                   return ()
                 }
                 |> ValueTask)
-                
+
             |> ignore
-            logger.LogInformation("Work is scheduled, file event is handled")
 
             ()
 
         watcher.Changed.Add(handleFileEvent "changed")
-        watcher.Created.Add(handleFileEvent "created")
-        //        watcher.Deleted.Add(handleFileEvent "deleted")
+        //        watcher.Created.Add(handleFileEvent "created")
         watcher.Renamed.Add(handleFileEvent "renamed")
 
         watcher.IncludeSubdirectories <- true
@@ -91,7 +87,7 @@ module ScanFiles =
         let taskResult =
           task {
             while token.IsCancellationRequested = false do
-              logger.LogInformation("Watching files, waiting for cancellation")
+              logger.LogInformation(sprintf "Watching files, waiting for cancellation (threadid = %s" Thread.CurrentThread.Name)
 
               try
                 let! result = Task.Delay(100000, token)

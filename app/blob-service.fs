@@ -2,18 +2,34 @@
 
 open Azure.Identity
 open Azure.Storage.Blobs
+open Marten
 open Microsoft.Extensions.Configuration
 open Domain
 open System.Linq
+open Microsoft.Extensions.Logging
+open System.Threading.Tasks
 
 module BlobService =
-  open System.Threading.Tasks
+
+  let addDomainEventIfSome (e: FileAdded option) (session: IDocumentSession) =
+    task{
+      match e with
+      | Some ev ->
+        let events: obj [] = [| ev |]
+
+        session.Events.StartStream(ev.Id, events)
+        |> ignore
+
+        do! session.SaveChangesAsync()
+        ()
+      | _ -> ()
+    }
 
   let checkFileAlreadyUploaded (client: BlobServiceClient) (filename: string) (content: System.IO.Stream) =
-    task {
+    async {
       let searchQuery = $"\"original_filename\" = '{filename}'"
       let result = client.FindBlobsByTagsAsync(searchQuery)
-      let! r0 = result.AsAsyncEnumerable().ToListAsync()
+      let! r0 = result.AsAsyncEnumerable().ToListAsync().AsTask() |> Async.AwaitTask
       // check for content/mdf5
       return r0.Count > 0
     }
@@ -23,6 +39,7 @@ module BlobService =
       let fileId = System.Guid.NewGuid()
       let blobClient = client.GetBlobClient(fileId.ToString())
 
+      // todo: add file creation date
       let metadata =
         dict [ "original_filename", filename
                "id", fileId.ToString() ]
@@ -62,12 +79,14 @@ module BlobService =
     result
 
   let getBlobContainerClient (configuration: IConfiguration) =
-    task {
+    async {
       let blobServiceClient = getBlobServiceClient configuration
 
       let blobContainerClient = blobServiceClient.GetBlobContainerClient("inbox")
-
-      let! container = blobContainerClient.CreateIfNotExistsAsync()
+      task{
+        let! container = blobContainerClient.CreateIfNotExistsAsync()
+        ()
+      } |>ignore
       return blobContainerClient
     }
 
@@ -85,7 +104,7 @@ module BlobService =
       return Some result
     }
 
-  let addFileIfNotYetExists (configuration: IConfiguration) (filename: string) (content: System.IO.Stream) =
+  let addFileIfNotYetExists (configuration: IConfiguration) (filename: string) (content: System.IO.Stream) (logger:ILogger)=
     task {
       let blobServiceClient = getBlobServiceClient configuration
       let! blobInboxContainerClient = getBlobContainerClient configuration
@@ -99,6 +118,8 @@ module BlobService =
         }
 
       let! fileAdded = addBlob fileAlreadyUploaded
+
+      if fileAdded.IsNone then logger.LogInformation("Skipped (file already exists)") else logger.LogInformation("File uploaded")
 
       return fileAdded
     }

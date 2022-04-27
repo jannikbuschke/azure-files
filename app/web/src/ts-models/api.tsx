@@ -9,26 +9,39 @@ import * as AzureFiles from "./AzureFiles"
 import * as Glow_TestAutomation from "./Glow.TestAutomation"
 import * as Glow_Azure_AzureKeyVault from "./Glow.Azure.AzureKeyVault"
 import * as Azure_Storage_Blobs_Models from "./Azure.Storage.Blobs.Models"
+import * as Microsoft_FSharp_Core from "./Microsoft.FSharp.Core"
 import * as Glow_Core_Profiles from "./Glow.Core.Profiles"
 
 type QueryInputs = {
+  "/api/blob/get-file": AzureFiles.GetBlobFile,
+  "/api/files/get-indexed-files": AzureFiles.GetIndexedFiles,
+  "/api/files/get-indexed-file": AzureFiles.GetIndexedFile,
   "/api/blob/get-files": AzureFiles.GetFiles,
   "/api/blob/get-containers": AzureFiles.GetBlobContainers,
   "/api/glow/test-automation/get-available-fake-users": Glow_TestAutomation.GetAvailableFakeUsers,
 }
 type QueryOutputs = {
+  "/api/blob/get-file": AzureFiles.AzureFilesBlobProperties,
+  "/api/files/get-indexed-files": AzureFiles.File[],
+  "/api/files/get-indexed-file": AzureFiles.File,
   "/api/blob/get-files": Azure_Storage_Blobs_Models.BlobItem[],
   "/api/blob/get-containers": Azure_Storage_Blobs_Models.BlobContainerItem[],
   "/api/glow/test-automation/get-available-fake-users": Glow_TestAutomation.FakeUsers,
 }
 export type Outputs = {
+  "/api/blob/delete-file": any,
+  "/api/file/set-tags": any,
   "/api/upload-form-files": any,
-  "/api/upload-system-files": any,
+  "/api/upload-system-files": Microsoft_FSharp_Core.FSharpOption_FileAdded[],
+  "/api/rename-system-files": any,
   "/api/glow/set-openid-connect-options": any,
 }
 export type Actions = {
+  "/api/blob/delete-file": AzureFiles.DeleteBlobFile,
+  "/api/file/set-tags": AzureFiles.SetTags,
   "/api/upload-form-files": AzureFiles.UploadFormFiles,
   "/api/upload-system-files": AzureFiles.UploadSystemFiles,
+  "/api/rename-system-files": AzureFiles.RenameSystemFiles,
   "/api/glow/set-openid-connect-options": Glow_Azure_AzureKeyVault.SetOpenIdConnectOptions,
 }
 

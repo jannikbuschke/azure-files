@@ -12,16 +12,7 @@ open Microsoft.Extensions.DependencyInjection
 
 type UnitOfWork = Func<IServiceProvider, CancellationToken, ValueTask>
 
-
 type FileUploadTask = { FilePath: string }
-
-//type IBackgroundTaskQueue =
-//
-//  abstract QueueBackgroundWorkItemAsync: workItem: FileUploadTask -> ValueTask
-//  abstract QueueBackgroundWorkItem: workItem: FileUploadTask -> unit
-//
-//  abstract DequeueAsync: cancellationToken: CancellationToken -> ValueTask<FileUploadTask>
-
 
 type BackgroundTaskQueue(capacity: int) =
 
@@ -37,17 +28,12 @@ type BackgroundTaskQueue(capacity: int) =
   //  interface IBackgroundTaskQueue with
 
   member this.QueueBackgroundWorkItem(workItem) =
-    Serilog.Log.Logger.Information("write queue item sync")
     let result = this._queue.Writer.TryWrite(workItem)
-    Serilog.Log.Logger.Information(sprintf "write done %b" result)
     ()
 
   member this.QueueBackgroundWorkItemAsync(workItem) =
     task {
-      Serilog.Log.Logger.Information("write queue item async")
-
       let! result = this._queue.Writer.WriteAsync(workItem)
-      Serilog.Log.Logger.Information(sprintf "write async done")
 
       return result
     }
@@ -55,10 +41,7 @@ type BackgroundTaskQueue(capacity: int) =
 
   member this.DequeueAsync(token) =
     task {
-      Serilog.Log.Logger.Information("read async...")
-
       let! workItem = this._queue.Reader.ReadAsync()
-      Serilog.Log.Logger.Information("Got a work item, returning it...")
 
       return workItem
     }
@@ -66,29 +49,21 @@ type BackgroundTaskQueue(capacity: int) =
 
 type IsAlreadyUploaded = string -> Stream -> ValueTask<bool>
 
-
 type QueuedHostedService(logger: ILogger<QueuedHostedService>, reader: ChannelReader<string>, reader2: ChannelReader<UnitOfWork>, services: IServiceProvider) =
   inherit BackgroundService()
 
   override this.ExecuteAsync(token) =
     logger.LogInformation($"Queued Hosted Service is running.{Environment.NewLine}")
-
+    let mutable i = 0
     task {
       while (token.IsCancellationRequested = false) do
-        //        logger.LogInformation("wait for item to be dequed")
-
         let! unitOfWork = reader2.ReadAsync(token)
         use scope = services.CreateScope()
-        
+        logger.LogInformation(sprintf "executing work %i on thread %s" i Thread.CurrentThread.Name)
         let! workResult = unitOfWork.Invoke(scope.ServiceProvider, token)
-        //
-//        let! workItem = reader.ReadAsync(token)
-//        logger.LogInformation("Got a dequed item, starting work")
-//
-//        logger.LogInformation("{@a}", workItem)
-        // service, upload task
-//        let! result = workItem.Invoke(token)
-        logger.LogInformation("Work is done")
+        logger.LogInformation(sprintf "executed work %i on thread %s" i Thread.CurrentThread.Name)
+        i <- i + 1
+
         return ()
     }
     |> ignore
@@ -99,7 +74,6 @@ type QueuedHostedService(logger: ILogger<QueuedHostedService>, reader: ChannelRe
     logger.LogInformation("Queued hosted service is stopoing")
     Task.CompletedTask
 
-
 type TestController(logger: ILogger<TestController>, writer: ChannelWriter<string>, reader: ChannelReader<string>) =
   inherit Microsoft.AspNetCore.Mvc.ControllerBase()
 
@@ -108,7 +82,7 @@ type TestController(logger: ILogger<TestController>, writer: ChannelWriter<strin
     task {
       logger.LogInformation("getting, wait for dequeud item")
       let! result = reader.ReadAsync()
-      //      let! result = queue.DequeueAsync(token)
+      // let! result = queue.DequeueAsync(token)
       return result
     }
 

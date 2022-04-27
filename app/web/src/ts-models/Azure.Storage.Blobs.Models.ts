@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 export type ObjectReplicationStatus = "Complete" | "Failed"
 export const defaultObjectReplicationStatus = "Complete"
 export const ObjectReplicationStatusValues: { [key in ObjectReplicationStatus]: ObjectReplicationStatus } = {
@@ -6,6 +5,52 @@ export const ObjectReplicationStatusValues: { [key in ObjectReplicationStatus]: 
   Failed: "Failed",
 }
 export const ObjectReplicationStatusValuesArray: ObjectReplicationStatus[] = Object.keys(ObjectReplicationStatusValues) as ObjectReplicationStatus[]
+
+export type BlobType = "Block" | "Page" | "Append"
+export const defaultBlobType = "Block"
+export const BlobTypeValues: { [key in BlobType]: BlobType } = {
+  Block: "Block",
+  Page: "Page",
+  Append: "Append",
+}
+export const BlobTypeValuesArray: BlobType[] = Object.keys(BlobTypeValues) as BlobType[]
+
+export type CopyStatus = "Pending" | "Success" | "Aborted" | "Failed"
+export const defaultCopyStatus = "Pending"
+export const CopyStatusValues: { [key in CopyStatus]: CopyStatus } = {
+  Pending: "Pending",
+  Success: "Success",
+  Aborted: "Aborted",
+  Failed: "Failed",
+}
+export const CopyStatusValuesArray: CopyStatus[] = Object.keys(CopyStatusValues) as CopyStatus[]
+
+export type LeaseDurationType = "Infinite" | "Fixed"
+export const defaultLeaseDurationType = "Infinite"
+export const LeaseDurationTypeValues: { [key in LeaseDurationType]: LeaseDurationType } = {
+  Infinite: "Infinite",
+  Fixed: "Fixed",
+}
+export const LeaseDurationTypeValuesArray: LeaseDurationType[] = Object.keys(LeaseDurationTypeValues) as LeaseDurationType[]
+
+export type LeaseState = "Available" | "Leased" | "Expired" | "Breaking" | "Broken"
+export const defaultLeaseState = "Available"
+export const LeaseStateValues: { [key in LeaseState]: LeaseState } = {
+  Available: "Available",
+  Leased: "Leased",
+  Expired: "Expired",
+  Breaking: "Breaking",
+  Broken: "Broken",
+}
+export const LeaseStateValuesArray: LeaseState[] = Object.keys(LeaseStateValues) as LeaseState[]
+
+export type LeaseStatus = "Locked" | "Unlocked"
+export const defaultLeaseStatus = "Locked"
+export const LeaseStatusValues: { [key in LeaseStatus]: LeaseStatus } = {
+  Locked: "Locked",
+  Unlocked: "Unlocked",
+}
+export const LeaseStatusValuesArray: LeaseStatus[] = Object.keys(LeaseStatusValues) as LeaseStatus[]
 
 export interface BlobImmutabilityPolicy {
   expiresOn: any
@@ -15,6 +60,128 @@ export interface BlobImmutabilityPolicy {
 export const defaultBlobImmutabilityPolicy: BlobImmutabilityPolicy = {
   expiresOn: null,
   policyMode: null,
+}
+
+export interface BlobProperties {
+  lastModified: any
+  createdOn: any
+  metadata: { [key: string]: string | null }
+  objectReplicationDestinationPolicyId: string | null
+  objectReplicationSourceProperties: ObjectReplicationPolicy[]
+  blobType: BlobType
+  copyCompletedOn: any
+  copyStatusDescription: string | null
+  copyId: string | null
+  copyProgress: string | null
+  copySource: any
+  copyStatus: CopyStatus
+  isIncrementalCopy: boolean
+  destinationSnapshot: string | null
+  leaseDuration: LeaseDurationType
+  leaseState: LeaseState
+  leaseStatus: LeaseStatus
+  contentLength: number
+  contentType: string | null
+  eTag: any
+  contentHash: string | null
+  contentEncoding: string | null
+  contentDisposition: string | null
+  contentLanguage: string | null
+  cacheControl: string | null
+  blobSequenceNumber: number
+  acceptRanges: string | null
+  blobCommittedBlockCount: number
+  isServerEncrypted: boolean
+  encryptionKeySha256: string | null
+  encryptionScope: string | null
+  accessTier: string | null
+  accessTierInferred: boolean
+  archiveStatus: string | null
+  accessTierChangedOn: any
+  versionId: string | null
+  isLatestVersion: boolean
+  tagCount: number
+  expiresOn: any
+  isSealed: boolean
+  rehydratePriority: string | null
+  lastAccessed: any
+  immutabilityPolicy: BlobImmutabilityPolicy
+  hasLegalHold: boolean
+}
+
+export const defaultBlobProperties: BlobProperties = {
+  lastModified: null,
+  createdOn: null,
+  metadata: {},
+  objectReplicationDestinationPolicyId: null,
+  objectReplicationSourceProperties: [],
+  blobType: {} as any,
+  copyCompletedOn: null,
+  copyStatusDescription: null,
+  copyId: null,
+  copyProgress: null,
+  copySource: null,
+  copyStatus: {} as any,
+  isIncrementalCopy: false,
+  destinationSnapshot: null,
+  leaseDuration: {} as any,
+  leaseState: {} as any,
+  leaseStatus: {} as any,
+  contentLength: 0,
+  contentType: null,
+  eTag: null,
+  contentHash: null,
+  contentEncoding: null,
+  contentDisposition: null,
+  contentLanguage: null,
+  cacheControl: null,
+  blobSequenceNumber: 0,
+  acceptRanges: null,
+  blobCommittedBlockCount: 0,
+  isServerEncrypted: false,
+  encryptionKeySha256: null,
+  encryptionScope: null,
+  accessTier: null,
+  accessTierInferred: false,
+  archiveStatus: null,
+  accessTierChangedOn: null,
+  versionId: null,
+  isLatestVersion: false,
+  tagCount: 0,
+  expiresOn: null,
+  isSealed: false,
+  rehydratePriority: null,
+  lastAccessed: null,
+  immutabilityPolicy: {} as any,
+  hasLegalHold: false,
+}
+
+export interface ObjectReplicationPolicy {
+  policyId: string | null
+  rules: ObjectReplicationRule[]
+}
+
+export const defaultObjectReplicationPolicy: ObjectReplicationPolicy = {
+  policyId: null,
+  rules: [],
+}
+
+export interface ObjectReplicationRule {
+  ruleId: string | null
+  replicationStatus: ObjectReplicationStatus
+}
+
+export const defaultObjectReplicationRule: ObjectReplicationRule = {
+  ruleId: null,
+  replicationStatus: {} as any,
+}
+
+export interface GetBlobTagResult {
+  tags: { [key: string]: string | null }
+}
+
+export const defaultGetBlobTagResult: GetBlobTagResult = {
+  tags: {},
 }
 
 export interface BlobItemProperties {
@@ -125,26 +292,6 @@ export const defaultBlobItem: BlobItem = {
   tags: {},
   objectReplicationSourceProperties: [],
   hasVersionsOnly: null,
-}
-
-export interface ObjectReplicationPolicy {
-  policyId: string | null
-  rules: ObjectReplicationRule[]
-}
-
-export const defaultObjectReplicationPolicy: ObjectReplicationPolicy = {
-  policyId: null,
-  rules: [],
-}
-
-export interface ObjectReplicationRule {
-  ruleId: string | null
-  replicationStatus: ObjectReplicationStatus
-}
-
-export const defaultObjectReplicationRule: ObjectReplicationRule = {
-  ruleId: null,
-  replicationStatus: {} as any,
 }
 
 export interface BlobContainerProperties {

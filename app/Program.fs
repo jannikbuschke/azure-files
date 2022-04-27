@@ -15,6 +15,7 @@ open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
+open Microsoft.FSharp.Reflection
 open Serilog
 open Glow.Core
 open Glow.Tests
@@ -31,8 +32,10 @@ module Program =
 
   let exitCode = 0
 
+
   [<EntryPoint>]
   let main args =
+
     Log.Logger <-
       LoggerConfiguration()
         .WriteTo.Console()
@@ -57,7 +60,12 @@ module Program =
     services.AddGlowApplicationServices(null, null, assemblies)
     services.AddAzureKeyvaultClientProvider()
 
-    services.AddTypescriptGeneration [| TsGenerationOptions(Assemblies = assemblies, Path = "./web/src/ts-models/", GenerateApi = true) |]
+    services.AddTypescriptGeneration [| TsGenerationOptions(
+                                          Assemblies = assemblies,
+                                          Path = "./web/src/ts-models/",
+                                          GenerateApi = true,
+                                          ApiOptions = ApiOptions(ApiFileFirstLines = ResizeArray())
+                                        ) |]
 
     // replace with glow authentication
     let authScheme =
@@ -87,6 +95,7 @@ module Program =
 
     let options = StoreOptions()
     options.Connection connectionString
+    options.Projections.SelfAggregate<Projections.File>(Events.Projections.ProjectionLifecycle.Inline)
     //    options.AutoCreateSchemaObjects <- true // if is development
     services
       .AddMarten(options)

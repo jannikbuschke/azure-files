@@ -14,19 +14,28 @@ export function BlobContainerDetail() {
   })
   return (
     <Stack>
-      {data.map((v) => (
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
         <div>
-          <b>{v.name}</b> {v.metadata["originalfilename"]}
-          {/* // <div>
+          {data.map((v) => (
+            <div>
+              <Link to={`./${v.name}`}>
+                <b>{v.name}</b> {v.metadata["originalfilename"]}
+              </Link>
+              {/* // <div>
           //   metadata:
           //   {Object.keys(v.metadata).map((key) => (
-          //     <div>
-          //       {key}: {v.metadata[key]}
-          //     </div>
-          //   ))}
+            //     <div>
+            //       {key}: {v.metadata[key]}
+            //     </div>
+            //   ))}
           // </div> */}
+            </div>
+          ))}
         </div>
-      ))}
+        <div>
+          <Outlet />
+        </div>
+      </div>
       {/* <RenderObject {...data} /> */}
     </Stack>
   )

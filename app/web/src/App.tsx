@@ -60,6 +60,12 @@ const data = [
     to: "/container",
   },
   { icon: undefined, color: "teal", label: "Upload file", to: "/upload-file" },
+  {
+    icon: undefined,
+    color: "teal",
+    label: "Indexed files",
+    to: "/indexed-files",
+  },
   // { icon: undefined, color: "violet", label: "Discussions" },
   // { icon: undefined, color: "grape", label: "Databases" },
 ]

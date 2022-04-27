@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 export interface SetOpenIdConnectOptions {
   tenantId: string | null
   clientId: string | null
