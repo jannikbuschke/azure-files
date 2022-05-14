@@ -1,5 +1,5 @@
 {
-  "name": "root",
+  "name": "azure-files-root",
   "private": true,
   "scripts": {
     "first-start": "npm install && npm run bootstrap && npm run tsc && npm run start",
@@ -7,9 +7,21 @@
     "start": "lerna run start --stream",
     "watch": "lerna run watch --stream",
     "tsc": "lerna run tsc --stream",
-    "lerna": "lerna"
+    "lerna": "lerna",
+    "clean": "npx -y rimraf node_modules **/node_modules/ package-lock.json && npm i",
+    "build": "npm run build -ws"
   },
-  "devDependencies": {
-    "lerna": "4.0.0"
-  }
+  "version": "0.1.0",
+  "main": "index.js",
+  "engines": {
+    "node": "^16.14.0",
+    "npm": "^8.5.0"
+  },
+  "workspaces": [
+    "app/web",
+    "glow/core-web",
+    "glow/glow.azure-web",
+    "glow/glow.beta-web",
+    "glow/shared"
+  ]
 }

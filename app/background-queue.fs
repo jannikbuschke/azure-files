@@ -5,7 +5,6 @@ open System.Threading.Tasks
 open System
 open System.Threading
 open System.Threading.Channels
-open Microsoft.AspNetCore.Mvc
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.DependencyInjection
@@ -74,22 +73,22 @@ type QueuedHostedService(logger: ILogger<QueuedHostedService>, reader: ChannelRe
     logger.LogInformation("Queued hosted service is stopoing")
     Task.CompletedTask
 
-type TestController(logger: ILogger<TestController>, writer: ChannelWriter<string>, reader: ChannelReader<string>) =
-  inherit Microsoft.AspNetCore.Mvc.ControllerBase()
-
-  [<HttpGet("api/test-get")>]
-  member this.Get(token: CancellationToken) =
-    task {
-      logger.LogInformation("getting, wait for dequeud item")
-      let! result = reader.ReadAsync()
-      // let! result = queue.DequeueAsync(token)
-      return result
-    }
-
-  [<HttpGet("api/test-post")>]
-  member this.Post(token: CancellationToken) =
-    let result = writer.TryWrite("hello world")
-    sprintf "done %b" result
+//type TestController(logger: ILogger<TestController>, writer: ChannelWriter<string>, reader: ChannelReader<string>) =
+//  inherit Microsoft.AspNetCore.Mvc.ControllerBase()
+//
+//  [<HttpGet("api/test-get")>]
+//  member this.Get(token: CancellationToken) =
+//    task {
+//      logger.LogInformation("getting, wait for dequeud item")
+//      let! result = reader.ReadAsync()
+//      // let! result = queue.DequeueAsync(token)
+//      return result
+//    }
+//
+//  [<HttpGet("api/test-post")>]
+//  member this.Post(token: CancellationToken) =
+//    let result = writer.TryWrite("hello world")
+//    sprintf "done %b" result
 //    queue.QueueBackgroundWorkItem("Hello")
 //    logger.LogInformation("added a work item")
 //

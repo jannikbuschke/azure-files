@@ -4,6 +4,7 @@ import { BlobItemDetail } from "./blob-container/blob-detail"
 import { IndexedFileDetail, IndexedFiles } from "./blob-container/indexed-files"
 import { BlobContainerDetail, BlobContainerList } from "./blob-container/list"
 import { UploadFile } from "./blob-container/upload-file"
+import { GenerateBlogActions } from "./my-actions/generate-blog"
 
 export function AllContentRoutes() {
   return (
@@ -17,6 +18,7 @@ export function AllContentRoutes() {
       <Route path="/indexed-files" element={<IndexedFiles />}>
         <Route path=":id" element={<IndexedFileDetail />} />
       </Route>
+      <Route path="/actions" element={<GenerateBlogActions />} />
     </Routes>
   )
 }

@@ -6,9 +6,12 @@ import { useAction, useSubmit, UseSubmit, ProblemDetails } from "glow-core/es/ac
 import { Formik, FormikConfig, FormikFormProps } from "formik"
 import { Form } from "formik-antd"
 import * as AzureFiles from "./AzureFiles"
+import * as AzFiles from "./AzFiles"
 import * as Glow_TestAutomation from "./Glow.TestAutomation"
 import * as Glow_Azure_AzureKeyVault from "./Glow.Azure.AzureKeyVault"
 import * as Azure_Storage_Blobs_Models from "./Azure.Storage.Blobs.Models"
+import * as Azure from "./Azure"
+import * as MediatR from "./MediatR"
 import * as Microsoft_FSharp_Core from "./Microsoft.FSharp.Core"
 import * as Glow_Core_Profiles from "./Glow.Core.Profiles"
 
@@ -22,19 +25,20 @@ type QueryInputs = {
 }
 type QueryOutputs = {
   "/api/blob/get-file": AzureFiles.AzureFilesBlobProperties,
-  "/api/files/get-indexed-files": AzureFiles.File[],
+  "/api/files/get-indexed-files": Array<AzureFiles.File>,
   "/api/files/get-indexed-file": AzureFiles.File,
-  "/api/blob/get-files": Azure_Storage_Blobs_Models.BlobItem[],
-  "/api/blob/get-containers": Azure_Storage_Blobs_Models.BlobContainerItem[],
+  "/api/blob/get-files": Array<Azure_Storage_Blobs_Models.BlobItem>,
+  "/api/blob/get-containers": Array<Azure_Storage_Blobs_Models.BlobContainerItem>,
   "/api/glow/test-automation/get-available-fake-users": Glow_TestAutomation.FakeUsers,
 }
 export type Outputs = {
-  "/api/blob/delete-file": any,
-  "/api/file/set-tags": any,
-  "/api/upload-form-files": any,
-  "/api/upload-system-files": Microsoft_FSharp_Core.FSharpOption_FileAdded[],
+  "/api/blob/delete-file": MediatR.Unit,
+  "/api/file/set-tags": MediatR.Unit,
+  "/api/upload-form-files": MediatR.Unit,
+  "/api/upload-system-files": Array<Microsoft_FSharp_Core.FSharpOption<AzureFiles.FileAdded>>,
   "/api/rename-system-files": any,
-  "/api/glow/set-openid-connect-options": any,
+  "/api/my/write-blog-data": MediatR.Unit,
+  "/api/glow/set-openid-connect-options": MediatR.Unit,
 }
 export type Actions = {
   "/api/blob/delete-file": AzureFiles.DeleteBlobFile,
@@ -42,6 +46,7 @@ export type Actions = {
   "/api/upload-form-files": AzureFiles.UploadFormFiles,
   "/api/upload-system-files": AzureFiles.UploadSystemFiles,
   "/api/rename-system-files": AzureFiles.RenameSystemFiles,
+  "/api/my/write-blog-data": AzFiles.GenerateBlogData,
   "/api/glow/set-openid-connect-options": Glow_Azure_AzureKeyVault.SetOpenIdConnectOptions,
 }
 

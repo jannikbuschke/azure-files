@@ -1,3 +1,6 @@
+import { ETag } from "./Azure"
+import { defaultETag } from "./Azure"
+
 export type ObjectReplicationStatus = "Complete" | "Failed"
 export const defaultObjectReplicationStatus = "Complete"
 export const ObjectReplicationStatusValues: { [key in ObjectReplicationStatus]: ObjectReplicationStatus } = {
@@ -52,24 +55,58 @@ export const LeaseStatusValues: { [key in LeaseStatus]: LeaseStatus } = {
 }
 export const LeaseStatusValuesArray: LeaseStatus[] = Object.keys(LeaseStatusValues) as LeaseStatus[]
 
+export type BlobImmutabilityPolicyMode = "Mutable" | "Unlocked" | "Locked"
+export const defaultBlobImmutabilityPolicyMode = "Mutable"
+export const BlobImmutabilityPolicyModeValues: { [key in BlobImmutabilityPolicyMode]: BlobImmutabilityPolicyMode } = {
+  Mutable: "Mutable",
+  Unlocked: "Unlocked",
+  Locked: "Locked",
+}
+export const BlobImmutabilityPolicyModeValuesArray: BlobImmutabilityPolicyMode[] = Object.keys(BlobImmutabilityPolicyModeValues) as BlobImmutabilityPolicyMode[]
+
+export type ArchiveStatus = "RehydratePendingToHot" | "RehydratePendingToCool"
+export const defaultArchiveStatus = "RehydratePendingToHot"
+export const ArchiveStatusValues: { [key in ArchiveStatus]: ArchiveStatus } = {
+  RehydratePendingToHot: "RehydratePendingToHot",
+  RehydratePendingToCool: "RehydratePendingToCool",
+}
+export const ArchiveStatusValuesArray: ArchiveStatus[] = Object.keys(ArchiveStatusValues) as ArchiveStatus[]
+
+export type RehydratePriority = "High" | "Standard"
+export const defaultRehydratePriority = "High"
+export const RehydratePriorityValues: { [key in RehydratePriority]: RehydratePriority } = {
+  High: "High",
+  Standard: "Standard",
+}
+export const RehydratePriorityValuesArray: RehydratePriority[] = Object.keys(RehydratePriorityValues) as RehydratePriority[]
+
+export type PublicAccessType = "None" | "BlobContainer" | "Blob"
+export const defaultPublicAccessType = "None"
+export const PublicAccessTypeValues: { [key in PublicAccessType]: PublicAccessType } = {
+  None: "None",
+  BlobContainer: "BlobContainer",
+  Blob: "Blob",
+}
+export const PublicAccessTypeValuesArray: PublicAccessType[] = Object.keys(PublicAccessTypeValues) as PublicAccessType[]
+
 export interface BlobImmutabilityPolicy {
-  expiresOn: any
-  policyMode: any
+  expiresOn: string | null
+  policyMode: BlobImmutabilityPolicyMode | null
 }
 
 export const defaultBlobImmutabilityPolicy: BlobImmutabilityPolicy = {
   expiresOn: null,
-  policyMode: null,
+  policyMode: {} as any,
 }
 
 export interface BlobProperties {
-  lastModified: any
-  createdOn: any
+  lastModified: string
+  createdOn: string
   metadata: { [key: string]: string | null }
   objectReplicationDestinationPolicyId: string | null
   objectReplicationSourceProperties: ObjectReplicationPolicy[]
   blobType: BlobType
-  copyCompletedOn: any
+  copyCompletedOn: string
   copyStatusDescription: string | null
   copyId: string | null
   copyProgress: string | null
@@ -82,7 +119,7 @@ export interface BlobProperties {
   leaseStatus: LeaseStatus
   contentLength: number
   contentType: string | null
-  eTag: any
+  eTag: ETag
   contentHash: string | null
   contentEncoding: string | null
   contentDisposition: string | null
@@ -97,26 +134,26 @@ export interface BlobProperties {
   accessTier: string | null
   accessTierInferred: boolean
   archiveStatus: string | null
-  accessTierChangedOn: any
+  accessTierChangedOn: string
   versionId: string | null
   isLatestVersion: boolean
   tagCount: number
-  expiresOn: any
+  expiresOn: string
   isSealed: boolean
   rehydratePriority: string | null
-  lastAccessed: any
+  lastAccessed: string
   immutabilityPolicy: BlobImmutabilityPolicy
   hasLegalHold: boolean
 }
 
 export const defaultBlobProperties: BlobProperties = {
-  lastModified: null,
-  createdOn: null,
+  lastModified: "00:00:00",
+  createdOn: "00:00:00",
   metadata: {},
   objectReplicationDestinationPolicyId: null,
   objectReplicationSourceProperties: [],
   blobType: {} as any,
-  copyCompletedOn: null,
+  copyCompletedOn: "00:00:00",
   copyStatusDescription: null,
   copyId: null,
   copyProgress: null,
@@ -129,7 +166,7 @@ export const defaultBlobProperties: BlobProperties = {
   leaseStatus: {} as any,
   contentLength: 0,
   contentType: null,
-  eTag: null,
+  eTag: {} as any,
   contentHash: null,
   contentEncoding: null,
   contentDisposition: null,
@@ -144,14 +181,14 @@ export const defaultBlobProperties: BlobProperties = {
   accessTier: null,
   accessTierInferred: false,
   archiveStatus: null,
-  accessTierChangedOn: null,
+  accessTierChangedOn: "00:00:00",
   versionId: null,
   isLatestVersion: false,
   tagCount: 0,
-  expiresOn: null,
+  expiresOn: "00:00:00",
   isSealed: false,
   rehydratePriority: null,
-  lastAccessed: null,
+  lastAccessed: "00:00:00",
   immutabilityPolicy: {} as any,
   hasLegalHold: false,
 }
@@ -185,43 +222,43 @@ export const defaultGetBlobTagResult: GetBlobTagResult = {
 }
 
 export interface BlobItemProperties {
-  lastModified: any
-  contentLength: any
+  lastModified: string | null
+  contentLength: number | null
   contentType: string | null
   contentEncoding: string | null
   contentLanguage: string | null
   contentHash: string | null
   contentDisposition: string | null
   cacheControl: string | null
-  blobSequenceNumber: any
-  blobType: any
-  leaseStatus: any
-  leaseState: any
-  leaseDuration: any
+  blobSequenceNumber: number | null
+  blobType: BlobType | null
+  leaseStatus: LeaseStatus | null
+  leaseState: LeaseState | null
+  leaseDuration: LeaseDurationType | null
   copyId: string | null
-  copyStatus: any
+  copyStatus: CopyStatus | null
   copySource: any
   copyProgress: string | null
   copyStatusDescription: string | null
-  serverEncrypted: any
-  incrementalCopy: any
+  serverEncrypted: boolean | null
+  incrementalCopy: boolean | null
   destinationSnapshot: string | null
-  remainingRetentionDays: any
+  remainingRetentionDays: number | null
   accessTier: any
   accessTierInferred: boolean
-  archiveStatus: any
+  archiveStatus: ArchiveStatus | null
   customerProvidedKeySha256: string | null
   encryptionScope: string | null
-  tagCount: any
-  expiresOn: any
-  isSealed: any
-  rehydratePriority: any
-  lastAccessedOn: any
+  tagCount: number | null
+  expiresOn: string | null
+  isSealed: boolean | null
+  rehydratePriority: RehydratePriority | null
+  lastAccessedOn: string | null
   eTag: any
-  createdOn: any
-  copyCompletedOn: any
-  deletedOn: any
-  accessTierChangedOn: any
+  createdOn: string | null
+  copyCompletedOn: string | null
+  deletedOn: string | null
+  accessTierChangedOn: string | null
   immutabilityPolicy: BlobImmutabilityPolicy
   hasLegalHold: boolean
 }
@@ -236,12 +273,12 @@ export const defaultBlobItemProperties: BlobItemProperties = {
   contentDisposition: null,
   cacheControl: null,
   blobSequenceNumber: null,
-  blobType: null,
-  leaseStatus: null,
-  leaseState: null,
-  leaseDuration: null,
+  blobType: {} as any,
+  leaseStatus: {} as any,
+  leaseState: {} as any,
+  leaseDuration: {} as any,
   copyId: null,
-  copyStatus: null,
+  copyStatus: {} as any,
   copySource: null,
   copyProgress: null,
   copyStatusDescription: null,
@@ -251,13 +288,13 @@ export const defaultBlobItemProperties: BlobItemProperties = {
   remainingRetentionDays: null,
   accessTier: null,
   accessTierInferred: false,
-  archiveStatus: null,
+  archiveStatus: {} as any,
   customerProvidedKeySha256: null,
   encryptionScope: null,
   tagCount: null,
   expiresOn: null,
   isSealed: null,
-  rehydratePriority: null,
+  rehydratePriority: {} as any,
   lastAccessedOn: null,
   eTag: null,
   createdOn: null,
@@ -273,12 +310,12 @@ export interface BlobItem {
   deleted: boolean
   snapshot: string | null
   versionId: string | null
-  isLatestVersion: any
+  isLatestVersion: boolean | null
   properties: BlobItemProperties
   metadata: { [key: string]: string | null }
   tags: { [key: string]: string | null }
   objectReplicationSourceProperties: ObjectReplicationPolicy[]
-  hasVersionsOnly: any
+  hasVersionsOnly: boolean | null
 }
 
 export const defaultBlobItem: BlobItem = {
@@ -295,42 +332,42 @@ export const defaultBlobItem: BlobItem = {
 }
 
 export interface BlobContainerProperties {
-  lastModified: any
-  leaseStatus: any
-  leaseState: any
-  leaseDuration: any
-  publicAccess: any
-  hasImmutabilityPolicy: any
-  hasLegalHold: any
+  lastModified: string
+  leaseStatus: LeaseStatus | null
+  leaseState: LeaseState | null
+  leaseDuration: LeaseDurationType | null
+  publicAccess: PublicAccessType | null
+  hasImmutabilityPolicy: boolean | null
+  hasLegalHold: boolean | null
   defaultEncryptionScope: string | null
-  preventEncryptionScopeOverride: any
-  deletedOn: any
-  remainingRetentionDays: any
-  eTag: any
+  preventEncryptionScopeOverride: boolean | null
+  deletedOn: string | null
+  remainingRetentionDays: number | null
+  eTag: ETag
   metadata: { [key: string]: string | null }
   hasImmutableStorageWithVersioning: boolean
 }
 
 export const defaultBlobContainerProperties: BlobContainerProperties = {
-  lastModified: null,
-  leaseStatus: null,
-  leaseState: null,
-  leaseDuration: null,
-  publicAccess: null,
+  lastModified: "00:00:00",
+  leaseStatus: {} as any,
+  leaseState: {} as any,
+  leaseDuration: {} as any,
+  publicAccess: {} as any,
   hasImmutabilityPolicy: null,
   hasLegalHold: null,
   defaultEncryptionScope: null,
   preventEncryptionScopeOverride: null,
   deletedOn: null,
   remainingRetentionDays: null,
-  eTag: null,
+  eTag: {} as any,
   metadata: {},
   hasImmutableStorageWithVersioning: false,
 }
 
 export interface BlobContainerItem {
   name: string | null
-  isDeleted: any
+  isDeleted: boolean | null
   versionId: string | null
   properties: BlobContainerProperties
 }

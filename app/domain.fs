@@ -26,5 +26,6 @@ module Projections =
       this.Id <- e.Id
       this.Md5Hash <- e.Md5Hash
       this.Filename <- e.Filename
+      this.Tags <- ResizeArray()
 
     member this.Apply(e: TagsSet) = this.Tags <- ResizeArray(e.Tags)

@@ -1,14 +1,10 @@
 ﻿namespace AzureFiles
 
 open System
-open Azure.Identity
 open Azure.Storage.Blobs
 open AzureFiles.Domain
-open AzureFiles.Projections
-open Glow.Glue.AspNetCore
 open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.Configuration
-open Microsoft.AspNetCore.Mvc
 open Microsoft.Extensions.Logging
 open BlobService
 open Glow.Core.Actions
@@ -18,6 +14,15 @@ open System.Collections.Generic
 open Marten
 open System.IO
 open Azure.Storage.Blobs.Models
+open AzFiles.ImageProcessing
+open SixLabors.ImageSharp
+open SixLabors.ImageSharp.Processing
+
+//type Tag =
+//  | StageForBlog
+//  | Publish
+//  | Keep
+//  | Remove
 
 type AzureFilesBlobProperties =
   { Properties: Azure.Storage.Blobs.Models.BlobProperties
@@ -38,6 +43,7 @@ type DeleteBlobFile() =
 [<Action(Route = "api/files/get-indexed-files", AllowAnonymous = true)>]
 type GetIndexedFiles() =
   interface IRequest<IReadOnlyList<Projections.File>>
+  member val FilterByTag = Unchecked.defaultof<string> with get, set
 
 [<Action(Route = "api/files/get-indexed-file", AllowAnonymous = true)>]
 type GetIndexedFile() =
@@ -66,10 +72,9 @@ type UploadSystemFiles() =
 
 [<Action(Route = "api/rename-system-files", AllowAnonymous = true)>]
 type RenameSystemFiles() =
-  interface IRequest<(Guid*string) option array>
-  member val Files = Unchecked.defaultof<ResizeArray<Guid * string>> with get, set
+  interface IRequest<string array>
+  member val Files = Unchecked.defaultof<ResizeArray<string>> with get, set
   member val FolderName = Unchecked.defaultof<string> with get, set
-
 
 [<Action(Route = "api/blob/get-containers", AllowAnonymous = true)>]
 type GetBlobContainers() =
@@ -88,7 +93,7 @@ type GetBlobContainersHandler
       task {
         let client = getBlobServiceClient configuration
         let containers = client.GetBlobContainers()
-        logger.LogInformation($"container count = {containers.Count}")
+        logger.LogInformation($"container count = {containers.Count()}")
         let result = client.GetBlobContainersAsync()
         let! r0 = result.AsAsyncEnumerable().ToListAsync()
         return r0
@@ -103,7 +108,7 @@ type GetBlobContainersHandler
         for file in files do
           let stream = file.OpenReadStream()
           let! e = addFileIfNotYetExists configuration file.FileName stream logger
-          do! addDomainEventIfSome e session
+          do! addDomainEventIfSome e session logger
 
         return Unit.Value
       }
@@ -126,12 +131,13 @@ type GetBlobContainersHandler
 
   interface IRequestHandler<UploadSystemFiles, FileAdded option []> with
     member this.Handle(request, token) =
-
       let handle (pathName: string) =
         async {
+          logger.LogInformation("handle for upload " + pathName)
+
           logger.LogInformation "wait 200 ms"
           let fileName = Path.GetFileName(pathName)
-          do! Async.Sleep(TimeSpan.FromMilliseconds 200)
+          do! Async.Sleep(TimeSpan.FromMilliseconds 100)
 
           logger.LogInformation "open stream"
 
@@ -146,7 +152,10 @@ type GetBlobContainersHandler
 
           logger.LogInformation "add domain event if some"
 
-          do! addDomainEventIfSome e session |> Async.AwaitTask
+          let! result =
+            addDomainEventIfSome e session logger
+            |> Async.AwaitTask
+
           logger.LogInformation "wait for 200 ms"
 
           do! Async.Sleep(TimeSpan.FromMilliseconds 200)
@@ -163,35 +172,53 @@ type GetBlobContainersHandler
         | _ -> async { return Option<FileAdded>.None }
 
       async {
-        return!
+        let! result =
           request.FilePaths
           |> Seq.map handleIfExists
           |> Async.Sequential
+
+        try
+          let! result1 = session.SaveChangesAsync() |> Async.AwaitTask
+          return result
+        with
+        | error ->
+          logger.LogInformation("error " + error.Message)
+          return result
       }
       |> Async.StartAsTask
 
 
-  interface IRequestHandler<RenameSystemFiles,(Guid*string) option array> with
+  interface IRequestHandler<RenameSystemFiles, string array> with
     member this.Handle(request, token) =
 
       logger.LogInformation($"Rename {request.Files.Count} files")
 
-      let handle (id:System.Guid, pathName:string) = async {
-        logger.LogInformation(sprintf "rename %s" pathName)
-        let extension = Path.GetExtension(pathName)
-        let filename = Path.GetFileName(pathName)
-        let srcDir = FileInfo(pathName).Directory.FullName
-        let targetDir = Path.Combine(srcDir, request.FolderName)
-        let targetFilename = Path.Combine(targetDir, $"{id.ToString()}.{extension}")
-        File.Move(pathName, targetFilename)
-        return Some (id, targetFilename)
-      }
+      let handle (pathName: string) =
+        async {
+          logger.LogInformation(sprintf "rename %s" pathName)
+          let id = System.Guid.NewGuid()
+          let extension = Path.GetExtension(pathName)
+          let filename = Path.GetFileName(pathName)
+          let srcDir = FileInfo(pathName).Directory.FullName
+          let targetDir = Path.Combine(srcDir, request.FolderName)
 
-      let handleIfExists (id, pathName) =
+          let targetFilename =
+            Path.Combine(targetDir, $"{id.ToString()}.{extension}")
+
+          File.Move(pathName, targetFilename)
+          return targetFilename
+        }
+
+      let handleIfExists (pathName) =
+
         if System.IO.File.Exists(pathName) then
-          handle (id, pathName)
+          logger.LogInformation("rename (file does exist)")
+          handle (pathName)
         else
-          async { return Option<System.Guid*string>.None }
+          async {
+            logger.LogInformation("do nothing (file does not exist)")
+            return ""
+          }
 
       async {
         return!
@@ -200,31 +227,19 @@ type GetBlobContainersHandler
           |> Async.Sequential
       }
       |> Async.StartAsTask
-      // map over files
-//      task {
-//        try
-//          for pathName in request.FilePaths do
-//            do! System.Threading.Tasks.Task.Delay(500)
-//
-//            let filename = Path.GetFileName(pathName)
-//            let srcDir = FileInfo(pathName).Directory.FullName
-//            let targetDir = Path.Combine(srcDir, request.FolderName)
-//            let targetFilename = Path.Combine(targetDir, filename)
-//            File.Move(pathName, targetFilename)
-//            do! System.Threading.Tasks.Task.Delay(500)
-//            ()
-//
-//        with
-//        | :? System.Exception as e -> logger.LogInformation("DIDNT WORK " + e.Message)
-//
-//        return MediatR.Unit.Value
-//      }
 
   interface IRequestHandler<GetIndexedFiles, IReadOnlyList<Projections.File>> with
     member this.Handle(request, token) =
       task {
         let! result = session.Query<Projections.File>().ToListAsync()
-        return result
+
+        return
+          if String.IsNullOrEmpty(request.FilterByTag) then
+            result
+          else
+            result
+              .Where(fun v -> v.Tags.Any(fun x -> x.Name = request.FilterByTag))
+              .ToList()
       }
 
   interface IRequestHandler<GetIndexedFile, Projections.File> with
@@ -273,6 +288,32 @@ type GetBlobContainersHandler
         |> ignore
 
         do! session.SaveChangesAsync()
-        return Unit.Value
 
+        let! blobContainerClient = getBlobContainerSourceFiles configuration
+
+        let client =
+          blobContainerClient.GetBlobClient(request.FileId.ToString())
+
+        let dim = { Width = 150; Height = 150 }
+        let stream = client.OpenRead()
+
+        let resize (path: string) =
+          let image =
+            Image.Load("C:\\Users\\jannik\\Pictures\\background.jpg")
+
+          image.Mutate
+            (fun x ->
+              x
+                .Resize(image.Width / 4, image.Height / 4)
+                .Grayscale()
+              |> ignore)
+
+          image.Save("bar.jpg")
+
+        resize ("")
+
+        let stream =
+          File.Open("C:\\Users\\jannik\\Pictures\\background.jpg", FileMode.OpenOrCreate)
+
+        return Unit.Value
       }

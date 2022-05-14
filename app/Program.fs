@@ -2,8 +2,8 @@ namespace AzureFiles
 
 open System.Threading
 open System.Threading.Channels
-open System.Threading.Tasks
 open Glow.Azure
+open Marten.Events.Daemon.Resiliency
 open Microsoft.AspNetCore.Authentication.Cookies
 open Microsoft.AspNetCore.Http
 open Marten
@@ -15,23 +15,20 @@ open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
-open Microsoft.FSharp.Reflection
 open Serilog
 open Glow.Core
 open Glow.Tests
 open Glow.Azdo.Authentication
 open Glow.TypeScript
 open Glow.Azure.AzureKeyVault
-open Microsoft.AspNetCore.Mvc
 open Glow.Hosting
+open Weasel.Core
 
 #nowarn "20"
 
 module Program =
-  open Glow
 
   let exitCode = 0
-
 
   [<EntryPoint>]
   let main args =
@@ -71,7 +68,6 @@ module Program =
     let authScheme =
       CookieAuthenticationDefaults.AuthenticationScheme
 
-
     let cookieAuth (o: CookieAuthenticationOptions) =
       do
         o.Cookie.HttpOnly <- true
@@ -96,15 +92,16 @@ module Program =
     let options = StoreOptions()
     options.Connection connectionString
     options.Projections.SelfAggregate<Projections.File>(Events.Projections.ProjectionLifecycle.Inline)
-    //    options.AutoCreateSchemaObjects <- true // if is development
-    services
-      .AddMarten(options)
-      .UseLightweightSessions()
+    options.AutoCreateSchemaObjects <- AutoCreate.CreateOrUpdate // if is development
+    let marten =
+      services
+        .AddMarten(options)
+        .AddAsyncDaemon(DaemonMode.Solo)
+        .UseLightweightSessions()
 
     builder.AddKeyVaultAsConfigurationProviderIfNameConfigured()
 
     builder.Services.AddGlowAadIntegration(builder.Environment, builder.Configuration)
-
 
     let channelOptions = UnboundedChannelOptions()
     //    channelOptions.SingleReader <- true
@@ -155,6 +152,16 @@ module Program =
 
     app.UseGlow(env, configuration, (fun options -> options.SpaDevServerUri <- "http://localhost:3000"))
 
-    app.Run()
+    let martenStore =
+      app.Services.GetService<IDocumentStore>()
 
-    exitCode
+    task {
+//      let! daemon = martenStore.BuildProjectionDaemonAsync()
+//      let token = CancellationToken()
+//      do! daemon.RebuildProjection<Projections.File>(token)
+      app.Run()
+
+      return exitCode
+    }
+    |> Async.AwaitTask
+    |> Async.RunSynchronously

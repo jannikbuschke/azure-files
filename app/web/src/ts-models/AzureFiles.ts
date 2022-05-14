@@ -1,7 +1,5 @@
 import { BlobProperties, GetBlobTagResult } from "./Azure.Storage.Blobs.Models"
 import { defaultBlobProperties, defaultGetBlobTagResult } from "./Azure.Storage.Blobs.Models"
-import { FSharpOption } from "./fsharp-option"
-import { defaultFSharpOption } from "./fsharp-option"
 
 export interface GetBlobFile {
   itemId: string | null
@@ -24,26 +22,28 @@ export const defaultDeleteBlobFile: DeleteBlobFile = {
 }
 
 export interface GetIndexedFiles {
+  filterByTag: string | null
 }
 
 export const defaultGetIndexedFiles: GetIndexedFiles = {
+  filterByTag: null,
 }
 
 export interface GetIndexedFile {
-  id: any
+  id: string
 }
 
 export const defaultGetIndexedFile: GetIndexedFile = {
-  id: null,
+  id: "00000000-0000-0000-0000-000000000000",
 }
 
 export interface SetTags {
-  fileId: any
+  fileId: string
   tags: Tag[]
 }
 
 export const defaultSetTags: SetTags = {
-  fileId: null,
+  fileId: "00000000-0000-0000-0000-000000000000",
   tags: [],
 }
 
@@ -78,7 +78,7 @@ export const defaultUploadSystemFiles: UploadSystemFiles = {
 }
 
 export interface RenameSystemFiles {
-  files: any[]
+  files: (string | null)[]
   folderName: string | null
 }
 
@@ -104,14 +104,14 @@ export const defaultAzureFilesBlobProperties: AzureFilesBlobProperties = {
 }
 
 export interface File {
-  id: any
+  id: string
   filename: string | null
   md5Hash: string | null
   tags: Tag[]
 }
 
 export const defaultFile: File = {
-  id: null,
+  id: "00000000-0000-0000-0000-000000000000",
   filename: null,
   md5Hash: null,
   tags: [],
@@ -120,12 +120,12 @@ export const defaultFile: File = {
 export interface FileAdded {
   filename: string | null
   md5Hash: string | null
-  id: any
+  id: string
 }
 
 export const defaultFileAdded: FileAdded = {
   filename: null,
   md5Hash: null,
-  id: null,
+  id: "00000000-0000-0000-0000-000000000000",
 }
 

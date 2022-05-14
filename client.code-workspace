@@ -1,20 +1,24 @@
 {
   "folders": [
     {
-      "name": "app",
+      "name": "az-files-client",
       "path": "app\\web"
     },
     {
-      "name": "glow",
+      "name": "glow-core-web",
       "path": "glow\\core-web"
     },
     {
       "path": "glow.azure-web"
     },
     {
-      "path": "glow.beta-web"
+      "path": "glow\\glow.beta-web"
     },
     {
+      "path": "glow\\shared"
+    },
+    {
+      "name": "az-files-app",
       "path": "app"
     }
   ],

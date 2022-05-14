@@ -2,34 +2,41 @@
 
 open Azure.Identity
 open Azure.Storage.Blobs
+open AzureFiles.Domain
 open Marten
 open Microsoft.Extensions.Configuration
-open Domain
 open System.Linq
 open Microsoft.Extensions.Logging
 open System.Threading.Tasks
 
 module BlobService =
 
-  let addDomainEventIfSome (e: FileAdded option) (session: IDocumentSession) =
-    task{
+  let addDomainEventIfSome (e: FileAdded option) (session: IDocumentSession) (logger: ILogger) =
+    task {
       match e with
       | Some ev ->
+        logger.LogInformation("session start stream {@event}", ev)
         let events: obj [] = [| ev |]
 
         session.Events.StartStream(ev.Id, events)
         |> ignore
 
-        do! session.SaveChangesAsync()
-        ()
-      | _ -> ()
+        logger.LogInformation("save changes async")
+
+        return ()
+      | _ ->
+        logger.LogInformation("no file added => do nothing")
+        return ()
     }
 
   let checkFileAlreadyUploaded (client: BlobServiceClient) (filename: string) (content: System.IO.Stream) =
     async {
       let searchQuery = $"\"original_filename\" = '{filename}'"
       let result = client.FindBlobsByTagsAsync(searchQuery)
-      let! r0 = result.AsAsyncEnumerable().ToListAsync().AsTask() |> Async.AwaitTask
+
+      let! r0 =
+        result.AsAsyncEnumerable().ToListAsync().AsTask()
+        |> Async.AwaitTask
       // check for content/mdf5
       return r0.Count > 0
     }
@@ -58,11 +65,11 @@ module BlobService =
       return e
     }
 
-
   let getBlobServiceClient (configuration: IConfiguration) =
     let section = configuration.GetSection("AzureBlob")
 
-    let connectionString = section.GetValue<string>("ConnectionString")
+    let connectionString =
+      section.GetValue<string>("ConnectionString")
 
     let rawUri = section.GetValue<string>("Uri")
 
@@ -78,36 +85,41 @@ module BlobService =
 
     result
 
-  let getBlobContainerClient (configuration: IConfiguration) =
+  let getBlobContainerClient (configuration: IConfiguration) (containerName: string) =
     async {
       let blobServiceClient = getBlobServiceClient configuration
 
-      let blobContainerClient = blobServiceClient.GetBlobContainerClient("inbox")
-      task{
+      let blobContainerClient =
+        blobServiceClient.GetBlobContainerClient(containerName)
+
+      task {
         let! container = blobContainerClient.CreateIfNotExistsAsync()
         ()
-      } |>ignore
+      }
+      |> ignore
+
       return blobContainerClient
     }
+
+  let getBlobContainerSourceFiles (configuration: IConfiguration) =
+    getBlobContainerClient configuration "src"
 
   let NoneAsync () : Task<string option> = Task.FromResult(None)
 
   let NoneFileAsync () : Task<FileAdded option> = Task.FromResult(None)
 
-  let SomeFileAsync
-    (blobInboxContainerClient: BlobContainerClient)
-    (filename: string)
-    (content: System.IO.Stream)
-    : Task<FileAdded option> =
+  let SomeFileAsync (blobInboxContainerClient: BlobContainerClient) (filename: string) (content: System.IO.Stream) : Task<FileAdded option> =
     task {
       let! result = addFile blobInboxContainerClient filename content
       return Some result
     }
 
-  let addFileIfNotYetExists (configuration: IConfiguration) (filename: string) (content: System.IO.Stream) (logger:ILogger)=
+  let addFileIfNotYetExists (configuration: IConfiguration) (filename: string) (content: System.IO.Stream) (logger: ILogger) =
     task {
+      logger.LogInformation("addFileIfNotYetExists")
+
       let blobServiceClient = getBlobServiceClient configuration
-      let! blobInboxContainerClient = getBlobContainerClient configuration
+      let! blobInboxContainerClient = getBlobContainerSourceFiles configuration
       let! fileAlreadyUploaded = checkFileAlreadyUploaded blobServiceClient filename content
 
       let addBlob (alreadyUploaded: bool) =
@@ -117,9 +129,14 @@ module BlobService =
           | false -> return! SomeFileAsync blobInboxContainerClient filename content
         }
 
+      logger.LogInformation("addBlob")
+
       let! fileAdded = addBlob fileAlreadyUploaded
 
-      if fileAdded.IsNone then logger.LogInformation("Skipped (file already exists)") else logger.LogInformation("File uploaded")
+      if fileAdded.IsNone then
+        logger.LogInformation("Skipped (file already exists)")
+      else
+        logger.LogInformation("File uploaded")
 
       return fileAdded
     }

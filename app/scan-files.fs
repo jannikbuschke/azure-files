@@ -34,20 +34,42 @@ module ScanFiles =
           Path.Combine(env.ContentRootPath, "www\\")
 
         let watcher = new FileSystemWatcher(path)
-        // let watcher =  new FileSystemWatcher(@"C:\home\jannik\temp")
 
         watcher.SynchronizingObject <- null
-        //        watcher.NotifyFilter <-  NotifyFilters.FileName ||| NotifyFilters.Size
-        // watcher.NotifyFilter <- NotifyFilters.Attributes
-        //   ||| NotifyFilters.CreationTime
-        //   ||| NotifyFilters.DirectoryName
-        //   ||| NotifyFilters.FileName
-        //   ||| NotifyFilters.LastAccess
-        //   ||| NotifyFilters.LastWrite
-        //   ||| NotifyFilters.Security
-        //   ||| NotifyFilters.Size;
 
-        // watcher.Filter <- "*.*";
+        logger.LogInformation("Initial scan")
+        let dir = System.IO.Directory.EnumerateFiles(path)
+
+        let files =
+          ResizeArray(
+            dir
+            |> Seq.filter (fun v -> System.IO.File.Exists(v))
+          )
+
+        logger.LogInformation("found files: {@files}", files.Count)
+        logger.LogInformation("found files: {@files}", files)
+
+        task {
+          for file in files do
+            use scope = serviceProvider.CreateScope()
+
+            let mediator =
+              scope.ServiceProvider.GetService<IMediator>()
+
+            let! result = mediator.Send(UploadSystemFiles(FilePaths = ResizeArray([| file |])))
+
+            let result =
+              ResizeArray(
+                result
+                |> Seq.choose id
+                |> Seq.map (fun v -> v.Id, v.Filename)
+              )
+
+            logger.LogInformation "rename files"
+            let! result = mediator.Send(RenameSystemFiles(Files = ResizeArray([| file |]), FolderName = "handled"))
+            return ()
+        }
+        |> ignore
 
         let handleFileEvent eventType =
           fun (e: FileSystemEventArgs) ->
@@ -59,7 +81,13 @@ module ScanFiles =
                   let mediator = services.GetService<IMediator>()
                   let files = ResizeArray [ e.FullPath ]
                   let! result = mediator.Send(UploadSystemFiles(FilePaths = files))
-                  let result = ResizeArray(result |> Seq.choose id |> Seq.map (fun v-> v.Id,v.Filename ))
+
+                  let result =
+                    ResizeArray(
+                      result
+                      |> Seq.choose id
+                      |> Seq.map (fun v -> v.Filename)
+                    )
 
                   logger.LogInformation "rename files"
                   let! result = mediator.Send(RenameSystemFiles(Files = result, FolderName = "handled"))
@@ -72,7 +100,6 @@ module ScanFiles =
             ()
 
         watcher.Changed.Add(handleFileEvent "changed")
-        //        watcher.Created.Add(handleFileEvent "created")
         watcher.Renamed.Add(handleFileEvent "renamed")
 
         watcher.IncludeSubdirectories <- true
@@ -99,6 +126,8 @@ module ScanFiles =
 
               return ()
           }
+
+        logger.LogInformation("scan files done")
 
         Task.CompletedTask
 

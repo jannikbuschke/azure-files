@@ -1,11 +1,13 @@
 import React from "react"
-import { AppShell, Header, MantineProvider, Navbar } from "@mantine/core"
-
+import { AppShell, MantineProvider, Navbar } from "@mantine/core"
 import { ThemeIcon, UnstyledButton, Group, Text } from "@mantine/core"
-import { UploadFile } from "./blob-container/upload-file"
 import { AllContentRoutes } from "./navigation"
 import { BrowserRouter, useMatch, useNavigate } from "react-router-dom"
 import { QueryClient, QueryClientProvider } from "react-query"
+import { NotificationsProvider } from "@mantine/notifications"
+import { VscAzure, VscCloudUpload } from "react-icons/vsc"
+import { FiChevronsRight } from "react-icons/fi"
+import { BsFileEarmarkRichtextFill } from "react-icons/bs"
 
 interface MainLinkProps {
   icon: React.ReactNode
@@ -28,11 +30,16 @@ function MainLink({ icon, color, label, to }: MainLinkProps) {
       sx={(theme) => ({
         display: "block",
         width: "100%",
-        padding: theme.spacing.xs,
-        borderRadius: theme.radius.sm,
+        padding: 1,
+        margin: 1,
+        borderRadius: theme.radius.xs,
         color:
           theme.colorScheme === "dark" ? theme.colors.dark[0] : theme.black,
         backgroundColor: match !== null ? theme.colors.blue[1] : undefined,
+        borderLeft:
+          match !== null
+            ? `4px solid ${theme.colors.blue[5]}`
+            : `4px solid white`,
         "&:hover": {
           backgroundColor:
             theme.colorScheme === "dark"
@@ -45,7 +52,6 @@ function MainLink({ icon, color, label, to }: MainLinkProps) {
         <ThemeIcon color={color} variant="light">
           {icon}
         </ThemeIcon>
-
         <Text size="sm">{label}</Text>
       </Group>
     </UnstyledButton>
@@ -54,17 +60,28 @@ function MainLink({ icon, color, label, to }: MainLinkProps) {
 
 const data = [
   {
-    icon: undefined,
+    icon: <BsFileEarmarkRichtextFill />,
+    color: "teal",
+    label: "Indexed files",
+    to: "/indexed-files",
+  },
+  {
+    icon: <VscAzure />,
     color: "blue",
     label: "Blob containers",
     to: "/container",
   },
-  { icon: undefined, color: "teal", label: "Upload file", to: "/upload-file" },
   {
-    icon: undefined,
-    color: "teal",
-    label: "Indexed files",
-    to: "/indexed-files",
+    icon: <VscCloudUpload />,
+    color: "black",
+    label: "Upload file",
+    to: "/upload-file",
+  },
+  {
+    icon: <FiChevronsRight />,
+    color: "red",
+    label: "Actions",
+    to: "/actions",
   },
   // { icon: undefined, color: "violet", label: "Discussions" },
   // { icon: undefined, color: "grape", label: "Databases" },
@@ -89,41 +106,43 @@ function App() {
             spacing: { xs: 15, sm: 20, md: 25, lg: 30, xl: 40 },
           }}
         >
-          <AppShell
-            padding="md"
-            navbar={
-              <Navbar width={{ base: 300 }} p="xs">
-                {/* Navbar content */}
-                {/* First section with normal height (depends on section content) */}
-                {/* <Navbar.Section>First section</Navbar.Section> */}
+          <NotificationsProvider>
+            <AppShell
+              padding="md"
+              navbar={
+                <Navbar width={{ base: 300 }}>
+                  {/* Navbar content */}
+                  {/* First section with normal height (depends on section content) */}
+                  {/* <Navbar.Section>First section</Navbar.Section> */}
 
-                {/* Grow section will take all available space that is not taken by first and last sections */}
-                <Navbar.Section grow>
-                  <MainLinks />
-                </Navbar.Section>
+                  {/* Grow section will take all available space that is not taken by first and last sections */}
+                  <Navbar.Section grow>
+                    <MainLinks />
+                  </Navbar.Section>
 
-                {/* Last section with normal height (depends on section content) */}
-                {/* <Navbar.Section>Last section</Navbar.Section> */}
-              </Navbar>
-            }
-            header={
-              <Header height={60} p="xs">
-                {/* Header content */}
-              </Header>
-            }
-            styles={(theme) => ({
-              main: {
-                backgroundColor:
-                  theme.colorScheme === "dark"
-                    ? theme.colors.dark[8]
-                    : theme.colors.gray[0],
-              },
-            })}
-          >
-            <AllContentRoutes />
-            {/* <UploadFile /> */}
-            {/* Your application here */}
-          </AppShell>
+                  {/* Last section with normal height (depends on section content) */}
+                  {/* <Navbar.Section>Last section</Navbar.Section> */}
+                </Navbar>
+              }
+              // header={
+              //   <Header height={60} p="xs">
+              //     {/* Header content */}
+              //   </Header>
+              // }
+              styles={(theme) => ({
+                main: {
+                  backgroundColor:
+                    theme.colorScheme === "dark"
+                      ? theme.colors.dark[8]
+                      : theme.colors.gray[0],
+                },
+              })}
+            >
+              <AllContentRoutes />
+              {/* <UploadFile /> */}
+              {/* Your application here */}
+            </AppShell>
+          </NotificationsProvider>
         </MantineProvider>
       </QueryClientProvider>
     </BrowserRouter>

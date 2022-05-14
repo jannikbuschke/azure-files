@@ -9,14 +9,16 @@
     <Compile Include="background-queue.fs" />
     <Compile Include="domain.fs" />
     <Compile Include="blob-service.fs" />
+    <Compile Include="image-processing.fs" />
     <Compile Include="upload-file-controller.fs" />
     <Compile Include="scan-files.fs" />
-    <Compile Include="image-processing.fs" />
+    <Compile Include="generate-blog-data.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Jering.Javascript.NodeJS" Version="6.0.1" />
     <PackageReference Include="SkiaSharp" Version="2.80.3" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="2.1.1" />
     <PackageReference Include="System.Linq.Async" Version="6.0.1" />
   </ItemGroup>
   <!--  <ItemGroup>-->
