@@ -13,6 +13,7 @@
     <Compile Include="upload-file-controller.fs" />
     <Compile Include="scan-files.fs" />
     <Compile Include="generate-blog-data.fs" />
+    <Compile Include="fsharp-tests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>

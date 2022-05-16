@@ -1,5 +1,6 @@
 ﻿namespace AzureFiles
 
+open System.IO
 open Azure.Identity
 open Azure.Storage.Blobs
 open AzureFiles.Domain
@@ -29,7 +30,7 @@ module BlobService =
         return ()
     }
 
-  let checkFileAlreadyUploaded (client: BlobServiceClient) (filename: string) (content: System.IO.Stream) =
+  let checkFileAlreadyUploaded (client: BlobServiceClient) (filename: string) =
     async {
       let searchQuery = $"\"original_filename\" = '{filename}'"
       let result = client.FindBlobsByTagsAsync(searchQuery)
@@ -41,8 +42,13 @@ module BlobService =
       return r0.Count > 0
     }
 
-  let addFile (client: BlobContainerClient) (filename: string) (content: System.IO.Stream) =
-    task {
+  let uploadFile (client: BlobContainerClient) (path: string) : Async<FileAdded option> =
+    async {
+      let filename = Path.GetFileName(path)
+
+      use content =
+        File.Open(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
+
       let fileId = System.Guid.NewGuid()
       let blobClient = client.GetBlobClient(fileId.ToString())
 
@@ -51,18 +57,21 @@ module BlobService =
         dict [ "original_filename", filename
                "id", fileId.ToString() ]
 
-      let! result = blobClient.UploadAsync(content, null, metadata)
+      let! result =
+        blobClient.UploadAsync(content, null, metadata)
+        |> Async.AwaitTask
+
       let hash = result.Value.ContentHash
 
       let tags = metadata
-      let! setTagResult = blobClient.SetTagsAsync(tags)
+      let! setTagResult = blobClient.SetTagsAsync(tags) |> Async.AwaitTask
 
       let e: FileAdded =
         { Id = fileId
           Filename = filename
           Md5Hash = hash }
 
-      return e
+      return Some e
     }
 
   let getBlobServiceClient (configuration: IConfiguration) =
@@ -106,24 +115,24 @@ module BlobService =
 
   let NoneAsync () : Task<string option> = Task.FromResult(None)
 
-  let NoneFileAsync () : Task<FileAdded option> = Task.FromResult(None)
+  let NoneFileAsync () : Async<FileAdded option> = async { return None }
 
-  let SomeFileAsync (blobInboxContainerClient: BlobContainerClient) (filename: string) (content: System.IO.Stream) : Task<FileAdded option> =
-    task {
-      let! result = addFile blobInboxContainerClient filename content
-      return Some result
+  let SomeFileAsync (blobInboxContainerClient: BlobContainerClient) (filename: string) (content: System.IO.Stream) : Async<FileAdded option> =
+    async {
+      let! result = uploadFile blobInboxContainerClient filename
+      return result
     }
 
   let addFileIfNotYetExists (configuration: IConfiguration) (filename: string) (content: System.IO.Stream) (logger: ILogger) =
-    task {
+    async {
       logger.LogInformation("addFileIfNotYetExists")
 
       let blobServiceClient = getBlobServiceClient configuration
       let! blobInboxContainerClient = getBlobContainerSourceFiles configuration
-      let! fileAlreadyUploaded = checkFileAlreadyUploaded blobServiceClient filename content
+      let! fileAlreadyUploaded = checkFileAlreadyUploaded blobServiceClient filename
 
       let addBlob (alreadyUploaded: bool) =
-        task {
+        async {
           match alreadyUploaded with
           | true -> return! NoneFileAsync()
           | false -> return! SomeFileAsync blobInboxContainerClient filename content

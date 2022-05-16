@@ -148,7 +148,6 @@ type GetBlobContainersHandler
 
           let! e =
             addFileIfNotYetExists configuration fileName stream logger
-            |> Async.AwaitTask
 
           logger.LogInformation "add domain event if some"
 
