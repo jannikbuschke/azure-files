@@ -11,6 +11,14 @@ export const defaultGetBlobFile: GetBlobFile = {
   containerId: null,
 }
 
+export interface DeleteAllBlobs {
+  containerName: string | null
+}
+
+export const defaultDeleteAllBlobs: DeleteAllBlobs = {
+  containerName: null,
+}
+
 export interface DeleteBlobFile {
   itemId: string | null
   containerId: string | null
@@ -22,11 +30,13 @@ export const defaultDeleteBlobFile: DeleteBlobFile = {
 }
 
 export interface GetIndexedFiles {
-  filterByTag: string | null
+  tagFilter: string | null
+  showUntagged: boolean
 }
 
 export const defaultGetIndexedFiles: GetIndexedFiles = {
-  filterByTag: null,
+  tagFilter: null,
+  showUntagged: false,
 }
 
 export interface GetIndexedFile {
@@ -39,7 +49,7 @@ export const defaultGetIndexedFile: GetIndexedFile = {
 
 export interface SetTags {
   fileId: string
-  tags: Tag[]
+  tags: TagAdded[]
 }
 
 export const defaultSetTags: SetTags = {
@@ -47,12 +57,22 @@ export const defaultSetTags: SetTags = {
   tags: [],
 }
 
-export interface Tag {
+export interface TagAdded {
   name: string | null
 }
 
-export const defaultTag: Tag = {
+export const defaultTagAdded: TagAdded = {
   name: null,
+}
+
+export interface SetTagsBatched {
+  tags: TagAdded[]
+  files: { [key: string]: boolean }
+}
+
+export const defaultSetTagsBatched: SetTagsBatched = {
+  tags: [],
+  files: {},
 }
 
 export interface GetFiles {
@@ -61,6 +81,18 @@ export interface GetFiles {
 
 export const defaultGetFiles: GetFiles = {
   name: null,
+}
+
+export interface GetNextUntaggedBlob {
+}
+
+export const defaultGetNextUntaggedBlob: GetNextUntaggedBlob = {
+}
+
+export interface GetAllUntagged {
+}
+
+export const defaultGetAllUntagged: GetAllUntagged = {
 }
 
 export interface UploadFormFiles {
@@ -103,29 +135,63 @@ export const defaultAzureFilesBlobProperties: AzureFilesBlobProperties = {
   tags: {} as any,
 }
 
-export interface File {
+export interface FileAggregate {
   id: string
+  url: string | null
   filename: string | null
   md5Hash: string | null
-  tags: Tag[]
+  localMd5Hash: string | null
+  tags: (string | null)[]
+  thumbnailUrl: string | null
+  lowresUrl: string | null
+  fullHdUrl: string | null
+  variants: ImageVariant[]
 }
 
-export const defaultFile: File = {
+export const defaultFileAggregate: FileAggregate = {
   id: "00000000-0000-0000-0000-000000000000",
+  url: null,
   filename: null,
   md5Hash: null,
+  localMd5Hash: null,
   tags: [],
+  thumbnailUrl: null,
+  lowresUrl: null,
+  fullHdUrl: null,
+  variants: [],
 }
 
-export interface FileAdded {
+export interface Dimension {
+  width: number
+  height: number
+}
+
+export const defaultDimension: Dimension = {
+  width: 0,
+  height: 0,
+}
+
+export interface ImageVariant {
+  url: string | null
+  dimension: Dimension
+}
+
+export const defaultImageVariant: ImageVariant = {
+  url: null,
+  dimension: {} as any,
+}
+
+export interface FileSavedToStorage {
   filename: string | null
   md5Hash: string | null
-  id: string
+  localMd5Hash: string | null
+  url: string | null
 }
 
-export const defaultFileAdded: FileAdded = {
+export const defaultFileSavedToStorage: FileSavedToStorage = {
   filename: null,
   md5Hash: null,
-  id: "00000000-0000-0000-0000-000000000000",
+  localMd5Hash: null,
+  url: null,
 }
 

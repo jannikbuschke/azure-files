@@ -1,61 +1,27 @@
 ﻿namespace AzureFiles
 
-open System.Collections.Generic
-open System.Threading
 open System.Threading.Channels
-open AzureFiles.Domain
+open AzureFiles
 open Microsoft.Extensions.Logging
 open System.Threading.Tasks
 open Microsoft.Extensions.Hosting
 open System.IO
 open Microsoft.AspNetCore.Hosting
 open Microsoft.Extensions.DependencyInjection
-// open Glow.Core.Utils
+open FSharp.Control
 open System
-open MediatR
 open Glow.Hosting
-open Microsoft.FSharp.Collections
 
 module ScanFiles =
 
-  type UploadFile = string -> Async<FileAdded option>
-
-  // orchestrate
-  let handleSingleFile addDomainEventIfSome addFileIfNotYetExists (pathName: string) (logger: ILogger) =
+  let scanAndHandleWwwDirectory (services: IServiceProvider) =
     async {
-      let fileName = Path.GetFileName(pathName)
-      logger.LogInformation "wait for 100 ms"
-
-      do! Async.Sleep(TimeSpan.FromMilliseconds 100)
-
-      use stream =
-        File.Open(pathName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
-
-      let! e =
-        addFileIfNotYetExists fileName stream
-        |> Async.AwaitTask
-
-      logger.LogInformation "add domain event if some"
-
-      let! result = addDomainEventIfSome e |> Async.AwaitTask
-
-      logger.LogInformation "wait for 200 ms"
-
-      do! Async.Sleep(TimeSpan.FromMilliseconds 200)
-
-      logger.LogInformation "upload file done"
-
-      return e
-    }
-
-
-  let scanAndHandleWwwDirectory (services: IServiceProvider) (cancellationToken: CancellationToken) =
-    task {
 
       let configuration =
         services.GetService<Microsoft.Extensions.Configuration.IConfiguration>()
 
-      let loggerFactory = services.GetService<ILoggerFactory>()
+      let loggerFactory =
+        services.GetService<ILoggerFactory>()
 
       let logger =
         loggerFactory.CreateLogger("initial.handle.files")
@@ -66,41 +32,40 @@ module ScanFiles =
       let path =
         Path.Combine(env.ContentRootPath, "www\\")
 
-      let getFilesInDir (path: string) =
+      logger.LogInformation("")
+      logger.LogInformation("***********************")
+      logger.LogInformation("**** start scan  ******")
+      logger.LogInformation("***********************")
+      logger.LogInformation($"Scanning path '{path}'")
+      logger.LogInformation("")
+
+
+      let! x =
         System.IO.Directory.EnumerateFiles(path)
+        |> AsyncSeq.ofSeq
+        |> AsyncSeq.iterAsync (fun v ->
+          async {
+            use scope = services.CreateScope()
+            logger.LogInformation(v)
+            let! result = (Workflow.runWorkflowForFilePath scope.ServiceProvider) v
+            return result
+          })
+        |> Async.Catch
 
-      let files = getFilesInDir path
+      match x with
+      | Choice1Of2 unit ->
+        logger.LogInformation("SCAN SUCCESS")
+      | Choice2Of2 ``exception`` ->
+        logger.LogError(``exception``, "SCAN ERROR")
 
-      let blobServiceClient =
-        BlobService.getBlobServiceClient configuration
+      logger.LogInformation("scan result {@result}", x)
 
-      let! blobInboxContainerClient = BlobService.getBlobContainerSourceFiles configuration
+      logger.LogInformation("")
+      logger.LogInformation("**************************")
+      logger.LogInformation("**** scan completed ******")
+      logger.LogInformation("**************************")
+      logger.LogInformation("")
 
-      let check =
-        BlobService.checkFileAlreadyUploaded blobServiceClient
-
-      let uploadFile: UploadFile =
-        BlobService.uploadFile blobInboxContainerClient
-
-      let! result = files |> Seq.map uploadFile |> Async.Parallel
-
-      ///
-// session: IDocumentSession
-// build dependencies
-// orchestrat
-
-      //      let mediator = services.GetService<IMediator>()
-//      let files = ResizeArray([e.FullPath])
-//      let! result = mediator.Send(UploadSystemFiles(FilePaths = files))
-//
-//      let result =
-//        ResizeArray(
-//          result
-//          |> Seq.choose id
-//          |> Seq.map (fun v -> v.Filename)
-//        )
-//
-//      let! result = mediator.Send(RenameSystemFiles(Files = result, FolderName = "handled"))
       return ()
     }
 
@@ -118,109 +83,22 @@ module ScanFiles =
       override this.ExecuteAsync(token) =
         logger.LogInformation("Execute backroundservice async")
 
-        // let path = env.ContentRootPath
-        let path =
-          Path.Combine(env.ContentRootPath, "www\\")
-
-        let watcher = new FileSystemWatcher(path)
-
-        watcher.SynchronizingObject <- null
-
-        logger.LogInformation("Initial scan")
-        let dir = System.IO.Directory.EnumerateFiles(path)
-
-        let files =
-          ResizeArray(
-            dir
-            |> Seq.filter (fun v -> System.IO.File.Exists(v))
-          )
-
-        logger.LogInformation("found files: {@files}", files.Count)
-        logger.LogInformation("found files: {@files}", files)
-
         task {
-          for file in files do
+          while token.IsCancellationRequested = false do
             use scope = serviceProvider.CreateScope()
+            logger.LogInformation("invoke scan")
 
-            let mediator =
-              scope.ServiceProvider.GetService<IMediator>()
+            let! result =
+              scanAndHandleWwwDirectory scope.ServiceProvider
+              |> Async.StartAsTask
 
-            let! result = mediator.Send(UploadSystemFiles(FilePaths = ResizeArray([| file |])))
+            logger.LogInformation("scan done")
 
-            let result =
-              ResizeArray(
-                result
-                |> Seq.choose id
-                |> Seq.map (fun v -> v.Id, v.Filename)
-              )
+            do! Task.Delay(150000) |> Async.AwaitTask
 
-            logger.LogInformation "rename files"
-
-            let! result = mediator.Send(RenameSystemFiles(Files = ResizeArray([| file |]), FolderName = "handled"))
-
-            return ()
+          return ()
         }
         |> ignore
-
-        let handleFileEvent eventType =
-          fun (e: FileSystemEventArgs) ->
-            logger.LogInformation(sprintf "File %s: %s" eventType e.FullPath)
-
-            writer2.TryWrite
-              (fun services cancellationToken ->
-                task {
-                  let mediator = services.GetService<IMediator>()
-                  let files = ResizeArray [ e.FullPath ]
-                  let! result = mediator.Send(UploadSystemFiles(FilePaths = files))
-
-                  let result =
-                    ResizeArray(
-                      result
-                      |> Seq.choose id
-                      |> Seq.map (fun v -> v.Filename)
-                    )
-
-                  logger.LogInformation "rename files"
-
-                  let! result = mediator.Send(RenameSystemFiles(Files = result, FolderName = "handled"))
-
-                  return ()
-                }
-                |> ValueTask)
-
-            |> ignore
-
-            ()
-
-        watcher.Changed.Add(handleFileEvent "changed")
-        watcher.Renamed.Add(handleFileEvent "renamed")
-
-        watcher.IncludeSubdirectories <- true
-        watcher.EnableRaisingEvents <- true
-        logger.LogInformation(sprintf "watcher is enabled %b" watcher.EnableRaisingEvents)
-
-        let x =
-          (sprintf "watching for changes in %s" path)
-
-        logger.LogInformation(x)
-
-        let taskResult =
-          task {
-            while token.IsCancellationRequested = false do
-              logger.LogInformation(sprintf "Watching files, waiting for cancellation (threadid = %s" Thread.CurrentThread.Name)
-
-              try
-                let! result = Task.Delay(100000, token)
-                return result
-              with
-              | :? TaskCanceledException as e ->
-                logger.LogInformation("Cancelling wait")
-                ()
-
-              return ()
-          }
-
-        logger.LogInformation("scan files done")
 
         Task.CompletedTask
 

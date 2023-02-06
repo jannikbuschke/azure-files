@@ -2,31 +2,27 @@ import {
   Box,
   Button,
   Chip,
-  Chips,
   Grid,
   LoadingOverlay,
   Paper,
   Stack,
   Title,
-  Text,
   Image,
   SegmentedControl,
+  ScrollArea,
 } from "@mantine/core"
 import { useForm } from "@mantine/form"
-import { RenderObject } from "glow-core"
+import { useFullscreen } from "@mantine/hooks"
+import { useNotify } from "glow-core"
 import * as React from "react"
 import { Outlet, useMatch, useParams, useResolvedPath } from "react-router"
 import { Link } from "react-router-dom"
-import { useTypedAction, useTypedQuery } from "../ts-models/api"
-import { defaultFile, File } from "../ts-models/AzureFiles"
+import { useTypedAction, useTypedQuery } from "../client/api"
+import { defaultFileAggregate, FileAggregate } from "../client/AzureFiles"
+import { Guid } from "../client/System"
+import { tags } from "./tag-values"
 
-const tags = [
-  { label: "Keep", value: "keep" },
-  { label: "Stage for blob", value: "stage-for-blog" },
-  { label: "publish", value: "publish" },
-]
-
-function CustomLink({ to, name }: { to: string; name: string }) {
+function CustomLink({ to, name }: { to: string; name: React.ReactNode }) {
   let resolved = useResolvedPath(to)
   let match = useMatch({ path: resolved.pathname, end: true })
   return (
@@ -37,36 +33,71 @@ function CustomLink({ to, name }: { to: string; name: string }) {
   )
 }
 
+const specialTags = {
+  all: "___all",
+  untagged: "___untagged",
+} as const
+
 export function IndexedFiles() {
-  const [selectedTag, setSelectedTag] = React.useState<string | undefined>(
-    undefined,
+  const [selectedTag, setSelectedTag] = React.useState<string>(
+    specialTags.untagged,
   )
-  const { data, loading } = useTypedQuery("/api/files/get-indexed-files", {
-    input: {
-      filterByTag: selectedTag === "___all" ? null : selectedTag || null,
+
+  const { data, loading, isFetching } = useTypedQuery(
+    "/api/files/get-indexed-files",
+    {
+      input: {
+        tagFilter: selectedTag,
+        showUntagged: selectedTag === specialTags.untagged,
+      },
+      placeholder: [],
     },
-    placeholder: [],
-  })
+  )
   return (
-    <Paper shadow="xs" p="md">
-      <LoadingOverlay visible={loading}></LoadingOverlay>
+    <Paper>
+      <LoadingOverlay visible={loading || isFetching}></LoadingOverlay>
       <SegmentedControl
-        data={[{ label: "All", value: "___all" } as any, ...tags]}
+        data={[
+          { label: "Untagged", value: specialTags.untagged },
+          { label: "All", value: specialTags.all } as any,
+          ...tags,
+        ]}
         value={selectedTag}
         onChange={(v) => {
-          setSelectedTag((selected) => (selected === v ? undefined : v))
+          setSelectedTag(v)
         }}
       />
-      <Grid>
-        <Grid.Col span={4}>
+      <Grid p="md">
+        <Grid.Col span={2}>
           <div>Filecount: {data.length}</div>
-          {data.map((v) => (
-            <div key={v.id}>
-              <CustomLink to={`./${v.id}`} name={v.filename!} />
-            </div>
-          ))}
+          <ScrollArea style={{ height: 750 }}>
+            {/* ... content */}
+            {data.map((v) => (
+              <div key={v.id}>
+                <CustomLink
+                  to={`./${v.id}`}
+                  name={
+                    <div>
+                      {/* thumbnailAvailable */}
+                      {v.thumbnailUrl || v.lowresUrl ? (
+                        <Image
+                          radius="sm"
+                          fit="contain"
+                          width={"100%"}
+                          src={v.thumbnailUrl || v.lowresUrl || v.url!}
+                        />
+                      ) : (
+                        ""
+                      )}
+                      <div>{v.filename!}</div>
+                    </div>
+                  }
+                />
+              </div>
+            ))}
+          </ScrollArea>
         </Grid.Col>
-        <Grid.Col span={8}>
+        <Grid.Col span={10}>
           <Outlet />
         </Grid.Col>
       </Grid>
@@ -74,23 +105,34 @@ export function IndexedFiles() {
   )
 }
 
-function FileContent({ data, id }: { data: File; id: string }) {
+export function FileContent({
+  data,
+  id,
+  onSave,
+}: {
+  data: FileAggregate
+  id: string
+  onSave?: () => void
+}) {
   const form = useForm({
     initialValues: {
-      tags: data?.tags?.map((v) => v.name) || [],
+      tags: data?.tags?.map((v) => v) || [],
     },
   })
-
+  const { notifyError } = useNotify()
   const [setTags, , { submitting }] = useTypedAction("/api/file/set-tags")
+  const { ref, toggle, fullscreen } = useFullscreen()
   return (
-    <Box mx="auto">
+    <Box mx="auto" key={id}>
       <LoadingOverlay visible={submitting}></LoadingOverlay>
+      {/* <RenderObject {...form.values} /> */}
       <form
         onSubmit={form.onSubmit(async (values) => {
           await setTags({
-            fileId: id!,
+            fileId: id as Guid,
             tags: values.tags.map((v) => ({ name: v })),
           })
+          onSave && onSave()
         })}
       >
         <Stack spacing={"sm"}>
@@ -104,29 +146,37 @@ function FileContent({ data, id }: { data: File; id: string }) {
             <Button type="submit" size="sm">
               Save
             </Button>
+            <Button size="sm" onClick={() => toggle()}>
+              fullscreen
+            </Button>
           </Stack>
           {/* <Text size="xs">{data.md5Hash}</Text> */}
-          <Chips size="sm" multiple={true} {...form.getInputProps("tags")}>
+          <Chip.Group multiple={true} {...form.getInputProps("tags")}>
             {tags.map((v) => (
-              <Chip key={v.value} value={v.value}>
+              <Chip size="sm" key={v.value} value={v.value}>
                 {v.label}
               </Chip>
             ))}
-          </Chips>
+          </Chip.Group>
         </Stack>
       </form>
       <br />
-      <Image
-        radius="sm"
-        fit="contain"
-        width={600}
-        src={`https://azfilesdevsa.blob.core.windows.net/src/${id}`}
-        // src="https://images.unsplash.com/photo-1511216335778-7cb8f49fa7a3?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=720&q=80"
-        // alt="Random unsplash image"
-      />
+      <div ref={ref}>
+        <Image
+          radius="sm"
+          fit="contain"
+          width={"100%"}
+          height={"100%"}
+          src={data.lowresUrl || data.url!}
+          onError={() => notifyError("Could not load image")}
+          // src="https://images.unsplash.com/photo-1511216335778-7cb8f49fa7a3?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=720&q=80"
+          // alt="Random unsplash image"
+        />
+        <Button>Tag</Button>
+      </div>
       {/* <img src={`https://azfilesdevsa.blob.core.windows.net/inbox/${id}`} /> */}
       {/* <img src="https://azfilesdevsa.blob.core.windows.net/inbox/0ddd673d-62a2-425b-a263-db5aabc4dabb" /> */}
-      <RenderObject {...form.values} />
+      {/* <RenderObject {...form.values} /> */}
     </Box>
   )
 }
@@ -134,8 +184,8 @@ function FileContent({ data, id }: { data: File; id: string }) {
 export function IndexedFileDetail() {
   const { id } = useParams<"id">()
   const { data, isFetched } = useTypedQuery("/api/files/get-indexed-file", {
-    input: { id: id! },
-    placeholder: defaultFile,
+    input: { id: id as Guid },
+    placeholder: defaultFileAggregate,
   })
 
   return isFetched ? <FileContent data={data} id={id!} /> : <div>loading</div>

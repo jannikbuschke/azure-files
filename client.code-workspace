@@ -9,10 +9,13 @@
       "path": "glow\\core-web"
     },
     {
-      "path": "glow.azure-web"
+      "path": "glow\\glow.azure-web"
     },
     {
       "path": "glow\\glow.beta-web"
+    },
+    {
+      "path": "glow\\glow.mantine-web"
     },
     {
       "path": "glow\\shared"
@@ -20,6 +23,9 @@
     {
       "name": "az-files-app",
       "path": "app"
+    },
+    {
+      "path": "glow\\glow.mantine-formik-web"
     }
   ],
   "settings": {}

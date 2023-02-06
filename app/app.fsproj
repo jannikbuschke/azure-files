@@ -7,9 +7,14 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="background-queue.fs" />
+    <Compile Include="FileId.fs" />
     <Compile Include="domain.fs" />
+    <Compile Include="marten-extensions.fs" />
+    <Compile Include="projections.fs" />
     <Compile Include="blob-service.fs" />
     <Compile Include="image-processing.fs" />
+    <Compile Include="utils.fs" />
+    <Compile Include="file-workflow.fs" />
     <Compile Include="upload-file-controller.fs" />
     <Compile Include="scan-files.fs" />
     <Compile Include="generate-blog-data.fs" />
@@ -17,19 +22,24 @@
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="FSharp.Control.AsyncSeq" Version="3.2.1" />
     <PackageReference Include="Jering.Javascript.NodeJS" Version="6.0.1" />
     <PackageReference Include="SkiaSharp" Version="2.80.3" />
     <PackageReference Include="SixLabors.ImageSharp" Version="2.1.1" />
     <PackageReference Include="System.Linq.Async" Version="6.0.1" />
+    <PackageReference Include="FsToolkit.ErrorHandling" Version="2.13.0" />
+    <PackageReference Include="FsToolkit.ErrorHandling.TaskResult" Version="2.13.0" />
+    <PackageReference Include="FsToolkit.ErrorHandling.AsyncSeq" Version="2.13.0" />
   </ItemGroup>
   <!--  <ItemGroup>-->
   <!--    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="3.1.2" />-->
   <!--  </ItemGroup>-->
   <ItemGroup>
-    <PackageReference Include="Marten" Version="5.1.0" />
+<!--    <PackageReference Include="Marten" Version="5.10.1" />-->
     <PackageReference Include="Azure.Storage.Blobs" Version="12.10.0" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\glow\glow.core.fs\glow.core.fs.fsproj" />
     <ProjectReference Include="..\glow\glow.meta\glow.meta.csproj" />
     <!--    <ProjectReference Include="..\glow\core\glow.core.csproj" />-->
     <!--    <ProjectReference Include="..\glow\glow.azdo\glow.azdo.csproj" />-->

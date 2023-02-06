@@ -20,6 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\app\app.fsproj" />
     <ProjectReference Include="..\glow\sample.fs\sample.fs.fsproj" />
   </ItemGroup>
 </Project>

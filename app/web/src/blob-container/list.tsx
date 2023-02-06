@@ -1,19 +1,27 @@
 import * as React from "react"
-import { Container, Grid, Stack } from "@mantine/core"
-import { useTypedQuery } from "../ts-models/api"
+import { Button, Container, Grid, Stack } from "@mantine/core"
 import { Outlet, useParams } from "react-router"
 import { Link } from "react-router-dom"
-import { RenderObject } from "glow-core"
+import { useTypedAction, useTypedQuery } from "../client/api"
 // import { RenderObject } from "glow-core"
 
 export function BlobContainerDetail() {
   const { id: name } = useParams<{ id: string }>()
-  const { data } = useTypedQuery("/api/blob/get-files", {
+  const { data, refetch } = useTypedQuery("/api/blob/get-files", {
     input: { name: name! },
     placeholder: [],
   })
+  const [deleteAll] = useTypedAction("/api/blob/delete-all-in-container")
   return (
     <Stack>
+      <Button
+        onClick={async () => {
+          await deleteAll({ containerName: name! })
+          refetch()
+        }}
+      >
+        Delete all
+      </Button>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
         <div>
           {data.map((v) => (
@@ -21,14 +29,6 @@ export function BlobContainerDetail() {
               <Link to={`./${v.name}`}>
                 <b>{v.name}</b> {v.metadata["originalfilename"]}
               </Link>
-              {/* // <div>
-          //   metadata:
-          //   {Object.keys(v.metadata).map((key) => (
-            //     <div>
-            //       {key}: {v.metadata[key]}
-            //     </div>
-            //   ))}
-          // </div> */}
             </div>
           ))}
         </div>

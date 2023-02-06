@@ -59,7 +59,6 @@ module Tests=
 
               ]
 
-
     //[<Tests>]
     let tests =
         testList
@@ -78,7 +77,7 @@ module Tests=
               <| fun _ -> Tests.skiptest "Yup, waiting for a sunny day..."
 
               //    testCase "I'm always fail (should fail)" <| fun _ ->
-    //      Tests.suc "This was expected..."
+              //      Tests.suc "This was expected..."
 
               testCase "contains things"
               <| fun _ -> Expect.containsAll [| 2; 3; 4 |] [| 2; 4 |] "This is the case; {2,3,4} contains {2,4}"
@@ -90,6 +89,6 @@ module Tests=
               <| fun _ -> Expect.equal "abcdef" "abcdef" "These should equal"
 
               //    test "I am (should fail)" {
-    //      "╰〳 ಠ 益 ಠೃ 〵╯" |> Expect.equal true false
-    //    }
+              //      "╰〳 ಠ 益 ಠೃ 〵╯" |> Expect.equal true false
+              //    }
               ]

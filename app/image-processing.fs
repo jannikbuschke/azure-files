@@ -1,13 +1,83 @@
 ﻿module AzFiles.ImageProcessing
 
+open System.IO
+open AzureFiles
+open SixLabors.ImageSharp
+open SixLabors.ImageSharp.Formats.Jpeg
+open SixLabors.ImageSharp.Processing
 open SkiaSharp
 
-type Dimension = { Width: int; Height: int }
+let resizeImage (stream: Stream) (mainAxisLength: int) =
+  task {
+    let image = Image.Load(stream)
+
+    let originalSize: Dimension =
+      { Width = image.Width
+        Height = image.Height }
+
+    let pixels = originalSize.Width * originalSize.Height
+
+    let targetSize: Dimension =
+      if originalSize.Width > originalSize.Height then
+        { Width = mainAxisLength
+          Height = mainAxisLength / pixels }
+      else
+        { Height = mainAxisLength
+          Width = mainAxisLength / pixels }
+
+    image.Mutate
+      (fun x ->
+        x.Resize(targetSize.Width, targetSize.Height, true)
+        |> ignore)
+
+    let result = new MemoryStream()
+
+    do! image.SaveAsync(result, JpegEncoder())
+
+    result.Position <- 0
+
+    return targetSize, result
+  }
+
+let resizeWithImageSharp (path: string) (mainAxisLength: int) =
+  async {
+    let image = Image.Load(path)
+
+    let originalSize: Dimension =
+      { Width = image.Width
+        Height = image.Height }
+
+    let pixels = originalSize.Width * originalSize.Height
+
+    let targetSize: Dimension =
+      if originalSize.Width > originalSize.Height then
+        { Width = mainAxisLength
+          Height = mainAxisLength / pixels }
+      else
+        { Height = mainAxisLength
+          Width = mainAxisLength / pixels }
+
+    image.Mutate
+      (fun x ->
+        x.Resize(targetSize.Width, targetSize.Height, true)
+        |> ignore)
+
+    let result = new MemoryStream()
+
+    do!
+      image.SaveAsync(result, JpegEncoder())
+      |> Async.AwaitTask
+
+    result.Position <- 0
+
+    return targetSize, result
+  }
+
 
 let resize (stream: System.IO.Stream) (dimension: Dimension) (quality: SKFilterQuality) =
   use bitmap = SKBitmap.Decode(stream)
 
-//  let height =
+  //  let height =
 //    System.Math.Min(dimension.Height, bitmap.Height)
 //
 //  let width =

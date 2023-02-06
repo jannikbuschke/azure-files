@@ -1,9 +1,10 @@
 ﻿namespace AzureFiles
 
 open System
+open System.Threading.Tasks
 open Azure.Storage.Blobs
-open AzureFiles.Domain
 open Microsoft.AspNetCore.Http
+open Microsoft.AspNetCore.Mvc
 open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.Logging
 open BlobService
@@ -14,9 +15,8 @@ open System.Collections.Generic
 open Marten
 open System.IO
 open Azure.Storage.Blobs.Models
-open AzFiles.ImageProcessing
-open SixLabors.ImageSharp
-open SixLabors.ImageSharp.Processing
+open FsToolkit.ErrorHandling
+open Microsoft.Extensions.DependencyInjection
 
 //type Tag =
 //  | StageForBlog
@@ -34,40 +34,68 @@ type GetBlobFile() =
   member val ItemId = Unchecked.defaultof<string> with get, set
   member val ContainerId = Unchecked.defaultof<string> with get, set
 
+[<Action(Route = "api/blob/delete-all-in-container", AllowAnonymous = true)>]
+type DeleteAllBlobs() =
+  interface IRequest<Unit>
+  member val ContainerName = Unchecked.defaultof<string> with get, set
+
 [<Action(Route = "api/blob/delete-file", AllowAnonymous = true)>]
 type DeleteBlobFile() =
   interface IRequest<Unit>
   member val ItemId = Unchecked.defaultof<string> with get, set
   member val ContainerId = Unchecked.defaultof<string> with get, set
 
+type GetIndexedFilesFilter =
+  | EmptyTags
+  | FilterByTag of string
+
 [<Action(Route = "api/files/get-indexed-files", AllowAnonymous = true)>]
 type GetIndexedFiles() =
-  interface IRequest<IReadOnlyList<Projections.File>>
-  member val FilterByTag = Unchecked.defaultof<string> with get, set
+  interface IRequest<List<FileAggregate>>
+  member val TagFilter = Unchecked.defaultof<string> with get, set
+  member val ShowUntagged = false with get, set
 
 [<Action(Route = "api/files/get-indexed-file", AllowAnonymous = true)>]
 type GetIndexedFile() =
-  interface IRequest<Projections.File>
+  interface IRequest<FileAggregate>
   member val Id = Unchecked.defaultof<System.Guid> with get, set
 
 [<Action(Route = "api/file/set-tags")>]
 type SetTags() =
   interface IRequest<Unit>
   member val FileId = Unchecked.defaultof<System.Guid> with get, set
-  member val Tags = Unchecked.defaultof<ResizeArray<Tag>> with get, set
+  member val Tags = Unchecked.defaultof<ResizeArray<TagAdded>> with get, set
+
+[<Action(Route = "api/file/set-tags-batched", AllowAnonymous = true)>]
+type SetTagsBatched() =
+  interface IRequest<Unit>
+  member val Tags = Unchecked.defaultof<ResizeArray<TagAdded>> with get, set
+  member val Files = Unchecked.defaultof<Dictionary<System.Guid, bool>> with get, set
 
 [<Action(Route = "api/blob/get-files", AllowAnonymous = true)>]
 type GetFiles() =
-  interface IRequest<List<Models.BlobItem>>
+  interface IRequest<ResizeArray<Models.BlobItem>>
   member val Name = Unchecked.defaultof<string> with get, set
+
+[<Action(Route = "api/file/get-next-untagged", AllowAnonymous = true)>]
+type GetNextUntaggedBlob() =
+  interface IRequest<FileAggregate>
+
+[<Action(Route = "api/file/get-all-untagged", AllowAnonymous = true)>]
+type GetAllUntagged() =
+  interface IRequest<ResizeArray<FileAggregate>>
 
 [<Action(Route = "api/upload-form-files", AllowAnonymous = true)>]
 type UploadFormFiles() =
-  interface IRequest<MediatR.Unit>
+  interface IRequest<Result<FileSavedToStorage, string> list>
+
+[<Action(Route = "api/test-action", AllowAnonymous = true)>]
+type TestAction() =
+  interface IRequest<Result<FileSavedToStorage, ErrorResult> list>
 
 [<Action(Route = "api/upload-system-files", AllowAnonymous = true)>]
 type UploadSystemFiles() =
-  interface IRequest<FileAdded option []>
+  interface IRequest<FileSavedToStorage option []>
   member val FilePaths = Unchecked.defaultof<ResizeArray<string>> with get, set
 
 [<Action(Route = "api/rename-system-files", AllowAnonymous = true)>]
@@ -82,11 +110,23 @@ type GetBlobContainers() =
 
 type GetBlobContainersHandler
   (
+    ctx: WebRequestContext,
     configuration: IConfiguration,
     logger: ILogger<GetBlobContainers>,
     httpContextAccessor: IHttpContextAccessor,
-    session: IDocumentSession
+    session: IDocumentSession,
+    serviceProvider: IServiceProvider
   ) =
+
+  interface IRequestHandler<GetAllUntagged, ResizeArray<FileAggregate>> with
+    member this.Handle(request, token) =
+      task {
+        let! entities = session.Query<FileAggregate>().ToListAsync()
+
+        let result = entities.Where(fun v -> v.Tags.Length = 0)
+
+        return ResizeArray(result)
+      }
 
   interface IRequestHandler<GetBlobContainers, List<Models.BlobContainerItem>> with
     member this.Handle(request, token) =
@@ -99,93 +139,46 @@ type GetBlobContainersHandler
         return r0
       }
 
-  interface IRequestHandler<UploadFormFiles, MediatR.Unit> with
-    member this.Handle(request, token) =
-      task {
-        let httpContext = httpContextAccessor.HttpContext
-        let files = httpContext.Request.Form.Files
-
-        for file in files do
-          let stream = file.OpenReadStream()
-          let! e = addFileIfNotYetExists configuration file.FileName stream logger
-          do! addDomainEventIfSome e session logger
-
-        return Unit.Value
-      }
+  // interface IRequestHandler<UploadFormFiles, Result<FileSavedToStorage, string> list> with
+  //   member this.Handle(request, token) =
+  //     task {
+  //
+  //       logger.LogInformation("handle upload form files")
+  //       let httpContext = httpContextAccessor.HttpContext
+  //       logger.LogInformation(sprintf "count %d" httpContext.Request.Form.Files.Count)
+  //
+  //       let init = httpContext.Request.Form.Files
+  //                  |> Seq.map Workflow.initiallyHandleFormFile
+  //
+  //       let tasks =
+  //         init
+  //         |> Seq.map (fun file ->
+  //           taskResult {
+  //             use scope = serviceProvider.CreateScope()
+  //             let ctx = scope.ServiceProvider.GetRequiredService<WebRequestContext>()
+  //             do! validateFileIsNotAlreadyUploaded ctx.DocumentSession file
+  //             let! result = uploadFileAndAppendEvent ctx file
+  //             return result
+  //           })
+  //
+  //       let! results = Task.WhenAll(tasks)
+  //       // let files = httpContext.Request.Form.Files
+  //       return results |> Seq.toList
+  //     }
 
   interface IRequestHandler<GetFiles, List<Models.BlobItem>> with
     member this.Handle(request, token) =
       task {
         let client = getBlobServiceClient configuration
 
-        let client2 =
-          client.GetBlobContainerClient(request.Name)
+        let client2 = client.GetBlobContainerClient(request.Name)
 
-        let asyncPageable =
-          client2.GetBlobsAsync(Models.BlobTraits.Metadata)
+        let asyncPageable = client2.GetBlobsAsync(Models.BlobTraits.Metadata)
 
         let! y = asyncPageable.AsAsyncEnumerable().ToListAsync()
 
         return y
       }
-
-  interface IRequestHandler<UploadSystemFiles, FileAdded option []> with
-    member this.Handle(request, token) =
-      let handle (pathName: string) =
-        async {
-          logger.LogInformation("handle for upload " + pathName)
-
-          logger.LogInformation "wait 200 ms"
-          let fileName = Path.GetFileName(pathName)
-          do! Async.Sleep(TimeSpan.FromMilliseconds 100)
-
-          logger.LogInformation "open stream"
-
-          use stream =
-            File.Open(pathName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
-
-          logger.LogInformation "add file if not yet exists"
-
-          let! e =
-            addFileIfNotYetExists configuration fileName stream logger
-
-          logger.LogInformation "add domain event if some"
-
-          let! result =
-            addDomainEventIfSome e session logger
-            |> Async.AwaitTask
-
-          logger.LogInformation "wait for 200 ms"
-
-          do! Async.Sleep(TimeSpan.FromMilliseconds 200)
-
-          logger.LogInformation "wait done"
-          logger.LogInformation "upload file done"
-
-          return e
-        }
-
-      let handleIfExists pathName =
-        match System.IO.File.Exists(pathName) with
-        | true -> handle pathName
-        | _ -> async { return Option<FileAdded>.None }
-
-      async {
-        let! result =
-          request.FilePaths
-          |> Seq.map handleIfExists
-          |> Async.Sequential
-
-        try
-          let! result1 = session.SaveChangesAsync() |> Async.AwaitTask
-          return result
-        with
-        | error ->
-          logger.LogInformation("error " + error.Message)
-          return result
-      }
-      |> Async.StartAsTask
-
 
   interface IRequestHandler<RenameSystemFiles, string array> with
     member this.Handle(request, token) =
@@ -201,18 +194,17 @@ type GetBlobContainersHandler
           let srcDir = FileInfo(pathName).Directory.FullName
           let targetDir = Path.Combine(srcDir, request.FolderName)
 
-          let targetFilename =
-            Path.Combine(targetDir, $"{id.ToString()}.{extension}")
+          let targetFilename = Path.Combine(targetDir, $"{id.ToString()}.{extension}")
 
           File.Move(pathName, targetFilename)
           return targetFilename
         }
 
-      let handleIfExists (pathName) =
+      let handleIfExists pathName =
 
         if System.IO.File.Exists(pathName) then
           logger.LogInformation("rename (file does exist)")
-          handle (pathName)
+          handle pathName
         else
           async {
             logger.LogInformation("do nothing (file does not exist)")
@@ -227,25 +219,38 @@ type GetBlobContainersHandler
       }
       |> Async.StartAsTask
 
-  interface IRequestHandler<GetIndexedFiles, IReadOnlyList<Projections.File>> with
+  interface IRequestHandler<GetIndexedFiles, List<FileAggregate>> with
     member this.Handle(request, token) =
       task {
-        let! result = session.Query<Projections.File>().ToListAsync()
+        let! result = session.Query<FileAggregate>().ToListAsync()
 
         return
-          if String.IsNullOrEmpty(request.FilterByTag) then
-            result
+          if request.ShowUntagged then
+            result.Where(fun v -> v.Tags.Length = 0).ToList()
           else
             result
-              .Where(fun v -> v.Tags.Any(fun x -> x.Name = request.FilterByTag))
+              .Where(fun v ->
+                request.TagFilter = null
+                || v.Tags.Any(fun x -> x = request.TagFilter))
               .ToList()
       }
 
-  interface IRequestHandler<GetIndexedFile, Projections.File> with
+  interface IRequestHandler<GetIndexedFile, FileAggregate> with
     member this.Handle(request, token) =
       task {
-        let! result = session.LoadAsync<Projections.File>(request.Id)
+        let! result = session.LoadAsync<FileAggregate>(request.Id)
         return result
+      }
+
+  interface IRequestHandler<GetNextUntaggedBlob, FileAggregate> with
+    member this.Handle(request, token) =
+      task {
+        let! result = session.Query<FileAggregate>().ToListAsync()
+
+        return
+          result
+            .Where(fun v -> v.Tags.Length = 0)
+            .FirstOrDefault()
       }
 
   interface IRequestHandler<DeleteBlobFile, MediatR.Unit> with
@@ -253,8 +258,7 @@ type GetBlobContainersHandler
       task {
         let client = getBlobServiceClient configuration
 
-        let client2 =
-          client.GetBlobContainerClient(request.ContainerId)
+        let client2 = client.GetBlobContainerClient(request.ContainerId)
 
         let client3 = client2.GetBlobClient(request.ItemId)
         let! response = client3.DeleteAsync()
@@ -266,8 +270,7 @@ type GetBlobContainersHandler
       task {
         let client = getBlobServiceClient configuration
 
-        let client2 =
-          client.GetBlobContainerClient(request.ContainerId)
+        let client2 = client.GetBlobContainerClient(request.ContainerId)
 
         let client3 = client2.GetBlobClient(request.ItemId)
         let props = client3.GetProperties().Value
@@ -276,43 +279,94 @@ type GetBlobContainersHandler
         return { Properties = props; Tags = tags }
       }
 
+  interface IRequestHandler<DeleteAllBlobs, Unit> with
+    member this.Handle(request, token) =
+      task {
+        let! container = getBlobContainerClient configuration request.ContainerName
+
+        do!
+          deleteAllBlobsInContainer container
+          |> Async.AwaitTask
+
+        return Unit.Value
+      }
+
+type TestController(logger: ILogger<TestController>, ctx: WebRequestContext, serviceProvider: IServiceProvider) =
+  inherit ControllerBase()
+
+  [<HttpPost("api/files/upload-files-2")>]
+  member this.UploadFiles() =
+    task {
+      logger.LogInformation("handle upload form files {@formfiles}", ctx.HttpContext.Request.Form.Files)
+      // let httpContext = httpContextAccessor.HttpContext
+      // logger.LogInformation(sprintf "count %d" httpContext.Request.Form.Files.Count)
+
+      let init =
+        ctx.HttpContext.Request.Form.Files
+        |> Seq.map Workflow.initiallyHandleFormFile
+        |> Seq.toList
+
+      logger.LogInformation("init {@init}", init)
+
+      let tasks =
+        init
+        |> List.map (fun file ->
+          taskResult {
+            use stream = new MemoryStream()
+            file.FormFile.OpenReadStream().CopyTo(stream)
+            stream.Position <- 0
+
+            use scope = serviceProvider.CreateScope()
+            let ctx = scope.ServiceProvider.GetRequiredService<WebRequestContext>()
+            do! validateFileIsNotAlreadyUploaded ctx.DocumentSession file
+            let! result = uploadFileAndAppendEvent ctx file stream
+
+            // do! Workflow.createVariantAndAppendEvent ctx 200 "thumbnail" file
+            // do! Workflow.createVariantAndAppendEvent ctx 1920 "fullhd" file
+
+            do! ctx.DocumentSession.SaveChangesAsync()
+
+            return result
+          })
+
+      let! results = Task.WhenAll(tasks)
+      logger.LogInformation("result {@result}", result)
+
+      // let files = httpContext.Request.Form.Files
+      return results |> Seq.toList
+    }
+
+  // interface IRequestHandler<SetTagsBatched, Unit> with
+//   member this.Handle(request, token) =
+//     task {
+//
+//       let tags = request.Tags |> Seq.toList
+//       let e: TagsSet = { Tags = tags }
+//
+//       request.Files
+//         |> Seq.filter (fun x -> x.Value)
+//         |> Seq.map (fun x -> x.Key)
+//         |> Seq.iter
+//              (fun id ->
+//                let events: obj [] = [| e |]
+//                session.Events.Append(id, events) |> ignore)
+//
+//       do! session.SaveChangesAsync()
+//
+//       return Unit.Value
+//     }
+
   interface IRequestHandler<SetTags, Unit> with
     member this.Handle(request, token) =
       task {
         let tags = request.Tags |> Seq.toList
-        let e: TagsSet = { Tags = tags }
-        let events: obj [] = [| e |]
 
-        session.Events.Append(request.FileId, events)
-        |> ignore
+        tags
+        |> List.iter (fun t ->
+          ctx.DocumentSession.Events.AppendFileStream(request.FileId |> FileId.create, FileEvent.TagAdded t)
+          |> ignore)
 
-        do! session.SaveChangesAsync()
-
-        let! blobContainerClient = getBlobContainerSourceFiles configuration
-
-        let client =
-          blobContainerClient.GetBlobClient(request.FileId.ToString())
-
-        let dim = { Width = 150; Height = 150 }
-        let stream = client.OpenRead()
-
-        let resize (path: string) =
-          let image =
-            Image.Load("C:\\Users\\jannik\\Pictures\\background.jpg")
-
-          image.Mutate
-            (fun x ->
-              x
-                .Resize(image.Width / 4, image.Height / 4)
-                .Grayscale()
-              |> ignore)
-
-          image.Save("bar.jpg")
-
-        resize ("")
-
-        let stream =
-          File.Open("C:\\Users\\jannik\\Pictures\\background.jpg", FileMode.OpenOrCreate)
+        do! ctx.DocumentSession.SaveChangesAsync()
 
         return Unit.Value
       }

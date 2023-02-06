@@ -1,31 +1,100 @@
 namespace AzureFiles
 
-module Domain =
+open System.Text.Json.Serialization
+open System.Threading.Tasks
+open Azure.Storage.Blobs
+open Marten
+open Microsoft.AspNetCore.Http
+open Microsoft.Extensions.Configuration
 
-  type FileAdded =
-    { Filename: string
-      Md5Hash: byte array
-      Id: System.Guid }
+type DuplicateCheckResult =
+  | IsNew
+  | IsDuplicate of FileId
 
-type Tag = { Name: string }
+type ErrorResult =
+  | FileIsDuplicate of duplicateFileId: FileId * filename: string
+  | NetworkError of string
 
-type TagsSet = { Tags: Tag list }
+// type LocalFile =
+//   { Id: FileId
+//     LocalFilePath: string
+//     LocalChecksum: Checksum
+//     DuplicateCheckResult: DuplicateCheckResult option }
+
+type Checksum = Checksum of string
+
+type FormFileScanned =
+  { Id: FileId
+    FormFile: IFormFile
+    Filename: string
+    LocalChecksum: Checksum }
+
+type FileScanned =
+  { Id: FileId
+    LocalFilePath: string option
+    Filename: string
+    LocalChecksum: Checksum }
+
+type CheckedForDuplicate =
+  { DuplicateCheckResult: DuplicateCheckResult }
+
+type OriginalFileUploaded =
+  { Md5Hash: byte array
+    LocalMd5Hash: Checksum
+    Url: string }
+
+type Dimension = { Width: int; Height: int }
+
+type LowresVersionCreated =
+  {
+    // remove id
+    // Id: System.Guid
+    Dimension: Dimension
+    Url: string
+    // blob id?
+    VariantName: string }
+
+type FileSavedToStorage =
+  { Filename: string
+    Md5Hash: byte array
+    LocalMd5Hash: Checksum
+    Url: string
+    BlobUrl: Skippable<string>
+    BlobName: Skippable<string>
+    BlobContainerName: Skippable<string>
+    BlobAccountName: Skippable<string>
+    BlobSequenceNumber: Skippable<int64>
+    ETag: Skippable<string> }
+
+type FileInitEvent = FileSavedToStorage of FileSavedToStorage
+
+type TagAdded = { Name: string }
+type TagRemoved = { Name: string }
+
+type FileEvent =
+  | LowresVersionCreated of LowresVersionCreated
+  | TagAdded of TagAdded
+  | TagRemoved of TagRemoved
 
 
-open Domain
+type GlowWebRequestContext =
+  { HttpContext: HttpContext
+    UserId: string option
+    DocumentSession: IDocumentSession
 
-module Projections =
+   }
 
-  type File() =
-    member val Id = Unchecked.defaultof<System.Guid> with get, set
-    member val Filename = Unchecked.defaultof<string> with get, set
-    member val Md5Hash = Unchecked.defaultof<byte array> with get, set
-    member val Tags = Unchecked.defaultof<ResizeArray<Tag>> with get, set
+type AuthenticatedWebRequestContext =
+  { HttpContext: HttpContext
+    UserId: string }
 
-    member this.Apply(e: FileAdded) =
-      this.Id <- e.Id
-      this.Md5Hash <- e.Md5Hash
-      this.Filename <- e.Filename
-      this.Tags <- ResizeArray()
+type GetContainer = unit -> Task<BlobContainerClient>
 
-    member this.Apply(e: TagsSet) = this.Tags <- ResizeArray(e.Tags)
+type WebRequestContext =
+  { HttpContext: HttpContext
+    UserId: string option
+    DocumentSession: IDocumentSession
+    GetSrcContainer: GetContainer
+    GetInboxContainer: GetContainer
+    GetVariantsContainer: GetContainer
+    Configuration: IConfiguration }
