@@ -4,10 +4,30 @@
 
 import * as System from "./System"
 import * as System_Collections_Generic from "./System_Collections_Generic"
-import * as Azure_Storage_Blobs_Models from "./Azure_Storage_Blobs_Models"
+import * as NodaTime from "./NodaTime"
 import * as Microsoft_FSharp_Core from "./Microsoft_FSharp_Core"
 import * as Microsoft_FSharp_Collections from "./Microsoft_FSharp_Collections"
+import * as Azure_Storage_Blobs_Models from "./Azure_Storage_Blobs_Models"
 import * as System_Text_Json_Serialization from "./System_Text_Json_Serialization"
+
+export type GetInboxFiles = {
+}
+export var defaultGetInboxFiles: GetInboxFiles = {
+}
+
+export type FileId_Case_FileId = System.Guid
+export type FileId = FileId_Case_FileId
+export type FileId_Case = "FileId"
+export var FileId_AllCases = [ "FileId" ] as const
+export var defaultFileId_Case_FileId = '00000000-0000-0000-0000-000000000000'
+export var defaultFileId = defaultFileId_Case_FileId as FileId
+
+export type GetInboxFile = {
+  id: FileId
+}
+export var defaultGetInboxFile: GetInboxFile = {
+  id: defaultFileId
+}
 
 export type GetBlobFile = {
   itemId: System.String
@@ -123,15 +143,6 @@ export type GetBlobContainers = {
 export var defaultGetBlobContainers: GetBlobContainers = {
 }
 
-export type AzureFilesBlobProperties = {
-  properties: Azure_Storage_Blobs_Models.BlobProperties
-  tags: Azure_Storage_Blobs_Models.GetBlobTagResult
-}
-export var defaultAzureFilesBlobProperties: AzureFilesBlobProperties = {
-  properties: Azure_Storage_Blobs_Models.defaultBlobProperties,
-  tags: Azure_Storage_Blobs_Models.defaultGetBlobTagResult
-}
-
 export type Checksum_Case_Checksum = System.String
 export type Checksum = Checksum_Case_Checksum
 export type Checksum_Case = "Checksum"
@@ -159,9 +170,11 @@ export var defaultImageVariant: ImageVariant = {
 
 export type FileAggregate = {
   id: System.Guid
+  createdAt: NodaTime.Instant
   url: Microsoft_FSharp_Core.FSharpOption<System.String>
   filename: System.String
   md5Hash: System_Collections_Generic.IEnumerable<System.Byte>
+  inbox: System.Boolean
   localMd5Hash: Checksum
   tags: Microsoft_FSharp_Collections.FSharpList<System.String>
   thumbnailUrl: Microsoft_FSharp_Core.FSharpOption<System.String>
@@ -171,15 +184,37 @@ export type FileAggregate = {
 }
 export var defaultFileAggregate: FileAggregate = {
   id: '00000000-0000-0000-0000-000000000000',
+  createdAt: "9999-12-31T23:59:59.999999999Z",
   url: null,
   filename: '',
   md5Hash: [],
+  inbox: false,
   localMd5Hash: defaultChecksum,
   tags: [] ,
   thumbnailUrl: null,
   lowresUrl: null,
   fullHdUrl: null,
   variants: [] 
+}
+
+export type InboxFileResult = {
+  previous: Microsoft_FSharp_Core.FSharpOption<FileId>
+  file: FileAggregate
+  next: Microsoft_FSharp_Core.FSharpOption<FileId>
+}
+export var defaultInboxFileResult: InboxFileResult = {
+  previous: null,
+  file: defaultFileAggregate,
+  next: null
+}
+
+export type AzureFilesBlobProperties = {
+  properties: Azure_Storage_Blobs_Models.BlobProperties
+  tags: Azure_Storage_Blobs_Models.GetBlobTagResult
+}
+export var defaultAzureFilesBlobProperties: AzureFilesBlobProperties = {
+  properties: Azure_Storage_Blobs_Models.defaultBlobProperties,
+  tags: Azure_Storage_Blobs_Models.defaultGetBlobTagResult
 }
 
 export type FileSavedToStorage = {
@@ -206,13 +241,6 @@ export var defaultFileSavedToStorage: FileSavedToStorage = {
   blobSequenceNumber: undefined,
   eTag: undefined
 }
-
-export type FileId_Case_FileId = System.Guid
-export type FileId = FileId_Case_FileId
-export type FileId_Case = "FileId"
-export var FileId_AllCases = [ "FileId" ] as const
-export var defaultFileId_Case_FileId = '00000000-0000-0000-0000-000000000000'
-export var defaultFileId = defaultFileId_Case_FileId as FileId
 
 export type ErrorResult_Case_FileIsDuplicate = { Case: "FileIsDuplicate", Fields: { duplicateFileId: FileId, filename: System.String } }
 export type ErrorResult_Case_NetworkError = { Case: "NetworkError", Fields: System.String }

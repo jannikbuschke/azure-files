@@ -64,7 +64,9 @@ export function UploadFile() {
   useSubscription(
     "Glow.core.fs.MartenAndPgsql.EventPublisher+EventNotification",
     (v) => {
-      notifyInfo(JSON.stringify(v.events))
+      v.events.forEach((e) => {
+        notifyInfo(e?.Case || "some event happend")
+      })
     },
   )
   const [files, setFiles] = React.useState(

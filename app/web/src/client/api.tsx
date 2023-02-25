@@ -17,13 +17,15 @@ import * as Glow_Core_MartenAndPgsql from "./Glow_Core_MartenAndPgsql"
 import * as MediatR from "./MediatR"
 import * as Glow_Api from "./Glow_Api"
 import * as Glow_Debug from "./Glow_Debug"
+import * as NodaTime from "./NodaTime"
+import * as Microsoft_FSharp_Core from "./Microsoft_FSharp_Core"
 import * as Azure_Storage_Blobs_Models from "./Azure_Storage_Blobs_Models"
 import * as Azure from "./Azure"
-import * as Microsoft_FSharp_Core from "./Microsoft_FSharp_Core"
 import * as System_Text_Json_Serialization from "./System_Text_Json_Serialization"
-import * as NodaTime from "./NodaTime"
 
 export type QueryInputs = {
+  "/api/get-inbox-files": AzureFiles.GetInboxFiles,
+  "/api/get-inbox-file": AzureFiles.GetInboxFile,
   "/api/blob/get-file": AzureFiles.GetBlobFile,
   "/api/files/get-indexed-files": AzureFiles.GetIndexedFiles,
   "/api/files/get-indexed-file": AzureFiles.GetIndexedFile,
@@ -43,6 +45,8 @@ export type QueryInputs = {
   "/api/glow/pgsql/get-activity": Glow_Debug.GetPgsqlActivities,
 }
 export type QueryOutputs = {
+  "/api/get-inbox-files": Microsoft_FSharp_Collections.FSharpList<AzureFiles.FileAggregate>,
+  "/api/get-inbox-file": AzureFiles.InboxFileResult,
   "/api/blob/get-file": AzureFiles.AzureFilesBlobProperties,
   "/api/files/get-indexed-files": System_Collections_Generic.List<AzureFiles.FileAggregate>,
   "/api/files/get-indexed-file": AzureFiles.FileAggregate,
