@@ -81,7 +81,6 @@ type GlowWebRequestContext =
   { HttpContext: HttpContext
     UserId: string option
     DocumentSession: IDocumentSession
-
    }
 
 type AuthenticatedWebRequestContext =

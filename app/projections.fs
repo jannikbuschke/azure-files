@@ -1,14 +1,15 @@
 ﻿namespace AzureFiles
 
-
 type ImageVariant = { Url: string; Dimension: Dimension }
 
 [<CLIMutable>]
 type FileAggregate =
   { Id: System.Guid
+    CreatedAt: NodaTime.Instant
     Url: string option
     Filename: string
     Md5Hash: byte array
+    Inbox: bool
     LocalMd5Hash: Checksum
     Tags: string list
     ThumbnailUrl: string option
@@ -19,6 +20,8 @@ type FileAggregate =
 
   member this.Apply(e: FileSavedToStorage, meta: Marten.Events.IEvent) : FileAggregate =
     { Id = meta.Id
+      CreatedAt = meta.Timestamp |> NodaTime.Instant.FromDateTimeOffset
+      Inbox = true
       Url = Some e.Url
       Md5Hash = e.Md5Hash
       LocalMd5Hash = e.LocalMd5Hash

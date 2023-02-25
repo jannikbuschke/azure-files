@@ -1,6 +1,7 @@
 ﻿namespace AzureFiles
 
 open System
+open System.Text.Json.Serialization
 open System.Threading.Tasks
 open Azure.Storage.Blobs
 open Microsoft.AspNetCore.Http
@@ -23,6 +24,26 @@ open Microsoft.Extensions.DependencyInjection
 //  | Publish
 //  | Keep
 //  | Remove
+
+type EmptyRecord =
+  { Skip: Skippable<unit> }
+
+  static member instance = { Skip = Skippable<unit>.Skip }
+
+[<Action(Route = "api/get-inbox-files", AllowAnonymous = true)>]
+type GetInboxFiles() =
+  interface IRequest<FileAggregate list>
+
+type InboxFileResult =
+  { Previous: FileId option
+    File: FileAggregate
+    Next: FileId option }
+
+[<Action(Route = "api/get-inbox-file", AllowAnonymous = true)>]
+type GetInboxFile =
+  { Id: FileId }
+
+  interface IRequest<InboxFileResult>
 
 type AzureFilesBlobProperties =
   { Properties: Azure.Storage.Blobs.Models.BlobProperties
@@ -108,6 +129,7 @@ type RenameSystemFiles() =
 type GetBlobContainers() =
   interface IRequest<List<Models.BlobContainerItem>>
 
+
 type GetBlobContainersHandler
   (
     ctx: WebRequestContext,
@@ -117,6 +139,54 @@ type GetBlobContainersHandler
     session: IDocumentSession,
     serviceProvider: IServiceProvider
   ) =
+
+  interface IRequestHandler<GetInboxFiles, FileAggregate list> with
+    member this.Handle(request, token) =
+      task {
+        let! entities = session.Query<FileAggregate>().ToListAsync()
+
+        let result =
+          entities
+            .Where(fun v -> v.Inbox = true)
+            .OrderByDescending(fun v -> v.CreatedAt)
+
+        return result |> Seq.toList
+      }
+
+  interface IRequestHandler<GetInboxFile, InboxFileResult> with
+    member this.Handle(request, token) =
+      task {
+        let! entities = session.Query<FileAggregate>().ToListAsync()
+
+        let result =
+          entities
+            .Where(fun v -> v.Inbox = true)
+            .OrderByDescending(fun v -> v.CreatedAt)
+          |> Seq.toList
+
+        let index =
+          result
+          |> List.findIndex (fun v -> v.Key() = request.Id)
+
+        let item = result.[index]
+
+        let prev =
+          if index > 0 then
+            Some(result.[index - 1])
+          else
+            None
+
+        let next =
+          if index < result.Length - 1 then
+            Some(result.[index + 1])
+          else
+            None
+
+        return
+          { Next = next |> Option.map (fun v -> v.Key())
+            Previous = prev |> Option.map (fun v -> v.Key())
+            File = item }
+      }
 
   interface IRequestHandler<GetAllUntagged, ResizeArray<FileAggregate>> with
     member this.Handle(request, token) =
