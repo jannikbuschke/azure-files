@@ -5,11 +5,14 @@ import { useAction, useSubmit, UseSubmit, ProblemDetails } from "glow-core"
 import { Formik, FormikConfig, FormikFormProps, FormikProps } from "formik"
 import { Form } from "formik-antd"
 import * as System from "./System"
-import * as Glow_core_fs_MartenAndPgsql from "./Glow_core_fs_MartenAndPgsql"
+import * as AzFiles from "./AzFiles"
 import * as Microsoft_FSharp_Collections from "./Microsoft_FSharp_Collections"
 import * as AzureFiles from "./AzureFiles"
+import * as System_Text_Json_Serialization from "./System_Text_Json_Serialization"
+import * as Microsoft_FSharp_Core from "./Microsoft_FSharp_Core"
+import * as Glow_core_fs_MartenAndPgsql from "./Glow_core_fs_MartenAndPgsql"
 import * as System_Collections_Generic from "./System_Collections_Generic"
-import * as AzFiles from "./AzFiles"
+import * as AzFiles_Features from "./AzFiles_Features"
 import * as Glow_TestAutomation from "./Glow_TestAutomation"
 import * as Glow_Azure_AzureKeyVault from "./Glow_Azure_AzureKeyVault"
 import * as Glow_Core_Profiles from "./Glow_Core_Profiles"
@@ -17,15 +20,11 @@ import * as Glow_Core_MartenAndPgsql from "./Glow_Core_MartenAndPgsql"
 import * as MediatR from "./MediatR"
 import * as Glow_Api from "./Glow_Api"
 import * as Glow_Debug from "./Glow_Debug"
-import * as NodaTime from "./NodaTime"
-import * as Microsoft_FSharp_Core from "./Microsoft_FSharp_Core"
 import * as Azure_Storage_Blobs_Models from "./Azure_Storage_Blobs_Models"
 import * as Azure from "./Azure"
-import * as System_Text_Json_Serialization from "./System_Text_Json_Serialization"
+import * as NodaTime from "./NodaTime"
 
 export type QueryInputs = {
-  "/api/get-inbox-files": AzureFiles.GetInboxFiles,
-  "/api/get-inbox-file": AzureFiles.GetInboxFile,
   "/api/blob/get-file": AzureFiles.GetBlobFile,
   "/api/files/get-indexed-files": AzureFiles.GetIndexedFiles,
   "/api/files/get-indexed-file": AzureFiles.GetIndexedFile,
@@ -33,6 +32,11 @@ export type QueryInputs = {
   "/api/file/get-next-untagged": AzureFiles.GetNextUntaggedBlob,
   "/api/file/get-all-untagged": AzureFiles.GetAllUntagged,
   "/api/blob/get-containers": AzureFiles.GetBlobContainers,
+  "/api/get-navbar": AzFiles_Features.GetNavbar,
+  "/api/get-tags": AzFiles_Features.GetTags,
+  "/api/get-images": AzFiles_Features.GetImages,
+  "/api/get-inbox-files": AzFiles_Features.GetInboxFiles,
+  "/api/get-inbox-file": AzFiles_Features.GetInboxFile,
   "/api/glow/test-automation/get-available-fake-users": Glow_TestAutomation.GetAvailableFakeUsers,
   "/glow/profile/get-profile": Glow_Core_Profiles.GetProfile,
   "/api/gebug/get-document-names": Glow_Core_MartenAndPgsql.GetKnownDocumentNames,
@@ -45,8 +49,6 @@ export type QueryInputs = {
   "/api/glow/pgsql/get-activity": Glow_Debug.GetPgsqlActivities,
 }
 export type QueryOutputs = {
-  "/api/get-inbox-files": Microsoft_FSharp_Collections.FSharpList<AzureFiles.FileAggregate>,
-  "/api/get-inbox-file": AzureFiles.InboxFileResult,
   "/api/blob/get-file": AzureFiles.AzureFilesBlobProperties,
   "/api/files/get-indexed-files": System_Collections_Generic.List<AzureFiles.FileAggregate>,
   "/api/files/get-indexed-file": AzureFiles.FileAggregate,
@@ -54,6 +56,11 @@ export type QueryOutputs = {
   "/api/file/get-next-untagged": AzureFiles.FileAggregate,
   "/api/file/get-all-untagged": System_Collections_Generic.List<AzureFiles.FileAggregate>,
   "/api/blob/get-containers": System_Collections_Generic.List<Azure_Storage_Blobs_Models.BlobContainerItem>,
+  "/api/get-navbar": AzFiles_Features.Navbar,
+  "/api/get-tags": Microsoft_FSharp_Collections.FSharpList<System.String>,
+  "/api/get-images": Microsoft_FSharp_Collections.FSharpList<AzureFiles.FileAggregate>,
+  "/api/get-inbox-files": Microsoft_FSharp_Collections.FSharpList<AzureFiles.FileAggregate>,
+  "/api/get-inbox-file": AzFiles_Features.InboxFileResult,
   "/api/glow/test-automation/get-available-fake-users": Glow_TestAutomation.FakeUsers,
   "/glow/profile/get-profile": Glow_Core_Profiles.Profile,
   "/api/gebug/get-document-names": Microsoft_FSharp_Collections.FSharpList<System.String>,
@@ -68,13 +75,13 @@ export type QueryOutputs = {
 export type Outputs = {
   "/api/blob/delete-all-in-container": MediatR.Unit,
   "/api/blob/delete-file": MediatR.Unit,
-  "/api/file/set-tags": MediatR.Unit,
-  "/api/file/set-tags-batched": MediatR.Unit,
   "/api/upload-form-files": Microsoft_FSharp_Collections.FSharpList<Microsoft_FSharp_Core.FSharpResult<AzureFiles.FileSavedToStorage,System.String>>,
   "/api/test-action": Microsoft_FSharp_Collections.FSharpList<Microsoft_FSharp_Core.FSharpResult<AzureFiles.FileSavedToStorage,AzureFiles.ErrorResult>>,
   "/api/upload-system-files": System_Collections_Generic.IEnumerable<Microsoft_FSharp_Core.FSharpOption<AzureFiles.FileSavedToStorage>>,
   "/api/rename-system-files": System_Collections_Generic.IEnumerable<System.String>,
   "/api/my/write-blog-data": MediatR.Unit,
+  "/api/file/delete-file": Microsoft_FSharp_Core.FSharpResult<Microsoft_FSharp_Core.Unit,AzureFiles.ServiceError>,
+  "/api/file/set-tags": Microsoft_FSharp_Core.FSharpResult<Microsoft_FSharp_Core.Unit,AzureFiles.ServiceError>,
   "/api/glow/set-openid-connect-options": MediatR.Unit,
   "/api/debug/archive-event": Microsoft_FSharp_Core.FSharpResult<Microsoft_FSharp_Core.Unit,Glow_Core_MartenAndPgsql.ApiError>,
   "/api/debug/restore-event": Microsoft_FSharp_Core.FSharpResult<Microsoft_FSharp_Core.Unit,Glow_Core_MartenAndPgsql.ApiError>,
@@ -86,13 +93,13 @@ export type Outputs = {
 export type Actions = {
   "/api/blob/delete-all-in-container": AzureFiles.DeleteAllBlobs,
   "/api/blob/delete-file": AzureFiles.DeleteBlobFile,
-  "/api/file/set-tags": AzureFiles.SetTags,
-  "/api/file/set-tags-batched": AzureFiles.SetTagsBatched,
   "/api/upload-form-files": AzureFiles.UploadFormFiles,
   "/api/test-action": AzureFiles.TestAction,
   "/api/upload-system-files": AzureFiles.UploadSystemFiles,
   "/api/rename-system-files": AzureFiles.RenameSystemFiles,
   "/api/my/write-blog-data": AzFiles.GenerateBlogData,
+  "/api/file/delete-file": AzFiles_Features.DeleteFile,
+  "/api/file/set-tags": AzFiles_Features.SetTags,
   "/api/glow/set-openid-connect-options": Glow_Azure_AzureKeyVault.SetOpenIdConnectOptions,
   "/api/debug/archive-event": Glow_Core_MartenAndPgsql.ArchiveEvent,
   "/api/debug/restore-event": Glow_Core_MartenAndPgsql.RestoreEvent,

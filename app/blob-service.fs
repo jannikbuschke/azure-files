@@ -191,12 +191,12 @@ module BlobService =
       return e
     }
 
-  let getBlobServiceClient (configuration: IConfiguration) =
-    let section = configuration.GetSection("AzureBlob")
+  let getBlobServiceClient (connectionString: string) =
+    // let section = configuration.GetSection("AzureBlob")
+    //
+    // let connectionString = section.GetValue<string>("ConnectionString")
 
-    let connectionString = section.GetValue<string>("ConnectionString")
-
-    let rawUri = section.GetValue<string>("Uri")
+    let rawUri = null // section.GetValue<string>("Uri")
 
     let uri =
       match rawUri with
@@ -210,9 +210,9 @@ module BlobService =
 
     result
 
-  let getBlobContainerClientByName (configuration: IConfiguration) (containerName: string) =
+  let getBlobContainerClientByName (connectionString: string) (containerName: string) =
     task {
-      let blobServiceClient = getBlobServiceClient configuration
+      let blobServiceClient = getBlobServiceClient connectionString
 
       let blobContainerClient = blobServiceClient.GetBlobContainerClient(containerName)
 
@@ -220,9 +220,9 @@ module BlobService =
       return blobContainerClient
     }
 
-  let getBlobContainerClient (configuration: IConfiguration) (containerName: string) =
+  let getBlobContainerClient (connectionString: string) (containerName: string) =
     async {
-      let blobServiceClient = getBlobServiceClient configuration
+      let blobServiceClient = getBlobServiceClient connectionString
 
       let blobContainerClient = blobServiceClient.GetBlobContainerClient(containerName)
 
@@ -235,8 +235,8 @@ module BlobService =
       return blobContainerClient
     }
 
-  let getBlobContainerSourceFiles (configuration: IConfiguration) =
-    getBlobContainerClient configuration "src"
+  let getBlobContainerSourceFiles (connectionString: string) =
+    getBlobContainerClient connectionString "src"
 
   let NonStringTask () : Task<string option> = Task.FromResult(None)
 

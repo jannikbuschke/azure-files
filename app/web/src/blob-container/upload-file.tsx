@@ -17,7 +17,11 @@ import { FSharpList } from "../client/Microsoft_FSharp_Collections"
 import { FSharpResult } from "../client/Microsoft_FSharp_Core"
 import { ErrorResult, FileSavedToStorage } from "../client/AzureFiles"
 import { useSubscription } from "../client/subscriptions"
-import { IconUpload, IconPhoto, IconX } from "@tabler/icons"
+import {
+  TbUpload as IconUpload,
+  TbPhoto as IconPhoto,
+  TbX as IconX,
+} from "react-icons/tb"
 
 // function getIconColor(status: DropzoneStatus, theme: MantineTheme) {
 //   return status.accepted
@@ -61,18 +65,16 @@ export function UploadFile() {
   const [loading, setloading] = React.useState(false)
   const { notifyError, notifySuccess, notifyInfo } = useNotify()
 
-  useSubscription(
-    "Glow.core.fs.MartenAndPgsql.EventPublisher+EventNotification",
-    (v) => {
-      v.events.forEach((e) => {
-        notifyInfo(e?.Case || "some event happend")
-      })
-    },
-  )
+  useSubscription("AzFiles.EventPublisher+FileEventNotification", (v) => {
+    v.events.forEach((e) => {
+      notifyInfo(e?.Case || "some event happend")
+    })
+  })
   const [files, setFiles] = React.useState(
     [] as {
+      file: File
       name: string
-      status: "Uploading" | "Sucess" | "Error"
+      status: "Init" | "Uploading" | "Sucess" | "Error"
     }[],
   )
   const [filemap, setFilemap] = React.useState<{
@@ -84,107 +86,69 @@ export function UploadFile() {
   return (
     <>
       <Dropzone
-        // style={{ height: 150 }}
+        multiple={true}
         onDrop={async (files) => {
-          showNotification({
-            id: "uploading-files",
-            title: "Uploading files",
-            message: `Uploading ${files.length} files`,
-            loading: true,
-            autoClose: false,
-          })
-          setFilemap((map) => ({
-            ...map,
-            ...files.reduce(
-              (prev, curr) => ({
-                ...prev,
-                [curr.name]: { name: curr.name, status: "Uploading" },
-              }),
-              {},
-            ),
-          }))
-          setFiles(files.map((v) => ({ name: v.name, status: "Uploading" })))
-          console.log("file", files)
-          setloading(true)
-          var data = new FormData()
-          files.forEach((file: FileWithPath) => {
-            data.append("file", file)
-          })
-          try {
-            const response = await fetch("/api/files/upload-files-2", {
-              headers: {
-                "x-submit-intent": "execute",
-              },
-              method: "POST",
-              body: data,
-            })
-            if (!response.ok) {
-              console.log("error", response)
-              const error = await response.json()
-              throw error
-            }
-            console.log("response", response)
-            const d = (await response.json()) as FSharpList<
-              FSharpResult<FileSavedToStorage, ErrorResult>
-            >
-            updateNotification({
-              id: "uploading-files",
+          for (let index = 0; index < files.length; index++) {
+            // const array = files.slice(index * 5, index * 5 + 5)
+            showNotification({
+              id: "uploading-files-" + index,
               title: "Uploading files",
-              message: `Uploading ${files.length} files`,
-              color: "green",
-              loading: false,
+              message: `Uploading ${files.length} files (${index + 1})`,
+              color: "blue",
+              loading: true,
               autoClose: true,
             })
-            d.forEach((result) => {
-              if (result.Case === "Error") {
-                const x = result.Fields
-                if (x.Case === "FileIsDuplicate") {
-                  const field = x.Fields
-                  // notifyError(field.filename + " already exists")
-                  setFilemap((v) => {
-                    return {
-                      ...v,
-                      [field.filename]: {
-                        ...v[field.filename]!,
-                        // ...result.Fields,
-                        status: "Already exists",
-                      },
-                    }
-                  })
-                }
-                // notifyError(result.Fields)
-              } else {
-                // notifySuccess(result.Fields.filename)
-                setFilemap((v) => ({
-                  ...v,
-                  [result.Fields.filename]: {
-                    ...v[result.Fields.filename]!,
-                    // ...result.Fields,
-                    status: "Sucess",
-                  },
-                }))
+            try {
+              const data = new FormData()
+              data.append("file", files[index]!)
+
+              const response = await fetch("/api/files/upload-files-2", {
+                headers: {
+                  "x-submit-intent": "execute",
+                },
+                method: "POST",
+                body: data,
+              })
+              if (!response.ok) {
+                console.log("error", response)
+                const error = await response.json()
+                throw error
               }
-            })
-          } catch (E: any) {
-            console.log("catch error")
-            updateNotification({
-              id: "uploading-files",
-              title: "Uploading files failed",
-              message: `Uploading ${files.length} files failed. Error ${
-                typeof E === "object" ? JSON.stringify(E) : E?.toString()
-              }`,
-              color: "red",
-              loading: false,
-              autoClose: false,
-            })
-            setloading(false)
-          } finally {
-            setloading(false)
+              console.log("response", response)
+              const d = (await response.json()) as FSharpList<
+                FSharpResult<FileSavedToStorage, ErrorResult>
+              >
+              updateNotification({
+                id: "uploading-files-" + index,
+                title: "Uploading files",
+                message: `Uploaded a file`,
+                color: "green",
+                loading: false,
+                autoClose: true,
+              })
+            } catch (E: any) {
+              console.log("catch error")
+              updateNotification({
+                id: "uploading-files-" + index,
+                title: "Uploading files failed",
+                message: `Uploading ${files.length} files failed. Error ${
+                  typeof E === "object" ? JSON.stringify(E) : E?.toString()
+                }`,
+                color: "red",
+                loading: false,
+                autoClose: false,
+              })
+              setloading(false)
+            } finally {
+              setloading(false)
+            }
           }
+
+          setloading(true)
         }}
         onReject={(files) => console.log("rejected files", files)}
-        maxSize={3 * 1024 ** 2}
-        accept={IMAGE_MIME_TYPE}
+        // maxSize={3 * 1024 ** 2}
+        // accept={IMAGE_MIME_TYPE}
       >
         <div>
           <Group
@@ -193,17 +157,23 @@ export function UploadFile() {
             style={{ minHeight: 220, pointerEvents: "none" }}
           >
             <Dropzone.Accept>
-              <IconUpload size={50} stroke={1.5} />
+              <IconUpload
+                size={50}
+                //  stroke={1.5}
+              />
             </Dropzone.Accept>
             <Dropzone.Reject>
               <IconX
                 size={50}
-                stroke={1.5}
+                // stroke={1.5}
                 color={theme.colors.red[theme.colorScheme === "dark" ? 4 : 6]}
               />
             </Dropzone.Reject>
             <Dropzone.Idle>
-              <IconPhoto size={50} stroke={1.5} />
+              <IconPhoto
+                size={50}
+                // stroke={1.5}
+              />
             </Dropzone.Idle>
             <div>
               <Text size="xl" inline>

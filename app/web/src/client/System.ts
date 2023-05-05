@@ -13,8 +13,8 @@ export type Byte = number
 export var defaultByte: Byte = 0
 
 
-export type Guid = `${number}-${number}-${number}-${number}-${number}`
-export var defaultGuid: Guid = '00000000-0000-0000-0000-000000000000'
+export type Int32 = number
+export var defaultInt32: Int32 = 0
 
 
 export type String = string
@@ -24,12 +24,9 @@ export var defaultString: String = ''
 export type Boolean = boolean
 export var defaultBoolean: Boolean = false
 
-export type ByteArray<T> = Array<T> // fullname System.Byte[]
-export var defaultByteArray: <T>(t:T) => ByteArray<T> = <T>(t:T) => []
 
-
-export type Int32 = number
-export var defaultInt32: Int32 = 0
+export type Guid = `${string}-${string}-${string}-${string}-${string}`
+export var defaultGuid: Guid = '00000000-0000-0000-0000-000000000000'
 
 
 export type DateTimeOffset = `${number}-${number}-${number}T${number}:${number}:${number}${"+"|"-"}${number}:${number}`
@@ -94,6 +91,9 @@ export var defaultUri: Uri = {
 
 export type Int64 = number
 export var defaultInt64: Int64 = 0
+
+export type ByteArray<T> = Array<T> // fullname System.Byte[]
+export var defaultByteArray: <T>(t:T) => ByteArray<T> = <T>(t:T) => []
 
 
 export type Nullable<T> = T | null

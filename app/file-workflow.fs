@@ -1,5 +1,6 @@
 ﻿namespace AzureFiles
 
+open AzFiles.Config
 open AzureFiles
 open Marten
 open System.IO
@@ -59,13 +60,14 @@ module Workflow =
   type Upload = FileScanned -> Async<FileSavedToStorage>
 
   let uploadOriginalFileAndSaveEvent (services: IServiceProvider) (localFile: FileScanned) =
-    let configuration =
-      services.GetService<Microsoft.Extensions.Configuration.IConfiguration>()
+    // let configuration =
+    //   services.GetService<Microsoft.Extensions.Configuration.IConfiguration>()
 
+    let connectionStrings = services.GetService<ConnectionStrings>()
     let session = services.GetService<IDocumentSession>()
 
     async {
-      let! blobInboxContainerClient = BlobService.getBlobContainerSourceFiles configuration
+      let! blobInboxContainerClient = BlobService.getBlobContainerSourceFiles connectionStrings.AzureBlob
 
       let! uploaded =
         BlobService.uploadOriginalFile blobInboxContainerClient localFile
@@ -123,12 +125,14 @@ module Workflow =
 
       let filename = $"{id.ToString()}-{variantName}"
 
-      let configuration =
-        services.GetService<Microsoft.Extensions.Configuration.IConfiguration>()
+      let connectionStrings = services.GetService<ConnectionStrings>()
+
+      // let configuration =
+      //   services.GetService<Microsoft.Extensions.Configuration.IConfiguration>()
 
       let session = services.GetService<IDocumentSession>()
 
-      let! imgVariantsClient = BlobService.getBlobContainerClient configuration "img-variants"
+      let! imgVariantsClient = BlobService.getBlobContainerClient connectionStrings.AzureBlob "img-variants"
 
       let uploadVariant (stream: MemoryStream) (filename: string) =
         let client = imgVariantsClient.GetBlobClient(filename)
@@ -204,13 +208,15 @@ module Workflow =
     let logger = loggerFactory.CreateLogger("File Workflow")
     logger.LogInformation($"Run workflow for path '{path}'")
 
-    let configuration =
-      services.GetService<Microsoft.Extensions.Configuration.IConfiguration>()
+    // let configuration =
+    //   services.GetService<Microsoft.Extensions.Configuration.IConfiguration>()
 
-    let blobServiceClient = BlobService.getBlobServiceClient configuration
+    let connectionStrings = services.GetService<ConnectionStrings>()
+
+    let blobServiceClient = BlobService.getBlobServiceClient connectionStrings.AzureBlob
 
     async {
-      let! blobInboxContainerClient = BlobService.getBlobContainerSourceFiles configuration
+      let! blobInboxContainerClient = BlobService.getBlobContainerSourceFiles connectionStrings.AzureBlob
 
       let checkDuplicateBasedOnLocalChecksum =
         BlobService.checkFileAlreadyHandledBasedOnLocalMd5hash blobServiceClient services

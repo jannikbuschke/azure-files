@@ -9,10 +9,6 @@ export type List<T> = Array<T>
 export var defaultList: <T>(defaultT:T) => List<T> = <T>(defaultT:T) => []
 
 
-export type Dictionary<TKey,TValue> = { [key: string]: TValue }
-export var defaultDictionary: <TKey,TValue>(defaultTKey:TKey,defaultTValue:TValue) => Dictionary<TKey,TValue> = <TKey,TValue>(defaultTKey:TKey,defaultTValue:TValue) => ({})
-
-
 export type ICollection<T> = {
   count: System.Int32
   isReadOnly: System.Boolean
@@ -45,4 +41,8 @@ export var defaultIEnumerable: <T>(defaultT:T) => IEnumerable<T> = <T>(defaultT:
 
 export type KeyValuePair<TKey,TValue> = ({Key:TKey,Value:TValue})
 export var defaultKeyValuePair: <TKey,TValue>(defaultTKey:TKey,defaultTValue:TValue) => KeyValuePair<TKey,TValue> = <TKey,TValue>(defaultTKey:TKey,defaultTValue:TValue) => ({Key:defaultTKey,Value:defaultTValue})
+
+
+export type Dictionary<TKey,TValue> = { [key: string]: TValue }
+export var defaultDictionary: <TKey,TValue>(defaultTKey:TKey,defaultTValue:TValue) => Dictionary<TKey,TValue> = <TKey,TValue>(defaultTKey:TKey,defaultTValue:TValue) => ({})
 

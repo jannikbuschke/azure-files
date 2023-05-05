@@ -3,7 +3,6 @@ import { Route, Routes, Outlet } from "react-router"
 import { BlobItemDetail } from "./blob-container/blob-detail"
 import { IndexedFileDetail, IndexedFiles } from "./blob-container/indexed-files"
 import { BlobContainerDetail, BlobContainerList } from "./blob-container/list"
-import { NextUntaggedBlob } from "./blob-container/next-untagged-blob"
 import { UploadFile } from "./blob-container/upload-file"
 import { GenerateBlogActions } from "./my-actions/generate-blog"
 import { UntaggedFilesView } from "./untagged-files"
@@ -13,6 +12,7 @@ import { EsEventList } from "glow-mantine/lib/debug-views/event-list"
 import { EsEventListWithoutValidation } from "glow-mantine/lib/debug-views/event-list-without-validation"
 import { PgsqlActivities } from "glow-mantine/lib/debug-views/pgsql"
 import { Nav } from "glow-mantine/lib/nav"
+import { ImagesGallery } from "./blob-container/images"
 
 export function AllContentRoutes() {
   return (
@@ -24,10 +24,10 @@ export function AllContentRoutes() {
       </Route>
       <Route path="/upload-file" element={<UploadFile />} />
       <Route path="/untagged-files" element={<UntaggedFilesView />} />
-      <Route path="/indexed-files" element={<IndexedFiles />}>
+      <Route path="/inbox" element={<IndexedFiles />}>
         <Route path=":id" element={<IndexedFileDetail />} />
-        <Route path="next-untagged" element={<NextUntaggedBlob />} />
       </Route>
+      <Route path="/images" element={<ImagesGallery />} />
       <Route path="/actions" element={<GenerateBlogActions />} />
       <Route
         path="/debug"

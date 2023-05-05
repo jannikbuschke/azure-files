@@ -1,6 +1,13 @@
 import { defineConfig } from "vite"
 import react from "@vitejs/plugin-react"
 import { name, version } from "./package.json"
+// import "vite/types/importMeta.d" // Not needed when not using TypeScript
+
+// if (import.meta.hot) {
+//   import.meta.hot.on("vite:beforeFullReload", () => {
+//     throw "(skipping full reload)"
+//   })
+// }
 
 export default defineConfig({
   define: {
@@ -17,7 +24,7 @@ export default defineConfig({
 
   build: {
     sourcemap: true,
-    outDir: "../planner1/app/web/build/",
+    outDir: "./build/",
     target: "es2015",
     minify: false,
   },

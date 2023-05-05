@@ -8,7 +8,7 @@
     "client": "npm run start --workspace=app/web",
     "server": "dotnet watch run --project ./app/app.fsproj",
     "clean": "npx -y rimraf node_modules **/node_modules/ package-lock.json && npm i",
-    "build": "npm run build -ws"
+    "build": "npm run build --workspace=app/web"
   },
   "version": "0.1.0",
   "main": "index.js",

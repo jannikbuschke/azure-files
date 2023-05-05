@@ -71,23 +71,35 @@ type FileInitEvent = FileSavedToStorage of FileSavedToStorage
 type TagAdded = { Name: string }
 type TagRemoved = { Name: string }
 
+type EmptyRecord =
+  { Skip: Skippable<unit> }
+  static member Instance = { Skip = Skippable.Skip }
+
 type FileEvent =
   | LowresVersionCreated of LowresVersionCreated
   | TagAdded of TagAdded
   | TagRemoved of TagRemoved
-
+  | Deleted of EmptyRecord
 
 type GlowWebRequestContext =
   { HttpContext: HttpContext
     UserId: string option
-    DocumentSession: IDocumentSession
-   }
+    DocumentSession: IDocumentSession }
 
 type AuthenticatedWebRequestContext =
   { HttpContext: HttpContext
     UserId: string }
 
 type GetContainer = unit -> Task<BlobContainerClient>
+
+type IWebRequestContext =
+  abstract HttpContext: HttpContext
+  abstract UserId: string option
+  abstract DocumentSession: IDocumentSession
+  abstract GetSrcContainer: GetContainer
+  abstract GetInboxContainer: GetContainer
+  abstract GetVariantsContainer: GetContainer
+  abstract Configuration: IConfiguration
 
 type WebRequestContext =
   { HttpContext: HttpContext
@@ -97,3 +109,7 @@ type WebRequestContext =
     GetInboxContainer: GetContainer
     GetVariantsContainer: GetContainer
     Configuration: IConfiguration }
+
+type ServiceError = { Message: string }
+
+type ServiceResult<'T> = Result<'T, ServiceError>

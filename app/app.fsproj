@@ -6,7 +6,9 @@
     <DefaultItemExcludes>$(DefaultItemExcludes);$(SpaRoot)node_modules\**</DefaultItemExcludes>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="ConnectionStrings.fs" />
     <Compile Include="background-queue.fs" />
+    <Compile Include="Policies.fs" />
     <Compile Include="FileId.fs" />
     <Compile Include="domain.fs" />
     <Compile Include="marten-extensions.fs" />
@@ -16,9 +18,14 @@
     <Compile Include="utils.fs" />
     <Compile Include="file-workflow.fs" />
     <Compile Include="upload-file-controller.fs" />
+    <Compile Include="Features\GetInboxFiles.fs" />
+    <Compile Include="Features\SetTags.fs" />
+    <Compile Include="Features\GetTaggedImages.fs" />
+    <Compile Include="Features\DeleteFile.fs" />
+    <Compile Include="Features\GetNavbar.fs" />
     <Compile Include="scan-files.fs" />
     <Compile Include="generate-blog-data.fs" />
-    <Compile Include="fsharp-tests.fs" />
+    <Compile Include="EventPublisher.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>

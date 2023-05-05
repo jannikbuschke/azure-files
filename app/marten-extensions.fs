@@ -1,7 +1,7 @@
 ﻿namespace AzureFiles
 
 open System.Runtime.CompilerServices
-open AzureFiles.FileId
+open Marten
 open Marten.Events
 
 [<Extension>]
@@ -17,7 +17,9 @@ type Extensions() =
     let id = FileId.value id
     Serilog.Log.Logger.Information("append to filestream {id}", id)
 
-    match e with
-    | LowresVersionCreated e -> ty.Append(id, [ e :> obj ])
-    | TagAdded e -> ty.Append(id, [ e :> obj ])
-    | TagRemoved e -> ty.Append(id, [ e :> obj ])
+    ty.Append(id, [ e :> obj ]) |> ignore
+    ()
+// match e with
+// | LowresVersionCreated e -> ty.Append(id, [ e :> obj ])
+// | TagAdded e -> ty.Append(id, [ e :> obj ])
+// | TagRemoved e -> ty.Append(id, [ e :> obj ])

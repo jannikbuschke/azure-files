@@ -1,10 +1,33 @@
 import React from "react"
 import ReactDOM from "react-dom"
 import "./index.css"
-import "antd/dist/antd.css"
-import App from "./App"
+// import "antd/dist/antd.css"
+import { App } from "./App"
 import * as serviceWorker from "./serviceWorker"
-ReactDOM.render(<App />, document.getElementById("root"))
+import dayjs from "dayjs"
+import LocalizedFormat from "dayjs/plugin/localizedFormat"
+import dayjsDuration from "dayjs/plugin/duration"
+import relativeTime from "dayjs/plugin/relativeTime"
+import timezone from "dayjs/plugin/timezone"
+import utc from "dayjs/plugin/utc"
+import "dayjs/locale/de"
+import "dayjs/locale/en"
+import { RootProvider } from "./app/root-providers"
+
+dayjs.extend(LocalizedFormat)
+dayjs.extend(dayjsDuration)
+dayjs.extend(relativeTime)
+dayjs.extend(utc)
+dayjs.extend(timezone)
+
+ReactDOM.render(
+  <React.Suspense fallback="Loading...">
+    <RootProvider>
+      <App />
+    </RootProvider>
+  </React.Suspense>,
+  document.getElementById("root"),
+)
 
 // If you want your app to work offline and load faster, you can change
 // unregister() to register() below. Note this comes with some pitfalls.

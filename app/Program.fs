@@ -3,6 +3,7 @@ namespace AzureFiles
 open System.Text.Json.Serialization
 open System.Threading
 open System.Threading.Channels
+open AzFiles.Config
 open Glow
 open Glow.Azure
 open Glow.Core.MartenSubscriptions
@@ -70,14 +71,7 @@ module Program =
          typedefof<Glow.Core.MartenAndPgsql.GetDocuments>
            .Assembly |]
       "..//glow//glow.mantine-web//src/client/"
-    // services.AddTypescriptGeneration [| TsGenerationOptions(
-    //                                       Assemblies = assemblies,
-    //                                       Path = "./web/src/ts-models/",
-    //                                       GenerateApi = true,
-    //                                       ApiOptions = ApiOptions(ApiFileFirstLines = ResizeArray())
-    //                                     ) |]
 
-    // replace with glow authentication
     let authScheme = CookieAuthenticationDefaults.AuthenticationScheme
 
     let cookieAuth (o: CookieAuthenticationOptions) =
@@ -90,12 +84,20 @@ module Program =
     services
       .AddAuthentication(authScheme)
       .AddCookie(cookieAuth)
-      .AddAzdoClientServices(fun options ->
-        options.Pat <- builder.Configuration.Item("azdo:Pat")
-        options.OrganizationBaseUrl <- builder.Configuration.Item("azdo:OrganizationBaseUrl"))
+    // .AddAzdoClientServices(fun options ->
+    //   options.Pat <- builder.Configuration.Item("azdo:Pat")
+    //   options.OrganizationBaseUrl <- builder.Configuration.Item("azdo:OrganizationBaseUrl"))
     |> ignore
 
 
+    let connectionStrings =
+      builder
+        .Configuration
+        .GetSection("ConnectionStrings")
+        .GetSection(builder.Environment.EnvironmentName)
+        .Get<ConnectionStrings>()
+
+    services.AddSingleton(connectionStrings)
     services.AddTransient<WebRequestContext> (fun v ->
       let httpContext =
         v
@@ -106,13 +108,13 @@ module Program =
       let configuration = v.GetRequiredService<IConfiguration>()
 
       let getSrcContainer =
-        fun () -> BlobService.getBlobContainerClientByName configuration "src"
+        fun () -> BlobService.getBlobContainerClientByName connectionStrings.AzureBlob "src"
 
       let getInboxContainer =
-        fun () -> BlobService.getBlobContainerClientByName configuration "inbox"
+        fun () -> BlobService.getBlobContainerClientByName connectionStrings.AzureBlob "inbox"
 
       let getVariantsContainer =
-        fun () -> BlobService.getBlobContainerClientByName configuration "img-variants"
+        fun () -> BlobService.getBlobContainerClientByName connectionStrings.AzureBlob "img-variants"
 
       { HttpContext = httpContext
         UserId = None
@@ -130,15 +132,12 @@ module Program =
     services.AddTestAuthentication()
     services.AddResponseCaching()
 
-    let connectionString = builder.Configuration.Item("ConnectionString")
-
-
     let marten =
       services
         .AddMarten(
           FuncConvert.FromFunc (fun (sp: IServiceProvider) ->
             let options = StoreOptions()
-            options.Connection(connectionString)
+            options.Connection(connectionStrings.Db)
 
             options
               .Projections
@@ -147,7 +146,12 @@ module Program =
 
             let logger = sp.GetService<ILogger<MartenSubscription>>()
 
-            options.Projections.Add(MartenSubscription([| UserEventPublisher(sp) |], logger), ProjectionLifecycle.Async, "customConsumer")
+            options.Projections.Add(
+              MartenSubscription([| UserEventPublisher(sp) |], logger),
+              ProjectionLifecycle.Async,
+              "customConsumer"
+            )
+
             let serializer = SystemTextJsonSerializer()
 
             serializer.Customize(fun v -> JsonSerializationSettings.ConfigureStjSerializerDefaultsForWeb(v))
@@ -182,7 +186,7 @@ module Program =
         .Writer)
 
     //    services.AddSingleton(BackgroundTaskQueue(100))
-    services.AddHostedService<ScanFiles.Service>()
+    // services.AddHostedService<ScanFiles.Service>()
     services.AddHostedService<QueuedHostedService>()
 
     services.AddAuthorization (fun options ->
@@ -203,7 +207,8 @@ module Program =
       |> Seq.toList
 
     let workspace =
-      workspaces |> List.find (fun v -> v.Name = builder.Environment.EnvironmentName)
+      workspaces
+      |> List.find (fun v -> v.Name = builder.Environment.EnvironmentName)
 
     services.AddSingleton(workspaces)
     services.AddSingleton(workspace)
@@ -221,9 +226,16 @@ module Program =
         .WriteTo.File("logs/log.txt")
         .CreateLogger()
 
+    Log.Logger.Information("Starting application")
+
     let app = buildApp(args).Build()
 
     let env = app.Services.GetService<IWebHostEnvironment>()
+
+    Log.Logger.Information(sprintf "Environment  = %s" env.EnvironmentName)
+    Log.Logger.Information(sprintf "Application  = %s" env.ApplicationName)
+    Log.Logger.Information(sprintf "Content root = %s" env.ContentRootPath)
+    Log.Logger.Information(sprintf "Web root     = %s" env.WebRootPath)
 
     let configuration = app.Services.GetService<IConfiguration>()
 
@@ -236,7 +248,7 @@ module Program =
 //                .WriteTo.File("logs/log.txt")
         .CreateLogger()
 
-    Log.Logger.Information "logger reconfigured"
+    Log.Logger.Information "Logger reconfigured"
 
     app.UseResponseCaching()
 

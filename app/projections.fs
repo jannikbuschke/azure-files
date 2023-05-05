@@ -1,5 +1,6 @@
 ﻿namespace AzureFiles
 
+
 type ImageVariant = { Url: string; Dimension: Dimension }
 
 [<CLIMutable>]
@@ -20,7 +21,9 @@ type FileAggregate =
 
   member this.Apply(e: FileSavedToStorage, meta: Marten.Events.IEvent) : FileAggregate =
     { Id = meta.Id
-      CreatedAt = meta.Timestamp |> NodaTime.Instant.FromDateTimeOffset
+      CreatedAt =
+        meta.Timestamp
+        |> NodaTime.Instant.FromDateTimeOffset
       Inbox = true
       Url = Some e.Url
       Md5Hash = e.Md5Hash
@@ -54,6 +57,7 @@ type FileAggregate =
   member this.Apply(e: TagRemoved) : FileAggregate =
     { this with Tags = this.Tags |> List.filter (fun v -> v <> e.Name) }
 
+
   member this.ShouldDelete(e: CheckedForDuplicate) : bool =
     match e.DuplicateCheckResult with
     | DuplicateCheckResult.IsDuplicate _ -> true
@@ -76,3 +80,36 @@ type FileAggregate =
     | LowresVersionCreated evt -> this.Apply(evt)
     | TagAdded e -> this.Apply(e)
     | TagRemoved e -> this.Apply(e)
+    | Deleted _ -> this
+
+  member this.ShouldDelete(e: FileEvent) : bool =
+    match e with
+    | Deleted _ -> true
+    | _ -> false
+
+namespace AzureFiles
+
+open System.Runtime.CompilerServices
+open Marten
+open FsToolkit.ErrorHandling
+
+[<Extension>]
+type Extensions2() =
+
+  [<Extension>]
+  static member GetFiles(ty: IDocumentSession) =
+    task {
+      let! files = ty.Query<FileAggregate>().ToListAsync()
+      return files |> Seq.toList
+    }
+
+  [<Extension>]
+  static member LoadFile(ty: IDocumentSession, FileId id) =
+    taskResult {
+      let! file = ty.LoadAsync<FileAggregate>(id)
+
+      if box file = null then
+        return! Error { ServiceError.Message = "File not found" }
+      else
+        return file
+    }

@@ -1,10 +1,9 @@
 ﻿namespace AzureFiles
 
 open System
-open System.Text.Json.Serialization
 open System.Threading.Tasks
+open AzFiles.Config
 open Azure.Storage.Blobs
-open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.Mvc
 open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.Logging
@@ -19,31 +18,10 @@ open Azure.Storage.Blobs.Models
 open FsToolkit.ErrorHandling
 open Microsoft.Extensions.DependencyInjection
 
-//type Tag =
-//  | StageForBlog
-//  | Publish
-//  | Keep
-//  | Remove
-
-type EmptyRecord =
-  { Skip: Skippable<unit> }
-
-  static member instance = { Skip = Skippable<unit>.Skip }
-
-[<Action(Route = "api/get-inbox-files", AllowAnonymous = true)>]
-type GetInboxFiles() =
-  interface IRequest<FileAggregate list>
-
 type InboxFileResult =
   { Previous: FileId option
     File: FileAggregate
     Next: FileId option }
-
-[<Action(Route = "api/get-inbox-file", AllowAnonymous = true)>]
-type GetInboxFile =
-  { Id: FileId }
-
-  interface IRequest<InboxFileResult>
 
 type AzureFilesBlobProperties =
   { Properties: Azure.Storage.Blobs.Models.BlobProperties
@@ -81,18 +59,6 @@ type GetIndexedFile() =
   interface IRequest<FileAggregate>
   member val Id = Unchecked.defaultof<System.Guid> with get, set
 
-[<Action(Route = "api/file/set-tags")>]
-type SetTags() =
-  interface IRequest<Unit>
-  member val FileId = Unchecked.defaultof<System.Guid> with get, set
-  member val Tags = Unchecked.defaultof<ResizeArray<TagAdded>> with get, set
-
-[<Action(Route = "api/file/set-tags-batched", AllowAnonymous = true)>]
-type SetTagsBatched() =
-  interface IRequest<Unit>
-  member val Tags = Unchecked.defaultof<ResizeArray<TagAdded>> with get, set
-  member val Files = Unchecked.defaultof<Dictionary<System.Guid, bool>> with get, set
-
 [<Action(Route = "api/blob/get-files", AllowAnonymous = true)>]
 type GetFiles() =
   interface IRequest<ResizeArray<Models.BlobItem>>
@@ -129,64 +95,14 @@ type RenameSystemFiles() =
 type GetBlobContainers() =
   interface IRequest<List<Models.BlobContainerItem>>
 
-
 type GetBlobContainersHandler
   (
     ctx: WebRequestContext,
     configuration: IConfiguration,
     logger: ILogger<GetBlobContainers>,
-    httpContextAccessor: IHttpContextAccessor,
     session: IDocumentSession,
-    serviceProvider: IServiceProvider
+    connectionStrings: ConnectionStrings
   ) =
-
-  interface IRequestHandler<GetInboxFiles, FileAggregate list> with
-    member this.Handle(request, token) =
-      task {
-        let! entities = session.Query<FileAggregate>().ToListAsync()
-
-        let result =
-          entities
-            .Where(fun v -> v.Inbox = true)
-            .OrderByDescending(fun v -> v.CreatedAt)
-
-        return result |> Seq.toList
-      }
-
-  interface IRequestHandler<GetInboxFile, InboxFileResult> with
-    member this.Handle(request, token) =
-      task {
-        let! entities = session.Query<FileAggregate>().ToListAsync()
-
-        let result =
-          entities
-            .Where(fun v -> v.Inbox = true)
-            .OrderByDescending(fun v -> v.CreatedAt)
-          |> Seq.toList
-
-        let index =
-          result
-          |> List.findIndex (fun v -> v.Key() = request.Id)
-
-        let item = result.[index]
-
-        let prev =
-          if index > 0 then
-            Some(result.[index - 1])
-          else
-            None
-
-        let next =
-          if index < result.Length - 1 then
-            Some(result.[index + 1])
-          else
-            None
-
-        return
-          { Next = next |> Option.map (fun v -> v.Key())
-            Previous = prev |> Option.map (fun v -> v.Key())
-            File = item }
-      }
 
   interface IRequestHandler<GetAllUntagged, ResizeArray<FileAggregate>> with
     member this.Handle(request, token) =
@@ -201,45 +117,19 @@ type GetBlobContainersHandler
   interface IRequestHandler<GetBlobContainers, List<Models.BlobContainerItem>> with
     member this.Handle(request, token) =
       task {
-        let client = getBlobServiceClient configuration
+        let client = getBlobServiceClient connectionStrings.AzureBlob
         let containers = client.GetBlobContainers()
         logger.LogInformation($"container count = {containers.Count()}")
         let result = client.GetBlobContainersAsync()
         let! r0 = result.AsAsyncEnumerable().ToListAsync()
         return r0
+      // return ResizeArray()
       }
-
-  // interface IRequestHandler<UploadFormFiles, Result<FileSavedToStorage, string> list> with
-  //   member this.Handle(request, token) =
-  //     task {
-  //
-  //       logger.LogInformation("handle upload form files")
-  //       let httpContext = httpContextAccessor.HttpContext
-  //       logger.LogInformation(sprintf "count %d" httpContext.Request.Form.Files.Count)
-  //
-  //       let init = httpContext.Request.Form.Files
-  //                  |> Seq.map Workflow.initiallyHandleFormFile
-  //
-  //       let tasks =
-  //         init
-  //         |> Seq.map (fun file ->
-  //           taskResult {
-  //             use scope = serviceProvider.CreateScope()
-  //             let ctx = scope.ServiceProvider.GetRequiredService<WebRequestContext>()
-  //             do! validateFileIsNotAlreadyUploaded ctx.DocumentSession file
-  //             let! result = uploadFileAndAppendEvent ctx file
-  //             return result
-  //           })
-  //
-  //       let! results = Task.WhenAll(tasks)
-  //       // let files = httpContext.Request.Form.Files
-  //       return results |> Seq.toList
-  //     }
 
   interface IRequestHandler<GetFiles, List<Models.BlobItem>> with
     member this.Handle(request, token) =
       task {
-        let client = getBlobServiceClient configuration
+        let client = getBlobServiceClient connectionStrings.AzureBlob
 
         let client2 = client.GetBlobContainerClient(request.Name)
 
@@ -248,6 +138,7 @@ type GetBlobContainersHandler
         let! y = asyncPageable.AsAsyncEnumerable().ToListAsync()
 
         return y
+      // return ResizeArray()
       }
 
   interface IRequestHandler<RenameSystemFiles, string array> with
@@ -326,7 +217,7 @@ type GetBlobContainersHandler
   interface IRequestHandler<DeleteBlobFile, MediatR.Unit> with
     member this.Handle(request, token) =
       task {
-        let client = getBlobServiceClient configuration
+        let client = getBlobServiceClient connectionStrings.AzureBlob
 
         let client2 = client.GetBlobContainerClient(request.ContainerId)
 
@@ -338,7 +229,7 @@ type GetBlobContainersHandler
   interface IRequestHandler<GetBlobFile, AzureFilesBlobProperties> with
     member this.Handle(request, token) =
       task {
-        let client = getBlobServiceClient configuration
+        let client = getBlobServiceClient connectionStrings.AzureBlob
 
         let client2 = client.GetBlobContainerClient(request.ContainerId)
 
@@ -352,7 +243,7 @@ type GetBlobContainersHandler
   interface IRequestHandler<DeleteAllBlobs, Unit> with
     member this.Handle(request, token) =
       task {
-        let! container = getBlobContainerClient configuration request.ContainerName
+        let! container = getBlobContainerClient connectionStrings.AzureBlob request.ContainerName
 
         do!
           deleteAllBlobsInContainer container
@@ -364,6 +255,7 @@ type GetBlobContainersHandler
 type TestController(logger: ILogger<TestController>, ctx: WebRequestContext, serviceProvider: IServiceProvider) =
   inherit ControllerBase()
 
+  // this is currently used
   [<HttpPost("api/files/upload-files-2")>]
   member this.UploadFiles() =
     task {
@@ -386,6 +278,13 @@ type TestController(logger: ILogger<TestController>, ctx: WebRequestContext, ser
             file.FormFile.OpenReadStream().CopyTo(stream)
             stream.Position <- 0
 
+            // maybe its fine
+            // whats next up?
+            // validate if production database should be on localhost
+            // maybe, production db on localhost, image storage on azure
+            // next up: cleanup
+            // then: implement nice homepage
+
             use scope = serviceProvider.CreateScope()
             let ctx = scope.ServiceProvider.GetRequiredService<WebRequestContext>()
             do! validateFileIsNotAlreadyUploaded ctx.DocumentSession file
@@ -405,38 +304,3 @@ type TestController(logger: ILogger<TestController>, ctx: WebRequestContext, ser
       // let files = httpContext.Request.Form.Files
       return results |> Seq.toList
     }
-
-  // interface IRequestHandler<SetTagsBatched, Unit> with
-//   member this.Handle(request, token) =
-//     task {
-//
-//       let tags = request.Tags |> Seq.toList
-//       let e: TagsSet = { Tags = tags }
-//
-//       request.Files
-//         |> Seq.filter (fun x -> x.Value)
-//         |> Seq.map (fun x -> x.Key)
-//         |> Seq.iter
-//              (fun id ->
-//                let events: obj [] = [| e |]
-//                session.Events.Append(id, events) |> ignore)
-//
-//       do! session.SaveChangesAsync()
-//
-//       return Unit.Value
-//     }
-
-  interface IRequestHandler<SetTags, Unit> with
-    member this.Handle(request, token) =
-      task {
-        let tags = request.Tags |> Seq.toList
-
-        tags
-        |> List.iter (fun t ->
-          ctx.DocumentSession.Events.AppendFileStream(request.FileId |> FileId.create, FileEvent.TagAdded t)
-          |> ignore)
-
-        do! ctx.DocumentSession.SaveChangesAsync()
-
-        return Unit.Value
-      }

@@ -1,24 +1,18 @@
 import {
   Box,
   Button,
-  Chip,
   Grid,
   LoadingOverlay,
   Paper,
-  Stack,
   Title,
   Image,
-  SegmentedControl,
   ScrollArea,
-  Text,
   Center,
   Group,
-  Divider,
   NavLink as MantineNavLink,
 } from "@mantine/core"
-import { useForm } from "@mantine/form"
-import { useFullscreen, useViewportSize } from "@mantine/hooks"
-import { RenderObject, useNotify } from "glow-core"
+import { useFullscreen, useHotkeys, useViewportSize } from "@mantine/hooks"
+import { useNotify } from "glow-core"
 import * as React from "react"
 import {
   Outlet,
@@ -29,19 +23,14 @@ import {
 } from "react-router"
 import { Link, NavLink, useSearchParams } from "react-router-dom"
 import { useTypedAction, useTypedQuery } from "../client/api"
-import {
-  defaultFileAggregate,
-  defaultInboxFileResult,
-  FileAggregate,
-  FileId,
-} from "../client/AzureFiles"
+import { FileAggregate, FileId } from "../client/AzureFiles"
 import { Guid } from "../client/System"
-import { tags } from "./tag-values"
-import { IconCaretLeft, IconCaretRight } from "@tabler/icons"
+import { TiArrowLeft, TiArrowRight } from "react-icons/ti"
 import { QueryWithBoundary } from "../query"
-import { NavTable } from "glow-beta/lib/list/nav-table"
 import dayjs from "dayjs"
 import { FSharpOption } from "../client/Microsoft_FSharp_Core"
+import { AzFiles, AzFiles_Features } from "../client"
+import { AsyncButton } from "../typed-api/ActionButton"
 
 function CustomLink({ to, name }: { to: string; name: React.ReactNode }) {
   let resolved = useResolvedPath(to)
@@ -64,39 +53,16 @@ export function IndexedFiles() {
     specialTags.untagged,
   )
 
-  const { data, loading, isFetching } = useTypedQuery(
-    "/api/files/get-indexed-files",
-    {
-      input: {
-        tagFilter: selectedTag,
-        showUntagged: selectedTag === specialTags.untagged,
-      },
-      placeholder: [],
-    },
-  )
-
   return (
     <Paper>
-      <LoadingOverlay visible={loading || isFetching}></LoadingOverlay>
-      <SegmentedControl
-        data={[
-          { label: "Untagged", value: specialTags.untagged },
-          { label: "All", value: specialTags.all } as any,
-          ...tags,
-        ]}
-        value={selectedTag}
-        onChange={(v) => {
-          setSelectedTag(v)
-        }}
-      />
-      <Grid p="md">
+      <Grid>
         <Grid.Col span={2}>
-          <div>Filecount: {data.length}</div>
-          <ScrollArea style={{ height: 750 }}>
+          <ScrollArea style={{ height: "85vh" }} scrollbarSize={0}>
             <QueryWithBoundary name="/api/get-inbox-files" input={{}}>
               {(data) => (
                 <>
-                  <NavTable dataSource={data} columns={[]} />
+                  {/* <div>Filecount: {data.length}</div> */}
+                  {/* <NavTable dataSource={data} columns={[]} /> */}
                   <div>
                     {data.map((file, i) => (
                       <>
@@ -108,12 +74,15 @@ export function IndexedFiles() {
                                 <MantineNavLink
                                   // p="xs"
                                   // m="xs"
+                                  style={{ textDecoration: "none" }}
                                   active={isActive}
                                   variant="light"
                                   label={file.filename}
-                                  description={dayjs(file.createdAt).format(
-                                    "L LT",
-                                  )}
+                                  description={
+                                    file.createdAt
+                                      ? dayjs(file.createdAt).format("L LT")
+                                      : "N/A"
+                                  }
                                 />
                               </>
                             )}
@@ -166,20 +135,14 @@ export function FileContent({
   prev,
 }: {
   data: FileAggregate
-  id: string
+  id: FileId
   onSave?: () => void
   next: FSharpOption<FileId>
   prev: FSharpOption<FileId>
 }) {
-  const form = useForm({
-    initialValues: {
-      tags: data?.tags?.map((v) => v) || [],
-    },
-  })
   const [params] = useSearchParams()
   const shouldFullscreen = params.get("fullscreen")
-
-  const { notifyError } = useNotify()
+  const { notifyError, notifyInfo } = useNotify()
   const [setTags, , { submitting }] = useTypedAction("/api/file/set-tags")
   const { ref, toggle, fullscreen } = useFullscreen()
   React.useEffect(() => {
@@ -189,88 +152,116 @@ export function FileContent({
   }, [toggle, shouldFullscreen])
   const x = useViewportSize()
   const navigate = useNavigate()
-  return (
-    <Box mx="auto" key={id}>
-      <LoadingOverlay visible={submitting}></LoadingOverlay>
-      {/* <RenderObject {...form.values} /> */}
-      <form
-        onSubmit={form.onSubmit(async (values) => {
-          await setTags({
-            fileId: id as Guid,
-            tags: values.tags.map((v) => ({ name: v })),
-          })
-          onSave && onSave()
-        })}
+
+  const navNext =
+    next === null
+      ? undefined
+      : () => {
+          navigate(`../${next}`)
+        }
+
+  const navPrev = prev === null ? undefined : () => navigate(`../${prev}`)
+
+  const setTagsAndNavigate = async (tags: AzFiles_Features.SetTags) => {
+    await setTags(tags)
+    navNext && navNext()
+  }
+  useHotkeys([
+    ["ArrowLeft", () => navPrev && navPrev()],
+    ["ArrowRight", () => navNext && navNext()],
+  ])
+
+  const actions = (
+    <>
+      <Button
+        variant="subtle"
+        leftIcon={<TiArrowLeft size={50} />}
+        disabled={navPrev === undefined}
+        onClick={navPrev}
+      />
+      <Button
+        onClick={() => setTagsAndNavigate({ fileId: id, tags: ["Stage"] })}
       >
-        <Stack spacing={"sm"}>
-          <Stack>
-            <div style={{ maxWidth: 600 }}>
-              <Title truncate={true}>{data.filename}</Title>
-            </div>
-          </Stack>
-          <Group>
-            <Button type="submit" size="sm">
-              Save
-            </Button>
-            <Button size="sm" onClick={() => toggle()}>
-              fullscreen
-            </Button>
-          </Group>
-          {/* <Text size="xs">{data.md5Hash}</Text> */}
-          <Chip.Group multiple={true} {...form.getInputProps("tags")}>
-            {tags.map((v) => (
-              <Chip size="sm" key={v.value} value={v.value}>
-                {v.label}
-              </Chip>
-            ))}
-          </Chip.Group>
-        </Stack>
-      </form>
+        Stage
+      </Button>
+      <Button
+        onClick={() => setTagsAndNavigate({ fileId: id, tags: ["Publish"] })}
+      >
+        Publish
+      </Button>
+      <Button
+        onClick={() => setTagsAndNavigate({ fileId: id, tags: ["Keep"] })}
+      >
+        Keep
+      </Button>
+      <AsyncButton
+        action="/api/file/delete-file"
+        values={{ fileId: id }}
+        variant="subtle"
+        color="red"
+        onSuccess={() => navNext && navNext()}
+      >
+        Delete
+      </AsyncButton>
+      {/* <Button variant="subtle" color="red">
+        Delete
+      </Button> */}
+      <Button
+        variant="subtle"
+        rightIcon={<TiArrowRight size={50} />}
+        disabled={navNext === undefined}
+        onClick={navNext}
+      />
+    </>
+  )
+
+  return (
+    <Box
+      mx="auto"
+      sx={(theme) => ({
+        backgroundColor:
+          theme.colorScheme === "dark"
+            ? theme.colors.dark[6]
+            : theme.colors.gray[2],
+      })}
+      p="xs"
+    >
+      <LoadingOverlay visible={submitting}></LoadingOverlay>
+      <Box>
+        <Title truncate={true}>{data.filename}</Title>
+      </Box>
+      <Button size="xs" onClick={() => toggle()} variant="default">
+        fullscreen
+      </Button>
       <br />
-      <div>
+      <div ref={ref} style={{ display: fullscreen ? undefined : "block" }}>
         <Image
-          // key={fullscreen ? "fullscreen" : "not-fullscreen"}
           radius="sm"
           fit={"contain"}
-          width={fullscreen ? x.width : "800px"}
-          height={fullscreen ? x.height : "500px"}
+          width={fullscreen ? x.width : "100%"}
+          height={fullscreen ? x.height : "80vh"}
           src={data.lowresUrl || data.url!}
           onError={() => notifyError("Could not load image")}
-          // src="https://images.unsplash.com/photo-1511216335778-7cb8f49fa7a3?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=720&q=80"
-          // alt="Random unsplash image"
         />
         <Center>
           <Group
             style={{ zIndex: 5 }}
-            bg="dark.5"
+            sx={(theme) => ({
+              backgroundColor:
+                theme.colorScheme === "dark"
+                  ? theme.colors.dark[5]
+                  : theme.colors.gray[4],
+            })}
+            // bg="dark.5"
             p="xs"
             mt={fullscreen ? -200 : "xs"}
-            // style={{
-            //   position: "absolute",
-            //   bottom: 50,
-            //   left: "50%",
-            //   right: "50%",
-            // }}
             position="center"
-            // style={{ width: 500 }}
           >
-            <Button variant="subtle" leftIcon={<IconCaretLeft />}>
-              {/* Previous */}
-            </Button>
-
-            <Button>Stage</Button>
-            <Button>Publish</Button>
-            <Button>Keep</Button>
-            <Button variant="subtle" color="red">
-              Delete
-            </Button>
-            <Button variant="subtle" rightIcon={<IconCaretRight />}>
-              {/* Next */}
-            </Button>
+            {actions}
           </Group>
         </Center>
       </div>
-      <div ref={ref}>
+      {/* <div>
         <Image
           opacity={fullscreen ? 1 : 0}
           key={fullscreen ? "fullscreen" : "not-fullscreen"}
@@ -280,8 +271,6 @@ export function FileContent({
           height={x.height}
           src={data.lowresUrl || data.url!}
           onError={() => notifyError("Could not load image")}
-          // src="https://images.unsplash.com/photo-1511216335778-7cb8f49fa7a3?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=720&q=80"
-          // alt="Random unsplash image"
         />
         <Center>
           <Group
@@ -289,72 +278,29 @@ export function FileContent({
             bg="dark.5"
             p="xs"
             mt={fullscreen ? -200 : "xs"}
-            // style={{
-            //   position: "absolute",
-            //   bottom: 50,
-            //   left: "50%",
-            //   right: "50%",
-            // }}
             position="center"
-            // style={{ width: 500 }}
           >
-            <Button
-              variant="subtle"
-              leftIcon={<IconCaretLeft />}
-              disabled={prev === null}
-              onClick={
-                prev === null
-                  ? undefined
-                  : () => navigate(`../${prev}?fullscreen=true`)
-              }
-            >
-              {/* Previous */}
-            </Button>
-
-            <Button>Stage</Button>
-            <Button>Publish</Button>
-            <Button>Keep</Button>
-            <Button variant="subtle" color="red">
-              Delete
-            </Button>
-            <Button
-              variant="subtle"
-              rightIcon={<IconCaretRight />}
-              disabled={next === null}
-              onClick={
-                next === null
-                  ? undefined
-                  : () => {
-                      navigate(`../${next}?fullscreen=true`)
-                    }
-              }
-            />
+            {actions}
           </Group>
         </Center>
-      </div>
-      {/* <img src={`https://azfilesdevsa.blob.core.windows.net/inbox/${id}`} /> */}
-      {/* <img src="https://azfilesdevsa.blob.core.windows.net/inbox/0ddd673d-62a2-425b-a263-db5aabc4dabb" /> */}
-      {/* <RenderObject {...form.values} /> */}
+      </div> */}
     </Box>
   )
 }
 
 export function IndexedFileDetail({}: {}) {
   const { id } = useParams<"id">()
-  const navigate = useNavigate()
-  const { data, isFetched } = useTypedQuery("/api/get-inbox-file", {
+  const { data } = useTypedQuery("/api/get-inbox-file", {
     input: { id: id as Guid },
-    placeholder: defaultInboxFileResult,
+    placeholder: AzFiles_Features.defaultInboxFileResult,
   })
 
-  return isFetched ? (
+  return (
     <FileContent
       data={data.file}
       next={data.next}
       prev={data.previous}
-      id={id!}
+      id={id as Guid}
     />
-  ) : (
-    <div>loading</div>
   )
 }

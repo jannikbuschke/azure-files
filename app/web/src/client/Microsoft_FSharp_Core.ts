@@ -5,6 +5,10 @@
 import * as System_Collections_Generic from "./System_Collections_Generic"
 
 
+export type Unit = any
+export var defaultUnit: Unit = ({})
+
+
 export type FSharpOption<T> = T | null
 export var defaultFSharpOption: <T>(defaultT:T) => FSharpOption<T> = <T>(defaultT:T) => null
 
@@ -22,8 +26,4 @@ export var defaultFSharpResult = <T,TError>(defaultT:T,defaultTError:TError) => 
 
 export type FSharpOptionArray<T> = Array<T> // fullname Microsoft.FSharp.Core.FSharpOption`1[[AzureFiles.FileSavedToStorage, app, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]][]
 export var defaultFSharpOptionArray: <T>(t:T) => FSharpOptionArray<T> = <T>(t:T) => []
-
-
-export type Unit = any
-export var defaultUnit: Unit = ({})
 

@@ -1,38 +1,42 @@
-import React from "react"
-import { AppShell, MantineProvider, Navbar } from "@mantine/core"
-import { ThemeIcon, UnstyledButton, Group, Text } from "@mantine/core"
+import {
+  AppShell,
+  Burger,
+  Card,
+  Header,
+  MantineProvider,
+  MediaQuery,
+  Navbar,
+} from "@mantine/core"
+import { Group, Text } from "@mantine/core"
 import { AllContentRoutes } from "./navigation"
-import { BrowserRouter, useMatch, useNavigate } from "react-router-dom"
+import { BrowserRouter } from "react-router-dom"
 import { QueryClient, QueryClientProvider } from "react-query"
 import { NotificationsProvider } from "@mantine/notifications"
 import { VscAzure, VscCloudUpload } from "react-icons/vsc"
 import { FiChevronsRight } from "react-icons/fi"
-import { BsFileEarmarkRichtextFill } from "react-icons/bs"
+import { TbInbox, TbPolaroid } from "react-icons/tb"
 import { MainLinks, MainLinkProps } from "glow-mantine"
 import {
-  AuthenticationProvider,
   GlowProvider,
   NotificationsProvider as GlowNotificationProvider,
   VnextAuthenticationProvider,
 } from "glow-core"
 import { TypedNotificationsProvider } from "glow-core/lib/notifications/type-notifications"
+import React from "react"
+import { useTypedQuery } from "./client/api"
 
-const data: MainLinkProps[] = [
+const navbarLinks: MainLinkProps[] = [
   {
-    icon: <BsFileEarmarkRichtextFill />,
+    icon: <TbInbox />,
     color: "teal",
-    label: "Indexed files",
-    to: "/indexed-files",
+    label: "Inbox",
+    to: "/inbox",
   },
   {
-    label: "Untagged files #1",
-    to: "/untagged-files",
-  },
-
-  {
-    color: "black",
-    label: "Untagged files",
-    to: "/indexed-files/next-untagged",
+    icon: <TbPolaroid />,
+    color: "green",
+    label: "Images",
+    to: "/images",
   },
   {
     icon: <VscAzure />,
@@ -58,17 +62,11 @@ const data: MainLinkProps[] = [
     label: "Events",
     to: "/debug/events",
   },
-  // { icon: undefined, color: "violet", label: "Discussions" },
-  // { icon: undefined, color: "grape", label: "Databases" },
 ]
 
-// export function MainLinks() {
-//   const links = data.map((link) => <MainLink {...link} key={link.label} />)
-//   return <div>{links}</div>
-// }
-
 const client = new QueryClient()
-function App() {
+
+export function Provider({ children }: { children: React.ReactNode }) {
   return (
     <BrowserRouter>
       <QueryClientProvider client={client}>
@@ -78,45 +76,11 @@ function App() {
               <TypedNotificationsProvider>
                 <MantineProvider
                   theme={{
-                    colorScheme: "dark",
+                    colorScheme: "light",
                   }}
                 >
                   <NotificationsProvider position="bottom-center">
-                    <AppShell
-                      padding="md"
-                      navbar={
-                        <Navbar width={{ base: 250 }}>
-                          {/* Navbar content */}
-                          {/* First section with normal height (depends on section content) */}
-                          {/* <Navbar.Section>First section</Navbar.Section> */}
-
-                          {/* Grow section will take all available space that is not taken by first and last sections */}
-                          <Navbar.Section grow>
-                            <MainLinks data={data} size="xl" />
-                          </Navbar.Section>
-
-                          {/* Last section with normal height (depends on section content) */}
-                          {/* <Navbar.Section>Last section</Navbar.Section> */}
-                        </Navbar>
-                      }
-                      // header={
-                      //   <Header height={60} p="xs">
-                      //     {/* Header content */}
-                      //   </Header>
-                      // }
-                      styles={(theme) => ({
-                        main: {
-                          backgroundColor:
-                            theme.colorScheme === "dark"
-                              ? theme.colors.dark[8]
-                              : theme.colors.gray[0],
-                        },
-                      })}
-                    >
-                      <AllContentRoutes />
-                      {/* <UploadFile /> */}
-                      {/* Your application here */}
-                    </AppShell>
+                    {children}
                   </NotificationsProvider>
                 </MantineProvider>
               </TypedNotificationsProvider>
@@ -128,4 +92,89 @@ function App() {
   )
 }
 
-export default App
+export function App() {
+  const [opened, setOpened] = React.useState(false)
+
+  const { data } = useTypedQuery("/api/get-navbar", {
+    input: {},
+    placeholder: null as any,
+    queryOptions: {
+      useErrorBoundary: true,
+      suspense: true,
+    },
+  })
+
+  return (
+    <AppShell
+      navbarOffsetBreakpoint="sm"
+      asideOffsetBreakpoint="sm"
+      padding="md"
+      header={
+        <Header height={{ base: 50, md: 70 }} p="md">
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              height: "100%",
+            }}
+          >
+            <MediaQuery largerThan="sm" styles={{ display: "none" }}>
+              <Burger
+                opened={opened}
+                onClick={() => setOpened((o) => !o)}
+                size="sm"
+                // color={theme.colors.gray[6]}
+                mr="xl"
+              />
+            </MediaQuery>
+
+            {/* <Text>Application header</Text> */}
+          </div>
+        </Header>
+      }
+      navbar={
+        <Navbar
+          hidden={!opened}
+          hiddenBreakpoint="sm"
+          width={{ sm: 200, lg: 300 }}
+        >
+          {/* Navbar content */}
+          {/* First section with normal height (depends on section content) */}
+          {/* <Navbar.Section>First section</Navbar.Section> */}
+          {data.message && (
+            <Navbar.Section>
+              <Card>
+                <Card.Section bg={data.message.color} p="xs">
+                  {data.message.title}
+                </Card.Section>
+              </Card>
+            </Navbar.Section>
+          )}
+          {/* Grow section will take all available space that is not taken by first and last sections */}
+          <Navbar.Section grow>
+            <MainLinks data={navbarLinks} size="xl" />
+          </Navbar.Section>
+          {/* Last section with normal height (depends on section content) */}
+          {/* <Navbar.Section>Last section</Navbar.Section> */}
+        </Navbar>
+      }
+      // header={
+      //   <Header height={60} p="xs">
+      //     {/* Header content */}
+      //   </Header>
+      // }
+      styles={(theme) => ({
+        main: {
+          backgroundColor:
+            theme.colorScheme === "dark"
+              ? theme.colors.dark[8]
+              : theme.colors.gray[0],
+        },
+      })}
+    >
+      <AllContentRoutes />
+      {/* <UploadFile /> */}
+      {/* Your application here */}
+    </AppShell>
+  )
+}
