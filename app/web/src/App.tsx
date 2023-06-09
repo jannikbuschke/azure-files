@@ -109,29 +109,26 @@ export function App() {
       navbarOffsetBreakpoint="sm"
       asideOffsetBreakpoint="sm"
       padding="md"
-      header={
-        <Header height={{ base: 50, md: 70 }} p="md">
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              height: "100%",
-            }}
-          >
-            <MediaQuery largerThan="sm" styles={{ display: "none" }}>
-              <Burger
-                opened={opened}
-                onClick={() => setOpened((o) => !o)}
-                size="sm"
-                // color={theme.colors.gray[6]}
-                mr="xl"
-              />
-            </MediaQuery>
-
-            {/* <Text>Application header</Text> */}
-          </div>
-        </Header>
-      }
+      // header={
+      //   <Header height={{ base: 50, md: 70 }} p="md">
+      //     <div
+      //       style={{
+      //         display: "flex",
+      //         alignItems: "center",
+      //         height: "100%",
+      //       }}
+      //     >
+      //       <MediaQuery largerThan="sm" styles={{ display: "none" }}>
+      //         <Burger
+      //           opened={opened}
+      //           onClick={() => setOpened((o) => !o)}
+      //           size="sm"
+      //           mr="xl"
+      //         />
+      //       </MediaQuery>
+      //     </div>
+      //   </Header>
+      // }
       navbar={
         <Navbar
           hidden={!opened}
@@ -143,8 +140,8 @@ export function App() {
           {/* <Navbar.Section>First section</Navbar.Section> */}
           {data.message && (
             <Navbar.Section>
-              <Card>
-                <Card.Section bg={data.message.color} p="xs">
+              <Card radius={0}>
+                <Card.Section opacity={0.8} bg={data.message.color} p="xs">
                   {data.message.title}
                 </Card.Section>
               </Card>

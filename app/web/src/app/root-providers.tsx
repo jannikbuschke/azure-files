@@ -16,8 +16,8 @@ export function RootProvider({ children }: { children: React.ReactNode }) {
   return (
     <BrowserRouter>
       <QueryClientProvider client={client}>
-        <VnextAuthenticationProvider>
-          <GlowProvider value={{ componentLibrary: "mantine" }}>
+        <GlowProvider value={{ componentLibrary: "mantine" }}>
+          <VnextAuthenticationProvider>
             <GlowNotificationProvider>
               <TypedNotificationsProvider>
                 <MantineProvider
@@ -31,8 +31,8 @@ export function RootProvider({ children }: { children: React.ReactNode }) {
                 </MantineProvider>
               </TypedNotificationsProvider>
             </GlowNotificationProvider>
-          </GlowProvider>
-        </VnextAuthenticationProvider>
+          </VnextAuthenticationProvider>
+        </GlowProvider>
       </QueryClientProvider>
     </BrowserRouter>
   )

@@ -1,7 +1,6 @@
 ﻿namespace AzureFiles
 
 open System.Runtime.CompilerServices
-open Marten
 open Marten.Events
 
 [<Extension>]
@@ -19,7 +18,3 @@ type Extensions() =
 
     ty.Append(id, [ e :> obj ]) |> ignore
     ()
-// match e with
-// | LowresVersionCreated e -> ty.Append(id, [ e :> obj ])
-// | TagAdded e -> ty.Append(id, [ e :> obj ])
-// | TagRemoved e -> ty.Append(id, [ e :> obj ])

@@ -1,27 +1,30 @@
 namespace AzureFiles
 
+open System
 open System.Text.Json.Serialization
 open System.Threading.Tasks
+open AzFiles.Exif
 open Azure.Storage.Blobs
 open Marten
 open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.Configuration
+open Microsoft.Extensions.Logging
 
 type DuplicateCheckResult =
   | IsNew
   | IsDuplicate of FileId
 
+type FileIsDuplicate = { FileId: FileId; Filename: string }
+
 type ErrorResult =
-  | FileIsDuplicate of duplicateFileId: FileId * filename: string
+  | FileIsDuplicate of FileIsDuplicate
   | NetworkError of string
 
-// type LocalFile =
-//   { Id: FileId
-//     LocalFilePath: string
-//     LocalChecksum: Checksum
-//     DuplicateCheckResult: DuplicateCheckResult option }
-
-type Checksum = Checksum of string
+type Checksum =
+  | Checksum of string
+  member this.value() =
+    match this with
+    | Checksum s -> s
 
 type FormFileScanned =
   { Id: FileId
@@ -54,6 +57,14 @@ type LowresVersionCreated =
     // blob id?
     VariantName: string }
 
+type Location =
+  { Latitude: decimal
+    Longitude: decimal }
+
+type ImageInfo =
+  { DateCreated: DateTimeOffset option
+    Location: Location option }
+
 type FileSavedToStorage =
   { Filename: string
     Md5Hash: byte array
@@ -64,7 +75,8 @@ type FileSavedToStorage =
     BlobContainerName: Skippable<string>
     BlobAccountName: Skippable<string>
     BlobSequenceNumber: Skippable<int64>
-    ETag: Skippable<string> }
+    ETag: Skippable<string>
+    ImageInfo: ImageInfo option }
 
 type FileInitEvent = FileSavedToStorage of FileSavedToStorage
 
@@ -75,20 +87,27 @@ type EmptyRecord =
   { Skip: Skippable<unit> }
   static member Instance = { Skip = Skippable.Skip }
 
+type ExifDataUpdated = { Data: ExifValue list }
+
+type FileDeleted = EmptyRecord
+
 type FileEvent =
   | LowresVersionCreated of LowresVersionCreated
   | TagAdded of TagAdded
   | TagRemoved of TagRemoved
   | Deleted of EmptyRecord
+  | ExifDataUpdated of ExifDataUpdated
+  | RemovedFromInbox of EmptyRecord
+  
 
-type GlowWebRequestContext =
-  { HttpContext: HttpContext
-    UserId: string option
-    DocumentSession: IDocumentSession }
+// type GlowWebRequestContext =
+//   { HttpContext: HttpContext
+//     UserId: string option
+//     DocumentSession: IDocumentSession }
 
-type AuthenticatedWebRequestContext =
-  { HttpContext: HttpContext
-    UserId: string }
+// type AuthenticatedWebRequestContext =
+//   { HttpContext: HttpContext
+//     UserId: string }
 
 type GetContainer = unit -> Task<BlobContainerClient>
 
@@ -100,15 +119,30 @@ type IWebRequestContext =
   abstract GetInboxContainer: GetContainer
   abstract GetVariantsContainer: GetContainer
   abstract Configuration: IConfiguration
+  abstract GetLogger<'T> : unit -> ILogger<'T>
 
-type WebRequestContext =
-  { HttpContext: HttpContext
-    UserId: string option
-    DocumentSession: IDocumentSession
-    GetSrcContainer: GetContainer
-    GetInboxContainer: GetContainer
-    GetVariantsContainer: GetContainer
-    Configuration: IConfiguration }
+module WebRequestContext =
+  let getBlobContentStreamAsync (ctx: IWebRequestContext) (fileId: FileId) =
+    fun () -> 
+      task {
+        let! container = ctx.GetSrcContainer()
+        let blobClient = container.GetBlobClient(fileId.value().ToString())
+        let! s = blobClient.DownloadStreamingAsync()
+        return s.Value.Content
+      }
+
+// type WebRequestContext =
+//   { HttpContext: HttpContext
+//     UserId: string option
+//     DocumentSession: IDocumentSession
+//     GetSrcContainer: GetContainer
+//     GetInboxContainer: GetContainer
+//     GetVariantsContainer: GetContainer
+//     Configuration: IConfiguration
+//     GetLogger<'T> : unit -> ILogger<'T>
+//     }
+
+
 
 type ServiceError = { Message: string }
 

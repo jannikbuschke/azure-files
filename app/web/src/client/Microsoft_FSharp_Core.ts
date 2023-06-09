@@ -5,7 +5,7 @@
 import * as System_Collections_Generic from "./System_Collections_Generic"
 
 
-export type Unit = any
+export type Unit = {}
 export var defaultUnit: Unit = ({})
 
 
@@ -22,8 +22,4 @@ export var FSharpResult_AllCases = [ "Ok", "Error" ] as const
 export var defaultFSharpResult_Case_Ok = <T,TError>(defaultT:T,defaultTError:TError) => ({ Case: "Ok", Fields: defaultT })
 export var defaultFSharpResult_Case_Error = <T,TError>(defaultT:T,defaultTError:TError) => ({ Case: "Error", Fields: defaultTError })
 export var defaultFSharpResult = <T,TError>(defaultT:T,defaultTError:TError) => defaultFSharpResult_Case_Ok(defaultT,defaultTError) as FSharpResult<T,TError>
-
-
-export type FSharpOptionArray<T> = Array<T> // fullname Microsoft.FSharp.Core.FSharpOption`1[[AzureFiles.FileSavedToStorage, app, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]][]
-export var defaultFSharpOptionArray: <T>(t:T) => FSharpOptionArray<T> = <T>(t:T) => []
 

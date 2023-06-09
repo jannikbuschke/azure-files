@@ -1,5 +1,6 @@
 ﻿module AzFiles.Features.GetInboxFiles
 
+open System
 open System.Text.Json.Serialization
 open AzureFiles
 open Glow.Core.Actions
@@ -7,12 +8,23 @@ open MediatR
 open System.Linq
 open Marten
 open FsToolkit.ErrorHandling
+open Polly
 
-//type Tag =
-//  | StageForBlog
-//  | Publish
-//  | Keep
-//  | Remove
+type FileListViewmodel =
+  { Id: FileId
+    Filename: string
+    Url: string
+    FileDateOrCreatedAt: NodaTime.Instant
+    Inbox: bool
+    Tags: string list }
+
+  static member FromFileProjection(projection: FileProjection) =
+    { Id = projection.Key()
+      Filename = projection.Filename
+      Url = projection.Url
+      FileDateOrCreatedAt = projection.FileDateOrCreatedAt
+      Tags = projection.Tags
+      Inbox = projection.Inbox }
 
 type EmptyRecord =
   { Skip: Skippable<unit> }
@@ -21,12 +33,13 @@ type EmptyRecord =
 
 [<Action(Route = "api/get-inbox-files", AllowAnonymous = true)>]
 type GetInboxFiles() =
-  interface IRequest<FileAggregate list>
+  interface IRequest<FileListViewmodel list>
 
 type InboxFileResult =
   { Previous: FileId option
-    File: FileAggregate
-    Next: FileId option }
+    File: FileViewmodel
+    Next: FileId option
+    NextUrl: string option }
 
 [<Action(Route = "api/get-inbox-file", AllowAnonymous = true)>]
 type GetInboxFile =
@@ -34,43 +47,57 @@ type GetInboxFile =
 
   interface IRequest<InboxFileResult>
 
-// type GetIndexedFilesFilter =
-//   | EmptyTags
-//   | FilterByTag of string
+module GetInboxFile =
+  let private memoryCache =
+    new Microsoft.Extensions.Caching.Memory.MemoryCache(Microsoft.Extensions.Caching.Memory.MemoryCacheOptions())
 
-type GetBlobContainersHandler(ctx: WebRequestContext) =
+  let private memoryCacheProvider =
+    Polly.Caching.Memory.MemoryCacheProvider(memoryCache)
+  // Create a Polly cache policy using that Polly.Caching.Memory.MemoryCacheProvider instance.
+  let cachePolicy = Policy.CacheAsync(memoryCacheProvider, TimeSpan.FromMinutes(3))
 
-  interface IRequestHandler<GetInboxFiles, FileAggregate list> with
+type GetBlobContainersHandler(ctx: IWebRequestContext) =
+
+  interface IRequestHandler<GetInboxFiles, FileListViewmodel list> with
     member this.Handle(_, _) =
       task {
         let! entities =
           ctx
             .DocumentSession
-            .Query<FileAggregate>()
+            .Query<FileProjection>()
             .ToListAsync()
 
-        let result =
+        return
           entities
-            .Where(fun v -> v.Inbox = true)
-            .OrderByDescending(fun v -> v.CreatedAt)
-
-        return result |> Seq.toList
+          |> Seq.filter (fun v -> v.Inbox = true)
+          |> Seq.sortBy (fun v -> v.FileDateOrCreatedAt)
+          |> Seq.map FileListViewmodel.FromFileProjection
+          |> Seq.toList
       }
 
   interface IRequestHandler<GetInboxFile, InboxFileResult> with
     member this.Handle(request, _) =
       task {
-        let! entities =
-          ctx
-            .DocumentSession
-            .Query<FileAggregate>()
-            .ToListAsync()
+        let getInboxFiles cacheContext =
+          task {
+            let! entities =
+              ctx
+                .DocumentSession
+                .Query<FileProjection>()
+                .ToListAsync()
 
-        let result =
-          entities
-            .Where(fun v -> v.Inbox = true)
-            .OrderByDescending(fun v -> v.CreatedAt)
-          |> Seq.toList
+            let result =
+              entities
+                .Where(fun v -> v.Inbox = true)
+                .OrderBy(fun v -> v.FileDateOrCreatedAt)
+              |> Seq.toList
+
+            return result
+          }
+
+        let! result = GetInboxFile.cachePolicy.ExecuteAndCaptureAsync(getInboxFiles, Context("get-inbox-files"))
+
+        let result = result.Result
 
         let index =
           result
@@ -92,6 +119,7 @@ type GetBlobContainersHandler(ctx: WebRequestContext) =
 
         return
           { Next = next |> Option.map (fun v -> v.Key())
+            NextUrl = next |> Option.map (fun v -> v.Url)
             Previous = prev |> Option.map (fun v -> v.Key())
-            File = item }
+            File = item |> FileViewmodel.FromFileProjection }
       }

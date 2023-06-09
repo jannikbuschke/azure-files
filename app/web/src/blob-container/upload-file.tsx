@@ -1,17 +1,7 @@
 import * as React from "react"
-import {
-  Group,
-  Text,
-  useMantineTheme,
-  MantineTheme,
-  Notification,
-} from "@mantine/core"
-import {
-  useNotifications,
-  updateNotification,
-  showNotification,
-} from "@mantine/notifications"
-import { Dropzone, FileWithPath, IMAGE_MIME_TYPE } from "@mantine/dropzone"
+import { Group, Text, useMantineTheme, MantineTheme } from "@mantine/core"
+import { updateNotification, showNotification } from "@mantine/notifications"
+import { Dropzone } from "@mantine/dropzone"
 import { useNotify } from "glow-core"
 import { FSharpList } from "../client/Microsoft_FSharp_Collections"
 import { FSharpResult } from "../client/Microsoft_FSharp_Core"
@@ -21,7 +11,11 @@ import {
   TbUpload as IconUpload,
   TbPhoto as IconPhoto,
   TbX as IconX,
+  TbFileCheck,
+  TbFileUnknown,
 } from "react-icons/tb"
+import { QueryWithBoundary } from "../query"
+import { useTypedQuery } from "../client/api"
 
 // function getIconColor(status: DropzoneStatus, theme: MantineTheme) {
 //   return status.accepted
@@ -60,16 +54,36 @@ export const dropzoneChildren = (
 )
 
 export function UploadFile() {
+  const { data, refetch } = useTypedQuery("/api/auto-inbox/get-items", {
+    input: { filterActive: false },
+    placeholder: [],
+  })
   const theme = useMantineTheme()
   // const [upload] = useTypedAction("/api/upload-files")
   const [loading, setloading] = React.useState(false)
   const { notifyError, notifySuccess, notifyInfo } = useNotify()
 
-  useSubscription("AzFiles.EventPublisher+FileEventNotification", (v) => {
-    v.events.forEach((e) => {
-      notifyInfo(e?.Case || "some event happend")
-    })
-  })
+  useSubscription(
+    "Glow.core.fs.MartenAndPgsql.EventPublisher+EventNotification",
+    (v) => {
+      console.log(
+        "Glow.core.fs.MartenAndPgsql.EventPublisher+EventNotification",
+        v,
+      )
+      refetch()
+    },
+    [],
+  )
+
+  useSubscription(
+    "AzFiles.EventPublisher+FileEventNotification",
+    (v) => {
+      v.events.forEach((e) => {
+        notifyInfo(e?.Case || "some event happend")
+      })
+    },
+    [],
+  )
   const [files, setFiles] = React.useState(
     [] as {
       file: File
@@ -90,19 +104,27 @@ export function UploadFile() {
         onDrop={async (files) => {
           for (let index = 0; index < files.length; index++) {
             // const array = files.slice(index * 5, index * 5 + 5)
-            showNotification({
-              id: "uploading-files-" + index,
-              title: "Uploading files",
-              message: `Uploading ${files.length} files (${index + 1})`,
-              color: "blue",
-              loading: true,
-              autoClose: true,
-            })
+            if (index === 0) {
+              showNotification({
+                id: "uploading-files",
+                title: "Uploading files",
+                message: `Uploading ${files.length} files (${index + 1})`,
+                color: "blue",
+                loading: true,
+                autoClose: false,
+              })
+            } else {
+              updateNotification({
+                id: "uploading-files",
+                message: `Uploading ${files.length} files (${index + 1})`,
+                autoClose: false,
+              })
+            }
             try {
               const data = new FormData()
               data.append("file", files[index]!)
 
-              const response = await fetch("/api/files/upload-files-2", {
+              const response = await fetch("/upload", {
                 headers: {
                   "x-submit-intent": "execute",
                 },
@@ -118,14 +140,14 @@ export function UploadFile() {
               const d = (await response.json()) as FSharpList<
                 FSharpResult<FileSavedToStorage, ErrorResult>
               >
-              updateNotification({
-                id: "uploading-files-" + index,
-                title: "Uploading files",
-                message: `Uploaded a file`,
-                color: "green",
-                loading: false,
-                autoClose: true,
-              })
+              // updateNotification({
+              //   id: "uploading-files-" + index,
+              //   // title: "File successfully uploaded",
+              //   message: `File successfully uploaded`,
+              //   color: "green",
+              //   loading: false,
+              //   autoClose: true,
+              // })
             } catch (E: any) {
               console.log("catch error")
               updateNotification({
@@ -140,6 +162,14 @@ export function UploadFile() {
               })
               setloading(false)
             } finally {
+              updateNotification({
+                id: "uploading-files",
+                // title: "File successfully uploaded",
+                message: `Files successfully uploaded`,
+                color: "green",
+                loading: false,
+                autoClose: true,
+              })
               setloading(false)
             }
           }
@@ -188,7 +218,7 @@ export function UploadFile() {
         </div>
         {/* {(status) => <>{dropzoneChildren(theme)}</>} */}
       </Dropzone>
-      {Object.keys(filemap).map((v) => {
+      {/* {Object.keys(filemap).map((v) => {
         const file = filemap[v]
         return (
           <div>
@@ -209,20 +239,24 @@ export function UploadFile() {
             </Text>
           </div>
         )
-      })}
-      {/* {files.map((v) => (
-        <div>
-          {v.name} {v.status}
+      })} */}
+      {/* <QueryWithBoundary
+        name={"/api/auto-inbox/get-items"}
+        input={{
+          filterActive: false,
+        }}
+      > */}
+      {(data) => (
+        <div style={{}}>
+          {data.map((v) => (
+            <div>
+              {v.id} {v.fileId}{" "}
+              {v.processed ? <TbFileCheck /> : <TbFileUnknown />}
+            </div>
+          ))}
         </div>
-      ))} */}
-      {/* <Notification
-        loading={loading}
-        title="Uploading data to the server"
-        disallowClose
-      >
-        Please wait until data is uploaded, you cannot close this notification
-        yet
-      </Notification> */}
+      )}
+      {/* </QueryWithBoundary> */}
     </>
   )
 }

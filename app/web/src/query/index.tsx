@@ -33,7 +33,10 @@ export function LoadBoundary({
 type QueryProps<QueryName extends keyof QueryTable> = {
   name: QueryName
   input: QueryInputs[QueryName]
-  children: (data: QueryOutputs[QueryName]) => React.ReactElement
+  children: (
+    data: QueryOutputs[QueryName],
+    controls: { refetch: () => void },
+  ) => React.ReactElement
   // placeholder: QueryOutputs[QueryName]
   // onSuccess?: (payload: Outputs[ActionName]) => void
   // onError?: (error: ProblemDetails) => void
@@ -59,7 +62,7 @@ export function Query<QueryName extends keyof QueryTable>({
   children,
 }: // placeholder,
 QueryProps<QueryName>) {
-  const { data } = useTypedQuery(name, {
+  const { data, refetch } = useTypedQuery(name, {
     input: input,
     placeholder: null as any,
     queryOptions: {
@@ -69,5 +72,5 @@ QueryProps<QueryName>) {
   })
 
   // not sure why typescript does not infer data correctly
-  return children(data)
+  return children(data, { refetch })
 }

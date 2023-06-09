@@ -1,7 +1,12 @@
 ﻿namespace AzureFiles
 
 
-type FileId = FileId of System.Guid
+type FileId =
+  | FileId of System.Guid
+
+  member this.value() =
+    let (FileId id) = this
+    id
 
 module FileId =
 

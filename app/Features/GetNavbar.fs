@@ -15,7 +15,7 @@ type Navbar = { Message: Message option }
 type GetNavbar() =
   interface IRequest<Navbar>
 
-type GetNavbarHandler(session: WebRequestContext) =
+type GetNavbarHandler(session: IWebRequestContext) =
   interface IRequestHandler<GetNavbar, Navbar> with
     member this.Handle(request, token) =
       task {

@@ -74,6 +74,7 @@ export type BlobProperties = {
   copyProgress: System.String
   copySource: System.Uri
   copyStatus: CopyStatus
+  blobCopyStatus: System.Nullable<CopyStatus>
   isIncrementalCopy: System.Boolean
   destinationSnapshot: System.String
   leaseDuration: LeaseDurationType
@@ -120,6 +121,7 @@ export var defaultBlobProperties: BlobProperties = {
   copyProgress: '',
   copySource: System.defaultUri,
   copyStatus: defaultCopyStatus,
+  blobCopyStatus: null,
   isIncrementalCopy: false,
   destinationSnapshot: '',
   leaseDuration: defaultLeaseDurationType,

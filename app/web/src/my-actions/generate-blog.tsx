@@ -2,6 +2,7 @@ import { Button, Group } from "@mantine/core"
 import * as React from "react"
 import { useTypedAction } from "../ts-models/api"
 import { showNotification, updateNotification } from "@mantine/notifications"
+import { AsyncButton } from "../typed-api/ActionButton"
 
 let i = 0
 
@@ -41,6 +42,9 @@ export function GenerateBlogActions() {
       >
         Production
       </Button>
+      <AsyncButton action="/api/my/write-obsidian-notes" values={{}}>
+        Generate obsidian photos
+      </AsyncButton>
     </Group>
   )
 }

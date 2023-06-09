@@ -73,7 +73,6 @@ let resizeWithImageSharp (path: string) (mainAxisLength: int) =
     return targetSize, result
   }
 
-
 let resize (stream: System.IO.Stream) (dimension: Dimension) (quality: SKFilterQuality) =
   use bitmap = SKBitmap.Decode(stream)
 
@@ -100,4 +99,3 @@ let asyncListProcess (input: string list) =
   |> Async.Sequential
   |> Async.Ignore
   |> Async.RunSynchronously
-  |> ignore

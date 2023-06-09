@@ -12,9 +12,9 @@ type GetTags =
 [<Action(Route = "api/get-images", AllowAnonymous = true)>]
 type GetImages =
   { IncludingTags: string list }
-  interface IRequest<FileAggregate list>
+  interface IRequest<FileProjection list>
 
-type GetTagsHandler(ctx: WebRequestContext) =
+type GetTagsHandler(ctx: IWebRequestContext) =
   interface IRequestHandler<GetTags, string list> with
     member this.Handle(request, token) =
       task {
@@ -27,7 +27,7 @@ type GetTagsHandler(ctx: WebRequestContext) =
           |> Seq.toList
       }
 
-  interface IRequestHandler<GetImages, FileAggregate list> with
+  interface IRequestHandler<GetImages, FileProjection list> with
     member this.Handle(request, token) =
       task {
         let! entity = ctx.DocumentSession.GetFiles()

@@ -7,7 +7,6 @@ open Marten
 open MediatR
 open System.Linq
 open Glow.Core.Actions
-open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.Logging
 
 type BlogType =
@@ -21,12 +20,13 @@ type GenerateBlogData() =
 
 type BlogPhoto =
   { Id: Guid
-    FullHdUrl: string
     OriginalUrl: string
-    ThumbnailUrl: string
-    LowresUrl: string }
+  // FullHdUrl: string
+  // ThumbnailUrl: string
+  // LowresUrl: string
+   }
 
-type GenerateBlogDataHandler(session: IDocumentSession, logger: ILogger<GenerateBlogDataHandler>, configuration: IConfiguration) =
+type GenerateBlogDataHandler(session: IDocumentSession, logger: ILogger<GenerateBlogDataHandler>) =
   interface IRequestHandler<GenerateBlogData, MediatR.Unit> with
     member this.Handle(request, token) =
       logger.LogInformation("generate blog")
@@ -34,7 +34,7 @@ type GenerateBlogDataHandler(session: IDocumentSession, logger: ILogger<Generate
       task {
         let! result =
           session
-            .Query<FileAggregate>()
+            .Query<FileProjection>()
             .Where(fun v -> v.Tags.Any(fun x -> x = request.TagName))
             .ToListAsync()
 
@@ -42,19 +42,25 @@ type GenerateBlogDataHandler(session: IDocumentSession, logger: ILogger<Generate
         let data =
           result
           //          |> Seq.sortBy(fun v-> v.Filename)
-          |> Seq.map
-               (fun v ->
-                 { Id = v.Id
-                   OriginalUrl = v.Url.Value
-                   ThumbnailUrl = v.ThumbnailUrl.Value
-                   LowresUrl = v.LowresUrl.Value
-                   FullHdUrl = v.FullHdUrl.Value })
+          |> Seq.map (fun v ->
+            { Id = v.Id
+              OriginalUrl = v.Url
+            // ThumbnailUrl = v.ThumbnailUrl.Value
+            // LowresUrl = v.LowresUrl.Value
+            // FullHdUrl = v.FullHdUrl.Value
+
+            })
           |> Seq.toList
 
         let serialized =
           System.Text.Json.JsonSerializer.Serialize(data, JsonSerializerOptions(WriteIndented = true))
 
-        do! System.IO.File.WriteAllTextAsync($"C:\\home\\jannik\\repos\\travel-photo-blog-vite\\src\\blog-{request.TagName}.json", serialized)
+        do!
+          System.IO.File.WriteAllTextAsync(
+            $"C:\\home\\jannik\\repos\\travel-photo-blog-vite\\src\\blog-{request.TagName}.json",
+            serialized
+          )
+
         logger.LogInformation("done")
 
         return MediatR.Unit.Value

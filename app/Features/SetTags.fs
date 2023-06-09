@@ -12,16 +12,20 @@ type SetTags =
     Tags: string list }
   interface IRequest<ServiceResult<unit>>
 
-type SetTagsHandler(ctx: WebRequestContext) =
+type SetTagsHandler(ctx: IWebRequestContext) =
 
   interface IRequestHandler<SetTags, ServiceResult<unit>> with
     member this.Handle(request, _) =
       taskResult {
-        let tags = request.Tags |> Seq.toList
+        // request.Tags
+        // |> Seq.toList
+        // |> List.iter (fun t ->
+        //   ctx.DocumentSession.Events.AppendFileStream(request.FileId |> FileId.create, FileEvent.TagAdded { Name = t }))
 
-        tags
-        |> List.iter (fun t ->
-          ctx.DocumentSession.Events.AppendFileStream(request.FileId |> FileId.create, FileEvent.TagAdded { Name = t }))
+        request.Tags
+        |> Seq.toList
+        |> List.map (fun v -> (request.FileId |> FileId.create, FileEvent.TagAdded { Name = v }))
+        |> List.iter ctx.DocumentSession.Events.AppendFileStream
 
         do! ctx.DocumentSession.SaveChangesAsync()
 

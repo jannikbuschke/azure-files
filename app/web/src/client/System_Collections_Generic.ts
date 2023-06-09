@@ -5,8 +5,8 @@
 import * as System from "./System"
 
 
-export type List<T> = Array<T>
-export var defaultList: <T>(defaultT:T) => List<T> = <T>(defaultT:T) => []
+export type IEnumerable<T> = Array<T>
+export var defaultIEnumerable: <T>(defaultT:T) => IEnumerable<T> = <T>(defaultT:T) => []
 
 
 export type ICollection<T> = {
@@ -35,8 +35,8 @@ export type IList<T> = Array<T>
 export var defaultIList: <T>(defaultT:T) => IList<T> = <T>(defaultT:T) => []
 
 
-export type IEnumerable<T> = Array<T>
-export var defaultIEnumerable: <T>(defaultT:T) => IEnumerable<T> = <T>(defaultT:T) => []
+export type List<T> = Array<T>
+export var defaultList: <T>(defaultT:T) => List<T> = <T>(defaultT:T) => []
 
 
 export type KeyValuePair<TKey,TValue> = ({Key:TKey,Value:TValue})

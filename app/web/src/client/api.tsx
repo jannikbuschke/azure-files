@@ -5,26 +5,28 @@ import { useAction, useSubmit, UseSubmit, ProblemDetails } from "glow-core"
 import { Formik, FormikConfig, FormikFormProps, FormikProps } from "formik"
 import { Form } from "formik-antd"
 import * as System from "./System"
-import * as AzFiles from "./AzFiles"
-import * as Microsoft_FSharp_Collections from "./Microsoft_FSharp_Collections"
+import * as Glow_Core_MartenAndPgsql from "./Glow_Core_MartenAndPgsql"
 import * as AzureFiles from "./AzureFiles"
+import * as AzFiles_Features from "./AzFiles_Features"
+import * as AzFiles_GenerateObsidianNotes from "./AzFiles_GenerateObsidianNotes"
+import * as AzFiles from "./AzFiles"
 import * as System_Text_Json_Serialization from "./System_Text_Json_Serialization"
 import * as Microsoft_FSharp_Core from "./Microsoft_FSharp_Core"
-import * as Glow_core_fs_MartenAndPgsql from "./Glow_core_fs_MartenAndPgsql"
-import * as System_Collections_Generic from "./System_Collections_Generic"
-import * as AzFiles_Features from "./AzFiles_Features"
+import * as Microsoft_FSharp_Collections from "./Microsoft_FSharp_Collections"
 import * as Glow_TestAutomation from "./Glow_TestAutomation"
 import * as Glow_Azure_AzureKeyVault from "./Glow_Azure_AzureKeyVault"
 import * as Glow_Core_Profiles from "./Glow_Core_Profiles"
-import * as Glow_Core_MartenAndPgsql from "./Glow_Core_MartenAndPgsql"
 import * as MediatR from "./MediatR"
 import * as Glow_Api from "./Glow_Api"
 import * as Glow_Debug from "./Glow_Debug"
+import * as System_Collections_Generic from "./System_Collections_Generic"
 import * as Azure_Storage_Blobs_Models from "./Azure_Storage_Blobs_Models"
 import * as Azure from "./Azure"
 import * as NodaTime from "./NodaTime"
+import * as SixLabors_ImageSharp from "./SixLabors_ImageSharp"
 
 export type QueryInputs = {
+  "/api/debug/get-documents": Glow_Core_MartenAndPgsql.GetDocuments,
   "/api/blob/get-file": AzureFiles.GetBlobFile,
   "/api/files/get-indexed-files": AzureFiles.GetIndexedFiles,
   "/api/files/get-indexed-file": AzureFiles.GetIndexedFile,
@@ -32,16 +34,18 @@ export type QueryInputs = {
   "/api/file/get-next-untagged": AzureFiles.GetNextUntaggedBlob,
   "/api/file/get-all-untagged": AzureFiles.GetAllUntagged,
   "/api/blob/get-containers": AzureFiles.GetBlobContainers,
+  "/api/blob/get-blob-metadata": AzFiles_Features.GetBlobMetadata,
+  "/api/blob/get-exif-data-from-blob-file": AzFiles_Features.GetExifDataFromBlobFile,
   "/api/get-navbar": AzFiles_Features.GetNavbar,
   "/api/get-tags": AzFiles_Features.GetTags,
   "/api/get-images": AzFiles_Features.GetImages,
   "/api/get-inbox-files": AzFiles_Features.GetInboxFiles,
   "/api/get-inbox-file": AzFiles_Features.GetInboxFile,
+  "/api/auto-inbox/get-items": AzFiles.GetLobbyItems,
   "/api/glow/test-automation/get-available-fake-users": Glow_TestAutomation.GetAvailableFakeUsers,
   "/glow/profile/get-profile": Glow_Core_Profiles.GetProfile,
   "/api/gebug/get-document-names": Glow_Core_MartenAndPgsql.GetKnownDocumentNames,
-  "/api/debug/get-documents": Glow_Core_MartenAndPgsql.GetDocuments,
-  "/api/es/get-events2": Glow_Core_MartenAndPgsql.GetEsEvents2,
+  "/api/es/get-events": Glow_Core_MartenAndPgsql.GetEsEvents,
   "/api/es/get-events-without-validation": Glow_Core_MartenAndPgsql.GetEsEventsWithoutValidation,
   "/api/pgsql/get-activity": Glow_Core_MartenAndPgsql.GetPgsqlActivities,
   "/api/events/get-last-modified": Glow_Core_MartenAndPgsql.GetLastModified,
@@ -49,23 +53,26 @@ export type QueryInputs = {
   "/api/glow/pgsql/get-activity": Glow_Debug.GetPgsqlActivities,
 }
 export type QueryOutputs = {
+  "/api/debug/get-documents": System_Collections_Generic.IEnumerable<System.Object>,
   "/api/blob/get-file": AzureFiles.AzureFilesBlobProperties,
-  "/api/files/get-indexed-files": System_Collections_Generic.List<AzureFiles.FileAggregate>,
-  "/api/files/get-indexed-file": AzureFiles.FileAggregate,
+  "/api/files/get-indexed-files": System_Collections_Generic.List<AzureFiles.FileProjection>,
+  "/api/files/get-indexed-file": AzureFiles.FileProjection,
   "/api/blob/get-files": System_Collections_Generic.List<Azure_Storage_Blobs_Models.BlobItem>,
-  "/api/file/get-next-untagged": AzureFiles.FileAggregate,
-  "/api/file/get-all-untagged": System_Collections_Generic.List<AzureFiles.FileAggregate>,
+  "/api/file/get-next-untagged": AzureFiles.FileProjection,
+  "/api/file/get-all-untagged": System_Collections_Generic.List<AzureFiles.FileProjection>,
   "/api/blob/get-containers": System_Collections_Generic.List<Azure_Storage_Blobs_Models.BlobContainerItem>,
+  "/api/blob/get-blob-metadata": System_Collections_Generic.IDictionary<System.String,System.String>,
+  "/api/blob/get-exif-data-from-blob-file": Microsoft_FSharp_Core.FSharpOption<Microsoft_FSharp_Collections.FSharpList<AzFiles.ExifValue>>,
   "/api/get-navbar": AzFiles_Features.Navbar,
   "/api/get-tags": Microsoft_FSharp_Collections.FSharpList<System.String>,
-  "/api/get-images": Microsoft_FSharp_Collections.FSharpList<AzureFiles.FileAggregate>,
-  "/api/get-inbox-files": Microsoft_FSharp_Collections.FSharpList<AzureFiles.FileAggregate>,
+  "/api/get-images": Microsoft_FSharp_Collections.FSharpList<AzureFiles.FileProjection>,
+  "/api/get-inbox-files": Microsoft_FSharp_Collections.FSharpList<AzFiles_Features.FileListViewmodel>,
   "/api/get-inbox-file": AzFiles_Features.InboxFileResult,
+  "/api/auto-inbox/get-items": Microsoft_FSharp_Collections.FSharpList<AzFiles.LobbyItem>,
   "/api/glow/test-automation/get-available-fake-users": Glow_TestAutomation.FakeUsers,
   "/glow/profile/get-profile": Glow_Core_Profiles.Profile,
   "/api/gebug/get-document-names": Microsoft_FSharp_Collections.FSharpList<System.String>,
-  "/api/debug/get-documents": System_Collections_Generic.IEnumerable<System.Object>,
-  "/api/es/get-events2": Microsoft_FSharp_Collections.FSharpList<Glow_Core_MartenAndPgsql.EventViewmodel>,
+  "/api/es/get-events": Microsoft_FSharp_Collections.FSharpList<Glow_Core_MartenAndPgsql.EventViewmodel>,
   "/api/es/get-events-without-validation": System_Collections_Generic.List<Glow_Core_MartenAndPgsql.EventViewmodel2>,
   "/api/pgsql/get-activity": System_Collections_Generic.List<Glow_Core_MartenAndPgsql.Activity>,
   "/api/events/get-last-modified": Glow_Core_MartenAndPgsql.StreamInfo,
@@ -77,8 +84,8 @@ export type Outputs = {
   "/api/blob/delete-file": MediatR.Unit,
   "/api/upload-form-files": Microsoft_FSharp_Collections.FSharpList<Microsoft_FSharp_Core.FSharpResult<AzureFiles.FileSavedToStorage,System.String>>,
   "/api/test-action": Microsoft_FSharp_Collections.FSharpList<Microsoft_FSharp_Core.FSharpResult<AzureFiles.FileSavedToStorage,AzureFiles.ErrorResult>>,
-  "/api/upload-system-files": System_Collections_Generic.IEnumerable<Microsoft_FSharp_Core.FSharpOption<AzureFiles.FileSavedToStorage>>,
-  "/api/rename-system-files": System_Collections_Generic.IEnumerable<System.String>,
+  "/api/remove-tagged-images-from-inbox": Microsoft_FSharp_Core.FSharpResult<Microsoft_FSharp_Core.Unit,AzureFiles.ServiceError>,
+  "/api/my/write-obsidian-notes": Microsoft_FSharp_Core.FSharpResult<MediatR.Unit,AzureFiles.ServiceError>,
   "/api/my/write-blog-data": MediatR.Unit,
   "/api/file/delete-file": Microsoft_FSharp_Core.FSharpResult<Microsoft_FSharp_Core.Unit,AzureFiles.ServiceError>,
   "/api/file/set-tags": Microsoft_FSharp_Core.FSharpResult<Microsoft_FSharp_Core.Unit,AzureFiles.ServiceError>,
@@ -95,8 +102,8 @@ export type Actions = {
   "/api/blob/delete-file": AzureFiles.DeleteBlobFile,
   "/api/upload-form-files": AzureFiles.UploadFormFiles,
   "/api/test-action": AzureFiles.TestAction,
-  "/api/upload-system-files": AzureFiles.UploadSystemFiles,
-  "/api/rename-system-files": AzureFiles.RenameSystemFiles,
+  "/api/remove-tagged-images-from-inbox": AzFiles_Features.RemoveTaggedImagesFromInbox,
+  "/api/my/write-obsidian-notes": AzFiles_GenerateObsidianNotes.GenerateObsidianNotes,
   "/api/my/write-blog-data": AzFiles.GenerateBlogData,
   "/api/file/delete-file": AzFiles_Features.DeleteFile,
   "/api/file/set-tags": AzFiles_Features.SetTags,

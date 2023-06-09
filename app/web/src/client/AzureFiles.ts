@@ -5,64 +5,11 @@
 import * as System from "./System"
 import * as System_Text_Json_Serialization from "./System_Text_Json_Serialization"
 import * as Microsoft_FSharp_Core from "./Microsoft_FSharp_Core"
-import * as System_Collections_Generic from "./System_Collections_Generic"
 import * as Azure_Storage_Blobs_Models from "./Azure_Storage_Blobs_Models"
 import * as NodaTime from "./NodaTime"
 import * as Microsoft_FSharp_Collections from "./Microsoft_FSharp_Collections"
-
-export type Dimension = {
-  width: System.Int32
-  height: System.Int32
-}
-export var defaultDimension: Dimension = {
-  width: 0,
-  height: 0
-}
-
-export type LowresVersionCreated = {
-  dimension: Dimension
-  url: System.String
-  variantName: System.String
-}
-export var defaultLowresVersionCreated: LowresVersionCreated = {
-  dimension: defaultDimension,
-  url: '',
-  variantName: ''
-}
-
-export type TagAdded = {
-  name: System.String
-}
-export var defaultTagAdded: TagAdded = {
-  name: ''
-}
-
-export type TagRemoved = {
-  name: System.String
-}
-export var defaultTagRemoved: TagRemoved = {
-  name: ''
-}
-
-export type EmptyRecord = {
-  skip: System_Text_Json_Serialization.Skippable<Microsoft_FSharp_Core.Unit>
-}
-export var defaultEmptyRecord: EmptyRecord = {
-  skip: undefined
-}
-
-export type FileEvent_Case_LowresVersionCreated = { Case: "LowresVersionCreated", Fields: LowresVersionCreated }
-export type FileEvent_Case_TagAdded = { Case: "TagAdded", Fields: TagAdded }
-export type FileEvent_Case_TagRemoved = { Case: "TagRemoved", Fields: TagRemoved }
-export type FileEvent_Case_Deleted = { Case: "Deleted", Fields: EmptyRecord }
-export type FileEvent = FileEvent_Case_LowresVersionCreated | FileEvent_Case_TagAdded | FileEvent_Case_TagRemoved | FileEvent_Case_Deleted
-export type FileEvent_Case = "LowresVersionCreated" | "TagAdded" | "TagRemoved" | "Deleted"
-export var FileEvent_AllCases = [ "LowresVersionCreated", "TagAdded", "TagRemoved", "Deleted" ] as const
-export var defaultFileEvent_Case_LowresVersionCreated = { Case: "LowresVersionCreated", Fields: defaultLowresVersionCreated }
-export var defaultFileEvent_Case_TagAdded = { Case: "TagAdded", Fields: defaultTagAdded }
-export var defaultFileEvent_Case_TagRemoved = { Case: "TagRemoved", Fields: defaultTagRemoved }
-export var defaultFileEvent_Case_Deleted = { Case: "Deleted", Fields: defaultEmptyRecord }
-export var defaultFileEvent = defaultFileEvent_Case_LowresVersionCreated as FileEvent
+import * as AzFiles from "./AzFiles"
+import * as System_Collections_Generic from "./System_Collections_Generic"
 
 export type GetBlobFile = {
   itemId: System.String
@@ -132,22 +79,6 @@ export type TestAction = {
 export var defaultTestAction: TestAction = {
 }
 
-export type UploadSystemFiles = {
-  filePaths: System_Collections_Generic.List<System.String>
-}
-export var defaultUploadSystemFiles: UploadSystemFiles = {
-  filePaths: []
-}
-
-export type RenameSystemFiles = {
-  files: System_Collections_Generic.List<System.String>
-  folderName: System.String
-}
-export var defaultRenameSystemFiles: RenameSystemFiles = {
-  files: [],
-  folderName: ''
-}
-
 export type GetBlobContainers = {
 }
 export var defaultGetBlobContainers: GetBlobContainers = {
@@ -159,6 +90,13 @@ export type FileId_Case = "FileId"
 export var FileId_AllCases = [ "FileId" ] as const
 export var defaultFileId_Case_FileId = '00000000-0000-0000-0000-000000000000'
 export var defaultFileId = defaultFileId_Case_FileId as FileId
+
+export type EmptyRecord = {
+  skip: System_Text_Json_Serialization.Skippable<Microsoft_FSharp_Core.Unit>
+}
+export var defaultEmptyRecord: EmptyRecord = {
+  skip: undefined
+}
 
 export type AzureFilesBlobProperties = {
   properties: Azure_Storage_Blobs_Models.BlobProperties
@@ -176,6 +114,15 @@ export var Checksum_AllCases = [ "Checksum" ] as const
 export var defaultChecksum_Case_Checksum = ''
 export var defaultChecksum = defaultChecksum_Case_Checksum as Checksum
 
+export type Dimension = {
+  width: System.Int32
+  height: System.Int32
+}
+export var defaultDimension: Dimension = {
+  width: 0,
+  height: 0
+}
+
 export type ImageVariant = {
   url: System.String
   dimension: Dimension
@@ -185,33 +132,53 @@ export var defaultImageVariant: ImageVariant = {
   dimension: defaultDimension
 }
 
-export type FileAggregate = {
+export type FileProjection = {
   id: System.Guid
   createdAt: NodaTime.Instant
-  url: Microsoft_FSharp_Core.FSharpOption<System.String>
+  url: System.String
   filename: System.String
   md5Hash: System_Collections_Generic.IEnumerable<System.Byte>
-  inbox: System.Boolean
+  removedFromInboxAt: Microsoft_FSharp_Core.FSharpOption<NodaTime.Instant>
   localMd5Hash: Checksum
   tags: Microsoft_FSharp_Collections.FSharpList<System.String>
-  thumbnailUrl: Microsoft_FSharp_Core.FSharpOption<System.String>
-  lowresUrl: Microsoft_FSharp_Core.FSharpOption<System.String>
-  fullHdUrl: Microsoft_FSharp_Core.FSharpOption<System.String>
-  variants: Microsoft_FSharp_Collections.FSharpList<ImageVariant>
+  lowresVersions: System_Text_Json_Serialization.Skippable<Microsoft_FSharp_Collections.FSharpList<ImageVariant>>
+  exifData: Microsoft_FSharp_Collections.FSharpList<AzFiles.ExifValue>
+  dateTimeOriginal: Microsoft_FSharp_Core.FSharpOption<NodaTime.Instant>
+  fileDateOrCreatedAt: NodaTime.Instant
+  inbox: System.Boolean
 }
-export var defaultFileAggregate: FileAggregate = {
+export var defaultFileProjection: FileProjection = {
   id: '00000000-0000-0000-0000-000000000000',
   createdAt: "9999-12-31T23:59:59.999999999Z",
-  url: null,
+  url: '',
   filename: '',
   md5Hash: [],
-  inbox: false,
+  removedFromInboxAt: null,
   localMd5Hash: defaultChecksum,
   tags: [] ,
-  thumbnailUrl: null,
-  lowresUrl: null,
-  fullHdUrl: null,
-  variants: [] 
+  lowresVersions: undefined,
+  exifData: [] ,
+  dateTimeOriginal: null,
+  fileDateOrCreatedAt: "9999-12-31T23:59:59.999999999Z",
+  inbox: false
+}
+
+export type Location = {
+  latitude: System.Decimal
+  longitude: System.Decimal
+}
+export var defaultLocation: Location = {
+  latitude: System.defaultDecimal,
+  longitude: System.defaultDecimal
+}
+
+export type ImageInfo = {
+  dateCreated: Microsoft_FSharp_Core.FSharpOption<System.DateTimeOffset>
+  location: Microsoft_FSharp_Core.FSharpOption<Location>
+}
+export var defaultImageInfo: ImageInfo = {
+  dateCreated: null,
+  location: null
 }
 
 export type FileSavedToStorage = {
@@ -225,6 +192,7 @@ export type FileSavedToStorage = {
   blobAccountName: System_Text_Json_Serialization.Skippable<System.String>
   blobSequenceNumber: System_Text_Json_Serialization.Skippable<System.Int64>
   eTag: System_Text_Json_Serialization.Skippable<System.String>
+  imageInfo: Microsoft_FSharp_Core.FSharpOption<ImageInfo>
 }
 export var defaultFileSavedToStorage: FileSavedToStorage = {
   filename: '',
@@ -236,15 +204,25 @@ export var defaultFileSavedToStorage: FileSavedToStorage = {
   blobContainerName: undefined,
   blobAccountName: undefined,
   blobSequenceNumber: undefined,
-  eTag: undefined
+  eTag: undefined,
+  imageInfo: null
 }
 
-export type ErrorResult_Case_FileIsDuplicate = { Case: "FileIsDuplicate", Fields: { duplicateFileId: FileId, filename: System.String } }
+export type FileIsDuplicate = {
+  fileId: FileId
+  filename: System.String
+}
+export var defaultFileIsDuplicate: FileIsDuplicate = {
+  fileId: defaultFileId,
+  filename: ''
+}
+
+export type ErrorResult_Case_FileIsDuplicate = { Case: "FileIsDuplicate", Fields: FileIsDuplicate }
 export type ErrorResult_Case_NetworkError = { Case: "NetworkError", Fields: System.String }
 export type ErrorResult = ErrorResult_Case_FileIsDuplicate | ErrorResult_Case_NetworkError
 export type ErrorResult_Case = "FileIsDuplicate" | "NetworkError"
 export var ErrorResult_AllCases = [ "FileIsDuplicate", "NetworkError" ] as const
-export var defaultErrorResult_Case_FileIsDuplicate = { Case: "FileIsDuplicate", Fields: {  duplicateFileId: defaultFileId,  filename: '' }  }
+export var defaultErrorResult_Case_FileIsDuplicate = { Case: "FileIsDuplicate", Fields: defaultFileIsDuplicate }
 export var defaultErrorResult_Case_NetworkError = { Case: "NetworkError", Fields: '' }
 export var defaultErrorResult = defaultErrorResult_Case_FileIsDuplicate as ErrorResult
 
@@ -254,4 +232,46 @@ export type ServiceError = {
 export var defaultServiceError: ServiceError = {
   message: ''
 }
+
+export type FileViewmodel = {
+  id: System.Guid
+  createdAt: NodaTime.Instant
+  url: System.String
+  filename: System.String
+  md5Hash: System_Collections_Generic.IEnumerable<System.Byte>
+  removedFromInboxAt: Microsoft_FSharp_Core.FSharpOption<NodaTime.Instant>
+  localMd5Hash: Checksum
+  tags: Microsoft_FSharp_Collections.FSharpList<System.String>
+  exifData: Microsoft_FSharp_Collections.FSharpList<AzFiles.ExifValue>
+  dateTimeOriginal: Microsoft_FSharp_Core.FSharpOption<NodaTime.Instant>
+  dateTime: Microsoft_FSharp_Core.FSharpOption<NodaTime.Instant>
+  dateTimeDigitized: Microsoft_FSharp_Core.FSharpOption<NodaTime.Instant>
+  fileDateOrCreatedAt: NodaTime.Instant
+  location: Microsoft_FSharp_Core.FSharpOption<System.Tuple<System.DecimalArray,System.DecimalArray>>
+}
+export var defaultFileViewmodel: FileViewmodel = {
+  id: '00000000-0000-0000-0000-000000000000',
+  createdAt: "9999-12-31T23:59:59.999999999Z",
+  url: '',
+  filename: '',
+  md5Hash: [],
+  removedFromInboxAt: null,
+  localMd5Hash: defaultChecksum,
+  tags: [] ,
+  exifData: [] ,
+  dateTimeOriginal: null,
+  dateTime: null,
+  dateTimeDigitized: null,
+  fileDateOrCreatedAt: "9999-12-31T23:59:59.999999999Z",
+  location: null
+}
+
+export type DuplicateCheckResult_Case_IsNew = { Case: "IsNew" }
+export type DuplicateCheckResult_Case_IsDuplicate = { Case: "IsDuplicate", Fields: FileId }
+export type DuplicateCheckResult = DuplicateCheckResult_Case_IsNew | DuplicateCheckResult_Case_IsDuplicate
+export type DuplicateCheckResult_Case = "IsNew" | "IsDuplicate"
+export var DuplicateCheckResult_AllCases = [ "IsNew", "IsDuplicate" ] as const
+export var defaultDuplicateCheckResult_Case_IsNew = { Case: "IsNew" }
+export var defaultDuplicateCheckResult_Case_IsDuplicate = { Case: "IsDuplicate", Fields: defaultFileId }
+export var defaultDuplicateCheckResult = defaultDuplicateCheckResult_Case_IsNew as DuplicateCheckResult
 

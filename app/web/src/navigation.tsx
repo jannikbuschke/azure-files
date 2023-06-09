@@ -1,16 +1,15 @@
 import * as React from "react"
 import { Route, Routes, Outlet } from "react-router"
 import { BlobItemDetail } from "./blob-container/blob-detail"
-import { IndexedFileDetail, IndexedFiles } from "./blob-container/indexed-files"
+import { IndexedFileDetail, Înbox } from "./blob-container/inbox"
 import { BlobContainerDetail, BlobContainerList } from "./blob-container/list"
 import { UploadFile } from "./blob-container/upload-file"
 import { GenerateBlogActions } from "./my-actions/generate-blog"
 import { UntaggedFilesView } from "./untagged-files"
-import {} from "glow-mantine/lib/debug-views/debug-data"
-import { DebugViews } from "glow-mantine/lib/debug-views/debug-views"
-import { EsEventList } from "glow-mantine/lib/debug-views/event-list"
-import { EsEventListWithoutValidation } from "glow-mantine/lib/debug-views/event-list-without-validation"
-import { PgsqlActivities } from "glow-mantine/lib/debug-views/pgsql"
+import { DebugViews } from "./debug-views/debug-views"
+import { EsEventList } from "./debug-views/event-list"
+import { EsEventListWithoutValidation } from "./debug-views/event-list-without-validation"
+import { PgsqlActivities } from "./debug-views/pgsql"
 import { Nav } from "glow-mantine/lib/nav"
 import { ImagesGallery } from "./blob-container/images"
 
@@ -24,8 +23,15 @@ export function AllContentRoutes() {
       </Route>
       <Route path="/upload-file" element={<UploadFile />} />
       <Route path="/untagged-files" element={<UntaggedFilesView />} />
-      <Route path="/inbox" element={<IndexedFiles />}>
-        <Route path=":id" element={<IndexedFileDetail />} />
+      <Route path="/inbox" element={<Înbox />}>
+        <Route
+          path=":id"
+          element={
+            <React.Suspense fallback={<div>loading...</div>}>
+              <IndexedFileDetail />
+            </React.Suspense>
+          }
+        />
       </Route>
       <Route path="/images" element={<ImagesGallery />} />
       <Route path="/actions" element={<GenerateBlogActions />} />

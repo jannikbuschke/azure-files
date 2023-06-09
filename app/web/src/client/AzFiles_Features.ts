@@ -2,11 +2,31 @@
 //   This file is auto generated   //
 //////////////////////////////////////
 
+import * as System from "./System"
 import * as AzureFiles from "./AzureFiles"
 import * as Microsoft_FSharp_Collections from "./Microsoft_FSharp_Collections"
-import * as System from "./System"
 import * as Microsoft_FSharp_Core from "./Microsoft_FSharp_Core"
+import * as NodaTime from "./NodaTime"
 import * as System_Collections_Generic from "./System_Collections_Generic"
+
+export type RemoveTaggedImagesFromInbox = {
+}
+export var defaultRemoveTaggedImagesFromInbox: RemoveTaggedImagesFromInbox = {
+}
+
+export type GetBlobMetadata = {
+  blobId: System.String
+}
+export var defaultGetBlobMetadata: GetBlobMetadata = {
+  blobId: ''
+}
+
+export type GetExifDataFromBlobFile = {
+  blobId: AzureFiles.FileId
+}
+export var defaultGetExifDataFromBlobFile: GetExifDataFromBlobFile = {
+  blobId: AzureFiles.defaultFileId
+}
 
 export type GetNavbar = {
 }
@@ -71,14 +91,33 @@ export var defaultNavbar: Navbar = {
   message: null
 }
 
+export type FileListViewmodel = {
+  id: AzureFiles.FileId
+  filename: System.String
+  url: System.String
+  fileDateOrCreatedAt: NodaTime.Instant
+  inbox: System.Boolean
+  tags: Microsoft_FSharp_Collections.FSharpList<System.String>
+}
+export var defaultFileListViewmodel: FileListViewmodel = {
+  id: AzureFiles.defaultFileId,
+  filename: '',
+  url: '',
+  fileDateOrCreatedAt: "9999-12-31T23:59:59.999999999Z",
+  inbox: false,
+  tags: [] 
+}
+
 export type InboxFileResult = {
   previous: Microsoft_FSharp_Core.FSharpOption<AzureFiles.FileId>
-  file: AzureFiles.FileAggregate
+  file: AzureFiles.FileViewmodel
   next: Microsoft_FSharp_Core.FSharpOption<AzureFiles.FileId>
+  nextUrl: Microsoft_FSharp_Core.FSharpOption<System.String>
 }
 export var defaultInboxFileResult: InboxFileResult = {
   previous: null,
-  file: AzureFiles.defaultFileAggregate,
-  next: null
+  file: AzureFiles.defaultFileViewmodel,
+  next: null,
+  nextUrl: null
 }
 

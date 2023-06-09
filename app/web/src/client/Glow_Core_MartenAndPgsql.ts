@@ -7,6 +7,13 @@ import * as MediatR from "./MediatR"
 import * as System_Collections_Generic from "./System_Collections_Generic"
 import * as NodaTime from "./NodaTime"
 
+export type GetDocuments = {
+  documentName: System.String
+}
+export var defaultGetDocuments: GetDocuments = {
+  documentName: ''
+}
+
 export type ArchiveEvent = {
   eventId: System.Guid
 }
@@ -58,16 +65,9 @@ export var defaultGetKnownDocumentNames: GetKnownDocumentNames = {
   dummy: MediatR.defaultUnit
 }
 
-export type GetDocuments = {
-  documentName: System.String
+export type GetEsEvents = {
 }
-export var defaultGetDocuments: GetDocuments = {
-  documentName: ''
-}
-
-export type GetEsEvents2 = {
-}
-export var defaultGetEsEvents2: GetEsEvents2 = {
+export var defaultGetEsEvents: GetEsEvents = {
 }
 
 export type GetEsEventsWithoutValidation = {

@@ -10,7 +10,7 @@ type DeleteFile =
   { FileId: FileId }
   interface IRequest<ServiceResult<unit>>
 
-type DeleteFileHandler(ctx: WebRequestContext) =
+type DeleteFileHandler(ctx: IWebRequestContext) =
   interface IRequestHandler<DeleteFile, ServiceResult<unit>> with
     member this.Handle(request, _) =
       taskResult {
