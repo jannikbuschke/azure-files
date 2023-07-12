@@ -13,6 +13,7 @@ import utc from "dayjs/plugin/utc"
 import "dayjs/locale/de"
 import "dayjs/locale/en"
 import { RootProvider } from "./app/root-providers"
+import { ErrorBoundary } from "./error-boundary"
 
 dayjs.extend(LocalizedFormat)
 dayjs.extend(dayjsDuration)
@@ -21,11 +22,13 @@ dayjs.extend(utc)
 dayjs.extend(timezone)
 
 ReactDOM.render(
-  <React.Suspense fallback="Loading...">
-    <RootProvider>
-      <App />
-    </RootProvider>
-  </React.Suspense>,
+  <ErrorBoundary>
+    <React.Suspense fallback="Loading...">
+      <RootProvider>
+        <App />
+      </RootProvider>
+    </React.Suspense>
+  </ErrorBoundary>,
   document.getElementById("root"),
 )
 

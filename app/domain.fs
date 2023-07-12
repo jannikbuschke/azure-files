@@ -10,6 +10,18 @@ open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.Logging
 
+type PropertyName =
+  | PropertyName of string
+  member this.Value() =
+    let (PropertyName s) = this
+    s
+type Property = { Name: PropertyName; Value: string }
+
+type PropertyChanged =
+  | PropertyAdded of Property
+  | PropertyRemoved of PropertyName
+  | PropertyUpdated of Property
+
 type DuplicateCheckResult =
   | IsNew
   | IsDuplicate of FileId
@@ -19,6 +31,7 @@ type FileIsDuplicate = { FileId: FileId; Filename: string }
 type ErrorResult =
   | FileIsDuplicate of FileIsDuplicate
   | NetworkError of string
+  | FileNotFound of FileId
 
 type Checksum =
   | Checksum of string
@@ -68,7 +81,7 @@ type ImageInfo =
 type FileSavedToStorage =
   { Filename: string
     Md5Hash: byte array
-    LocalMd5Hash: Checksum
+    LocalMd5Hash: Checksum option
     Url: string
     BlobUrl: Skippable<string>
     BlobName: Skippable<string>
@@ -98,7 +111,9 @@ type FileEvent =
   | Deleted of EmptyRecord
   | ExifDataUpdated of ExifDataUpdated
   | RemovedFromInbox of EmptyRecord
-  
+  | PropertyChanged of PropertyChanged
+  | PropertiesChanged of PropertyChanged list
+
 
 // type GlowWebRequestContext =
 //   { HttpContext: HttpContext
@@ -123,7 +138,7 @@ type IWebRequestContext =
 
 module WebRequestContext =
   let getBlobContentStreamAsync (ctx: IWebRequestContext) (fileId: FileId) =
-    fun () -> 
+    fun () ->
       task {
         let! container = ctx.GetSrcContainer()
         let blobClient = container.GetBlobClient(fileId.value().ToString())
@@ -143,7 +158,9 @@ module WebRequestContext =
 //     }
 
 
+type ApiErrorInfo =
+  | ErrorResult of ErrorResult
 
-type ServiceError = { Message: string }
+type ApiError = { Message: string; Info: ApiErrorInfo option }
 
-type ServiceResult<'T> = Result<'T, ServiceError>
+type ApiResult<'T> = Result<'T, ApiError>

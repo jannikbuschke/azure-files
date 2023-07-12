@@ -7,6 +7,9 @@
     "storybook": "npm run storybook --workspace=app/web",
     "client": "npm run start --workspace=app/web",
     "server": "dotnet watch run --project ./app/app.fsproj",
+    "server:migrate-only": "dotnet watch run --project ./app/app.fsproj --migrate-only",
+    "server:prod": "dotnet watch run --project ./app/app.fsproj --environment Production",
+    "server:prod:migrate-only": "dotnet run --project ./app/app.fsproj --environment Production --migrate-only",
     "clean": "npx -y rimraf node_modules **/node_modules/ package-lock.json && npm i",
     "build": "npm run build --workspace=app/web"
   },

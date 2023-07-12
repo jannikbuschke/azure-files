@@ -2,16 +2,60 @@
 //   This file is auto generated   //
 //////////////////////////////////////
 
-import * as System from "./System"
 import * as AzureFiles from "./AzureFiles"
 import * as Microsoft_FSharp_Collections from "./Microsoft_FSharp_Collections"
+import * as System from "./System"
 import * as Microsoft_FSharp_Core from "./Microsoft_FSharp_Core"
-import * as NodaTime from "./NodaTime"
 import * as System_Collections_Generic from "./System_Collections_Generic"
 
 export type RemoveTaggedImagesFromInbox = {
 }
 export var defaultRemoveTaggedImagesFromInbox: RemoveTaggedImagesFromInbox = {
+}
+
+export type AddProperty = {
+  id: AzureFiles.FileId
+  property: AzureFiles.Property
+}
+export var defaultAddProperty: AddProperty = {
+  id: AzureFiles.defaultFileId,
+  property: AzureFiles.defaultProperty
+}
+
+export type RemoveProperty = {
+  id: AzureFiles.FileId
+  propertyName: AzureFiles.PropertyName
+}
+export var defaultRemoveProperty: RemoveProperty = {
+  id: AzureFiles.defaultFileId,
+  propertyName: AzureFiles.defaultPropertyName
+}
+
+export type UpdateProperty = {
+  id: AzureFiles.FileId
+  property: AzureFiles.Property
+}
+export var defaultUpdateProperty: UpdateProperty = {
+  id: AzureFiles.defaultFileId,
+  property: AzureFiles.defaultProperty
+}
+
+export type UpsertProperties = {
+  id: AzureFiles.FileId
+  properties: Microsoft_FSharp_Collections.FSharpList<AzureFiles.Property>
+}
+export var defaultUpsertProperties: UpsertProperties = {
+  id: AzureFiles.defaultFileId,
+  properties: [] 
+}
+
+export type UpsertPropertiesRaw = {
+  id: AzureFiles.FileId
+  values: System.String
+}
+export var defaultUpsertPropertiesRaw: UpsertPropertiesRaw = {
+  id: AzureFiles.defaultFileId,
+  values: ''
 }
 
 export type GetBlobMetadata = {
@@ -49,9 +93,11 @@ export var defaultGetTags: GetTags = {
 
 export type GetImages = {
   includingTags: Microsoft_FSharp_Collections.FSharpList<System.String>
+  date: Microsoft_FSharp_Core.FSharpOption<System.String>
 }
 export var defaultGetImages: GetImages = {
-  includingTags: [] 
+  includingTags: [] ,
+  date: null
 }
 
 export type SetTags = {
@@ -63,9 +109,33 @@ export var defaultSetTags: SetTags = {
   tags: [] 
 }
 
+export type TagMany = {
+  filter: AzureFiles.Filter
+  tags: Microsoft_FSharp_Collections.FSharpList<System.String>
+}
+export var defaultTagMany: TagMany = {
+  filter: AzureFiles.defaultFilter,
+  tags: [] 
+}
+
+export type Order_Case_Desc = { Case: "Desc" }
+export type Order_Case_Asc = { Case: "Asc" }
+export type Order = Order_Case_Desc | Order_Case_Asc
+export type Order_Case = "Desc" | "Asc"
+export var Order_AllCases = [ "Desc", "Asc" ] as const
+export var defaultOrder_Case_Desc = { Case: "Desc" }
+export var defaultOrder_Case_Asc = { Case: "Asc" }
+export var defaultOrder = defaultOrder_Case_Desc as Order
+
 export type GetInboxFiles = {
+  cached: System.Boolean
+  count: System.Int32
+  order: Order
 }
 export var defaultGetInboxFiles: GetInboxFiles = {
+  cached: false,
+  count: 0,
+  order: defaultOrder
 }
 
 export type GetInboxFile = {
@@ -91,22 +161,15 @@ export var defaultNavbar: Navbar = {
   message: null
 }
 
-export type FileListViewmodel = {
-  id: AzureFiles.FileId
-  filename: System.String
-  url: System.String
-  fileDateOrCreatedAt: NodaTime.Instant
-  inbox: System.Boolean
-  tags: Microsoft_FSharp_Collections.FSharpList<System.String>
+
+export type Page<T> = {
+  values: Microsoft_FSharp_Collections.FSharpList<T>
+  count: System.Int32
 }
-export var defaultFileListViewmodel: FileListViewmodel = {
-  id: AzureFiles.defaultFileId,
-  filename: '',
-  url: '',
-  fileDateOrCreatedAt: "9999-12-31T23:59:59.999999999Z",
-  inbox: false,
-  tags: [] 
-}
+export var defaultPage: <T>(defaultT:T) => Page<T> = <T>(defaultT:T) => ({
+  values: [] ,
+  count: 0
+})
 
 export type InboxFileResult = {
   previous: Microsoft_FSharp_Core.FSharpOption<AzureFiles.FileId>

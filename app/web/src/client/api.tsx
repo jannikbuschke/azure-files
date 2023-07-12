@@ -8,22 +8,22 @@ import * as System from "./System"
 import * as Glow_Core_MartenAndPgsql from "./Glow_Core_MartenAndPgsql"
 import * as AzureFiles from "./AzureFiles"
 import * as AzFiles_Features from "./AzFiles_Features"
+import * as Microsoft_FSharp_Collections from "./Microsoft_FSharp_Collections"
+import * as AzFiles_Features_GoogleDrive from "./AzFiles_Features_GoogleDrive"
+import * as AzFiles_Features_Fsi from "./AzFiles_Features_Fsi"
 import * as AzFiles_GenerateObsidianNotes from "./AzFiles_GenerateObsidianNotes"
 import * as AzFiles from "./AzFiles"
 import * as System_Text_Json_Serialization from "./System_Text_Json_Serialization"
 import * as Microsoft_FSharp_Core from "./Microsoft_FSharp_Core"
-import * as Microsoft_FSharp_Collections from "./Microsoft_FSharp_Collections"
 import * as Glow_TestAutomation from "./Glow_TestAutomation"
 import * as Glow_Azure_AzureKeyVault from "./Glow_Azure_AzureKeyVault"
 import * as Glow_Core_Profiles from "./Glow_Core_Profiles"
 import * as MediatR from "./MediatR"
-import * as Glow_Api from "./Glow_Api"
 import * as Glow_Debug from "./Glow_Debug"
 import * as System_Collections_Generic from "./System_Collections_Generic"
 import * as Azure_Storage_Blobs_Models from "./Azure_Storage_Blobs_Models"
 import * as Azure from "./Azure"
 import * as NodaTime from "./NodaTime"
-import * as SixLabors_ImageSharp from "./SixLabors_ImageSharp"
 
 export type QueryInputs = {
   "/api/debug/get-documents": Glow_Core_MartenAndPgsql.GetDocuments,
@@ -34,6 +34,7 @@ export type QueryInputs = {
   "/api/file/get-next-untagged": AzureFiles.GetNextUntaggedBlob,
   "/api/file/get-all-untagged": AzureFiles.GetAllUntagged,
   "/api/blob/get-containers": AzureFiles.GetBlobContainers,
+  "/api/g-drive/show-files": AzFiles_Features_GoogleDrive.GetGoogleDriveFiles,
   "/api/blob/get-blob-metadata": AzFiles_Features.GetBlobMetadata,
   "/api/blob/get-exif-data-from-blob-file": AzFiles_Features.GetExifDataFromBlobFile,
   "/api/get-navbar": AzFiles_Features.GetNavbar,
@@ -49,7 +50,6 @@ export type QueryInputs = {
   "/api/es/get-events-without-validation": Glow_Core_MartenAndPgsql.GetEsEventsWithoutValidation,
   "/api/pgsql/get-activity": Glow_Core_MartenAndPgsql.GetPgsqlActivities,
   "/api/events/get-last-modified": Glow_Core_MartenAndPgsql.GetLastModified,
-  "/api/es/get-events": Glow_Api.GetEsEvents,
   "/api/glow/pgsql/get-activity": Glow_Debug.GetPgsqlActivities,
 }
 export type QueryOutputs = {
@@ -61,22 +61,22 @@ export type QueryOutputs = {
   "/api/file/get-next-untagged": AzureFiles.FileProjection,
   "/api/file/get-all-untagged": System_Collections_Generic.List<AzureFiles.FileProjection>,
   "/api/blob/get-containers": System_Collections_Generic.List<Azure_Storage_Blobs_Models.BlobContainerItem>,
+  "/api/g-drive/show-files": Microsoft_FSharp_Core.FSharpResult<Microsoft_FSharp_Collections.FSharpList<AzFiles_Features_GoogleDrive.GDriveFile>,AzureFiles.ApiError>,
   "/api/blob/get-blob-metadata": System_Collections_Generic.IDictionary<System.String,System.String>,
   "/api/blob/get-exif-data-from-blob-file": Microsoft_FSharp_Core.FSharpOption<Microsoft_FSharp_Collections.FSharpList<AzFiles.ExifValue>>,
   "/api/get-navbar": AzFiles_Features.Navbar,
   "/api/get-tags": Microsoft_FSharp_Collections.FSharpList<System.String>,
-  "/api/get-images": Microsoft_FSharp_Collections.FSharpList<AzureFiles.FileProjection>,
-  "/api/get-inbox-files": Microsoft_FSharp_Collections.FSharpList<AzFiles_Features.FileListViewmodel>,
-  "/api/get-inbox-file": AzFiles_Features.InboxFileResult,
+  "/api/get-images": Microsoft_FSharp_Collections.FSharpList<AzureFiles.FileViewmodel>,
+  "/api/get-inbox-files": AzFiles_Features.Page<AzureFiles.FileViewmodel>,
+  "/api/get-inbox-file": Microsoft_FSharp_Core.FSharpResult<AzFiles_Features.InboxFileResult,AzureFiles.ApiError>,
   "/api/auto-inbox/get-items": Microsoft_FSharp_Collections.FSharpList<AzFiles.LobbyItem>,
   "/api/glow/test-automation/get-available-fake-users": Glow_TestAutomation.FakeUsers,
   "/glow/profile/get-profile": Glow_Core_Profiles.Profile,
   "/api/gebug/get-document-names": Microsoft_FSharp_Collections.FSharpList<System.String>,
   "/api/es/get-events": Microsoft_FSharp_Collections.FSharpList<Glow_Core_MartenAndPgsql.EventViewmodel>,
-  "/api/es/get-events-without-validation": System_Collections_Generic.List<Glow_Core_MartenAndPgsql.EventViewmodel2>,
+  "/api/es/get-events-without-validation": System_Collections_Generic.List<Glow_Core_MartenAndPgsql.RawEventModel>,
   "/api/pgsql/get-activity": System_Collections_Generic.List<Glow_Core_MartenAndPgsql.Activity>,
   "/api/events/get-last-modified": Glow_Core_MartenAndPgsql.StreamInfo,
-  "/api/es/get-events": System_Collections_Generic.List<Glow_Api.EventViewmodel>,
   "/api/glow/pgsql/get-activity": System_Collections_Generic.List<Glow_Debug.Activity>,
 }
 export type Outputs = {
@@ -84,13 +84,23 @@ export type Outputs = {
   "/api/blob/delete-file": MediatR.Unit,
   "/api/upload-form-files": Microsoft_FSharp_Collections.FSharpList<Microsoft_FSharp_Core.FSharpResult<AzureFiles.FileSavedToStorage,System.String>>,
   "/api/test-action": Microsoft_FSharp_Collections.FSharpList<Microsoft_FSharp_Core.FSharpResult<AzureFiles.FileSavedToStorage,AzureFiles.ErrorResult>>,
-  "/api/remove-tagged-images-from-inbox": Microsoft_FSharp_Core.FSharpResult<Microsoft_FSharp_Core.Unit,AzureFiles.ServiceError>,
-  "/api/my/write-obsidian-notes": Microsoft_FSharp_Core.FSharpResult<MediatR.Unit,AzureFiles.ServiceError>,
+  "/api/remove-tagged-images-from-inbox": Microsoft_FSharp_Core.FSharpResult<Microsoft_FSharp_Core.Unit,AzureFiles.ApiError>,
+  "/api/add-property": Microsoft_FSharp_Core.FSharpResult<Microsoft_FSharp_Core.Unit,AzureFiles.ApiError>,
+  "/api/remove-property": Microsoft_FSharp_Core.FSharpResult<Microsoft_FSharp_Core.Unit,AzureFiles.ApiError>,
+  "/UpdateProperty": Microsoft_FSharp_Core.FSharpResult<Microsoft_FSharp_Core.Unit,AzureFiles.ApiError>,
+  "/api/upsert-properties": Microsoft_FSharp_Core.FSharpResult<Microsoft_FSharp_Core.Unit,AzureFiles.ApiError>,
+  "/api/upsert-properties-raw": Microsoft_FSharp_Core.FSharpResult<Microsoft_FSharp_Core.Unit,AzureFiles.ApiError>,
+  "/api/g-drive/download-file-to-inbox": Microsoft_FSharp_Core.FSharpResult<Microsoft_FSharp_Core.Unit,AzureFiles.ApiError>,
+  "/api/fsi/evaluate": Microsoft_FSharp_Core.FSharpResult<System.Object,AzureFiles.ApiError>,
+  "/api/my/write-obsidian-notes": Microsoft_FSharp_Core.FSharpResult<MediatR.Unit,AzureFiles.ApiError>,
   "/api/my/write-blog-data": MediatR.Unit,
-  "/api/file/delete-file": Microsoft_FSharp_Core.FSharpResult<Microsoft_FSharp_Core.Unit,AzureFiles.ServiceError>,
-  "/api/file/set-tags": Microsoft_FSharp_Core.FSharpResult<Microsoft_FSharp_Core.Unit,AzureFiles.ServiceError>,
+  "/api/file/delete-file": Microsoft_FSharp_Core.FSharpResult<Microsoft_FSharp_Core.Unit,AzureFiles.ApiError>,
+  "/api/file/set-tags": Microsoft_FSharp_Core.FSharpResult<Microsoft_FSharp_Core.Unit,AzureFiles.ApiError>,
+  "/api/file/tag-many": Microsoft_FSharp_Core.FSharpResult<Microsoft_FSharp_Core.Unit,AzureFiles.ApiError>,
   "/api/glow/set-openid-connect-options": MediatR.Unit,
-  "/api/debug/archive-event": Microsoft_FSharp_Core.FSharpResult<Microsoft_FSharp_Core.Unit,Glow_Core_MartenAndPgsql.ApiError>,
+  "/api/debug/archive-events": Microsoft_FSharp_Core.FSharpResult<System.Int32,Glow_Core_MartenAndPgsql.ApiError>,
+  "/api/debug/restore-events": Microsoft_FSharp_Core.FSharpResult<System.Int32,Glow_Core_MartenAndPgsql.ApiError>,
+  "/api/debug/archive-event": Microsoft_FSharp_Core.FSharpResult<System.Int32,Glow_Core_MartenAndPgsql.ApiError>,
   "/api/debug/restore-event": Microsoft_FSharp_Core.FSharpResult<Microsoft_FSharp_Core.Unit,Glow_Core_MartenAndPgsql.ApiError>,
   "/api/debug/rename-event-dotnet-type": Microsoft_FSharp_Core.FSharpResult<System.Int32,Glow_Core_MartenAndPgsql.ApiError>,
   "/api/application/remove-all-event-data": MediatR.Unit,
@@ -103,11 +113,21 @@ export type Actions = {
   "/api/upload-form-files": AzureFiles.UploadFormFiles,
   "/api/test-action": AzureFiles.TestAction,
   "/api/remove-tagged-images-from-inbox": AzFiles_Features.RemoveTaggedImagesFromInbox,
+  "/api/add-property": AzFiles_Features.AddProperty,
+  "/api/remove-property": AzFiles_Features.RemoveProperty,
+  "/UpdateProperty": AzFiles_Features.UpdateProperty,
+  "/api/upsert-properties": AzFiles_Features.UpsertProperties,
+  "/api/upsert-properties-raw": AzFiles_Features.UpsertPropertiesRaw,
+  "/api/g-drive/download-file-to-inbox": AzFiles_Features_GoogleDrive.DownloadFileToInbox,
+  "/api/fsi/evaluate": AzFiles_Features_Fsi.EvaluateFs,
   "/api/my/write-obsidian-notes": AzFiles_GenerateObsidianNotes.GenerateObsidianNotes,
   "/api/my/write-blog-data": AzFiles.GenerateBlogData,
   "/api/file/delete-file": AzFiles_Features.DeleteFile,
   "/api/file/set-tags": AzFiles_Features.SetTags,
+  "/api/file/tag-many": AzFiles_Features.TagMany,
   "/api/glow/set-openid-connect-options": Glow_Azure_AzureKeyVault.SetOpenIdConnectOptions,
+  "/api/debug/archive-events": Glow_Core_MartenAndPgsql.ArchiveEvents,
+  "/api/debug/restore-events": Glow_Core_MartenAndPgsql.RestoreEvents,
   "/api/debug/archive-event": Glow_Core_MartenAndPgsql.ArchiveEvent,
   "/api/debug/restore-event": Glow_Core_MartenAndPgsql.RestoreEvent,
   "/api/debug/rename-event-dotnet-type": Glow_Core_MartenAndPgsql.RenameEventDotnetTypeName,

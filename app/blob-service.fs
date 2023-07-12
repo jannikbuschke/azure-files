@@ -72,7 +72,7 @@ module BlobService =
 
       let! result =
         session
-          .Query<FileProjection>()
+          .Query<FileHandledProjection>()
           .Where(fun v ->
             v.MatchesSql("data ->> 'Md5Hash' = ?", rawChecksum)
             && v.Filename = filename
@@ -116,7 +116,6 @@ module BlobService =
 
       return ()
     }
-
 
   let getBlobServiceClient (connectionString: string) =
     // let section = configuration.GetSection("AzureBlob")

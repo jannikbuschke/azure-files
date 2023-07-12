@@ -8,10 +8,10 @@ open FsToolkit.ErrorHandling
 [<Action(Route = "api/file/delete-file", AllowAnonymous = true)>]
 type DeleteFile =
   { FileId: FileId }
-  interface IRequest<ServiceResult<unit>>
+  interface IRequest<ApiResult<unit>>
 
 type DeleteFileHandler(ctx: IWebRequestContext) =
-  interface IRequestHandler<DeleteFile, ServiceResult<unit>> with
+  interface IRequestHandler<DeleteFile, ApiResult<unit>> with
     member this.Handle(request, _) =
       taskResult {
         let! entity = ctx.DocumentSession.LoadFile request.FileId

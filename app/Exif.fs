@@ -4,6 +4,7 @@ open System
 open System.Text.Json.Serialization
 open System.Threading.Tasks
 open AzureFiles
+open Microsoft.Extensions.Logging
 open Polly
 open SixLabors.ImageSharp
 open SixLabors.ImageSharp.Metadata.Profiles.Exif
@@ -12,6 +13,8 @@ type ushort = uint16
 
 type Rational = { Numerator: uint; Denominator: uint }
 type SignedRational = { Numerator: int; Denominator: int }
+
+type Number = int
 
 type ExifValue =
   | XPosition of Rational
@@ -248,6 +251,16 @@ type ExifValue =
   | TimeZoneOffset of uint []
   | SubIFDs of uint []
 
+
+let getDate exifValues =
+  exifValues
+  |> List.choose (fun v ->
+    match v with
+    | ExifValue.DateTime s -> Some s
+    | ExifValue.DateTimeDigitized s -> Some s
+    | ExifValue.DateTimeOriginal s -> Some s
+    | _ -> None)
+  |> List.tryHead
 
 // type ExifData =
 //   {
@@ -558,10 +571,15 @@ let readExif (exifProfile: ExifProfile) =
 
       v
       |> Option.ofObj
-      |> Option.map (fun v -> v.Value)
+      |> Option.map (fun v ->
+        let n = v.Value
+        int n
+      // {Number.SignedValue=0;Number.UnsignedValue=0u;IsSigned=true}
+      )
+
       |> Skippable.ofOption
 
-    let parseNumberField (tag: ExifTag<Number>, case: Number -> ExifValue) =
+    let parseNumberField (tag: ExifTag<SixLabors.ImageSharp.Number>, case: Number -> ExifValue) =
       tag |> parseNumber |> Skippable.map case
 
     let parseNumberArray (tag: ExifTag<SixLabors.ImageSharp.Number []>) =
@@ -569,10 +587,10 @@ let readExif (exifProfile: ExifProfile) =
 
       v
       |> Option.ofObj
-      |> Option.map (fun v -> v.Value)
+      |> Option.map (fun v -> v.Value |> Array.map (fun v -> int v))
       |> Skippable.ofOption
 
-    let parseNumberArrayField (tag: ExifTag<Number []>, case: Number [] -> ExifValue) =
+    let parseNumberArrayField (tag: ExifTag<SixLabors.ImageSharp.Number []>, case: Number [] -> ExifValue) =
       tag |> parseNumberArray |> Skippable.map case
 
     let parseIntArray (tag: ExifTag<int []>) =
@@ -941,9 +959,23 @@ let readExif (exifProfile: ExifProfile) =
     Some data
 
 let readExifFromStream (s: System.IO.Stream) =
-  use image = Image.Load s
+  task {
+    // let! detect = Image.IdentifyAsync s
+    // s.Position <- 0
 
-  readExif image.Metadata.ExifProfile
+    use! image = Image.LoadAsync s
+    // use image =
+    //   if detect = null then
+    //     null
+    //   else
+    //     Image.Load s
+
+    return
+      if image = null then
+        None
+      else
+        readExif image.Metadata.ExifProfile
+  }
 
 
 module ExifCache =
@@ -956,15 +988,15 @@ module ExifCache =
   let cachePolicy = Policy.CacheAsync(memoryCacheProvider, TimeSpan.FromSeconds(30))
 
 
-let readExifData (blobId: FileId, getStreamAsync: unit -> Task<System.IO.Stream>) =
+let readExifData (logger: ILogger<obj>, blobId: FileId, getStreamAsync: unit -> Task<System.IO.Stream>) =
   task {
 
     let f ctx =
       task {
-        printfn "Reading exif data"
+        logger.LogInformation "Reading exif data"
 
         let! stream = getStreamAsync ()
-        let result = stream |> readExifFromStream
+        let! result = stream |> readExifFromStream
 
         return result
       }

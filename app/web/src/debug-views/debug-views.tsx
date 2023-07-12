@@ -13,14 +13,14 @@ import {
   useMantineTheme,
 } from "@mantine/core"
 import { LoadingOverlay } from "@mantine/core"
-import { useNotify } from "glow-core"
+import { ErrorBanner, useNotify } from "glow-core"
 import { Prism } from "@mantine/prism"
 import { useTypedAction, useTypedQuery } from "../client/api"
 import { AsyncButton } from "../typed-api/ActionButton"
 
 export function DebugViews() {
-  const [documentName, setDocumentName] = React.useState("MeetingItem")
-  const { data: documentNames } = useTypedQuery(
+  const [documentName, setDocumentName] = React.useState("file")
+  const { data: documentNames, error: errorDocumentNames } = useTypedQuery(
     "/api/gebug/get-document-names",
     {
       input: { dummy: {} },
@@ -57,7 +57,9 @@ export function DebugViews() {
         },
       }}
     >
-      <Container fluid={true}>
+      <Container fluid={true} pos="relative">
+        <ErrorBanner message={errorDocuments} />
+        <ErrorBanner message={errorDocumentNames} />
         <LoadingOverlay visible={isLoading} />
         <Paper shadow="xs" p="md">
           <Group>

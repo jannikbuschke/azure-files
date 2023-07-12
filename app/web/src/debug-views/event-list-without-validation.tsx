@@ -17,9 +17,9 @@ import { Prism } from "@mantine/prism"
 import { TextInput } from "formik-mantine"
 import { TypedForm, useTypedQuery } from "../client/api"
 import { useSubscriptions } from "../client/subscriptions"
-import { EventViewmodel2 } from "../client/Glow_Core_MartenAndPgsql"
 import { Label } from "../generic/label"
 import { AsyncButton } from "../typed-api/ActionButton"
+import { RawEventModel } from "../client/Glow_Core_MartenAndPgsql"
 
 export function EsEventListWithoutValidation() {
   const { data, error, refetch, loading } = useTypedQuery(
@@ -31,7 +31,7 @@ export function EsEventListWithoutValidation() {
   )
   // const [rerender, setRerender] = React.useState(0)
   // useInterval(() => setRerender(rerender + 1), 5000)
-  const [selected, setSelected] = React.useState<null | EventViewmodel2>()
+  const [selected, setSelected] = React.useState<null | RawEventModel>()
   useSubscriptions(
     (v) => {
       refetch()
@@ -39,14 +39,59 @@ export function EsEventListWithoutValidation() {
     [refetch],
   )
   const { notifyError, notifySuccess } = useNotify()
-  const [opened, setOpened] = React.useState(false)
+  const [opened, setRenameEventTypeOpened] = React.useState(false)
+  const [archiveEventsOpened, setArchiveEventsOpened] = React.useState(false)
   return (
     <div style={{ position: "relative" }}>
       <ErrorBanner message={error} />
 
-      <Button variant="default" onClick={() => setOpened((o) => !o)}>
-        Rename event type
-      </Button>
+      <Group mb="xs">
+        <Button variant="default" onClick={() => refetch()}>
+          Reload
+        </Button>
+        <Button
+          variant="default"
+          onClick={() => setArchiveEventsOpened((o) => !o)}
+        >
+          Archive events
+        </Button>
+
+        <Button
+          variant="default"
+          onClick={() => setRenameEventTypeOpened((o) => !o)}
+        >
+          Rename event type
+        </Button>
+      </Group>
+
+      <Collapse in={archiveEventsOpened}>
+        <Paper p="xs" shadow="xs" my="xs">
+          <TypedForm
+            actionName={"/api/debug/archive-events"}
+            initialValues={{ typeName: "" }}
+            onSuccess={(result) => {
+              if (result.Case === "Error") {
+                notifyError(result.Case)
+              } else {
+                notifySuccess(JSON.stringify(result))
+              }
+            }}
+          >
+            {(f, _) => (
+              <Stack align={"start"}>
+                <TextInput
+                  name={_.typeName._PATH_}
+                  label={"Type"}
+                  style={{ width: 800 }}
+                />
+                <Button loading={f.isSubmitting} onClick={() => f.submitForm()}>
+                  Archive events
+                </Button>
+              </Stack>
+            )}
+          </TypedForm>
+        </Paper>
+      </Collapse>
 
       <Collapse in={opened}>
         <Paper p="xs" shadow="xs" my="xs">
@@ -111,6 +156,7 @@ export function EsEventListWithoutValidation() {
                     component="tr"
                     key={element.id}
                     sx={(theme) => ({
+                      opacity: element.is_archived ? 0.3 : undefined,
                       background:
                         selected?.id == element.id
                           ? theme.colorScheme === "light"

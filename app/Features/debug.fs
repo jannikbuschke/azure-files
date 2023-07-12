@@ -37,7 +37,7 @@ type Handler(session: IDocumentSession, logger: ILogger<Handler>, store: IDocume
           // | "workspacesingletonconfiguration" -> loadDocuments session
           // | "mynotificationsettings" -> loadDocuments session
           // | "file" -> loadDocuments session
-          | _ -> failwith "not supported"
+          | _ -> failwith $"not supported document type: '{request.DocumentName.ToLower()}'"
 
         return query
       }

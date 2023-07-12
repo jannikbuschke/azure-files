@@ -24,9 +24,13 @@ type NewLobbyItemDetected =
 
 type LobbyItemRemoved = { Target: LobbyExit }
 
+// LobbyItem deleted without being processed
+type LobbyItemDeleted = { Reason: string }
+
 type LobbyEvent =
   | NewLobbyItemDetected of NewLobbyItemDetected
   | LobbyItemRemoved of LobbyItemRemoved
+  | LobbyItemDeleted of LobbyItemDeleted
 
 [<CLIMutable>]
 type LobbyItem =
@@ -36,6 +40,10 @@ type LobbyItem =
     DuplicateCheckResult: DuplicateCheckResult
     Processed: bool
     Target: LobbyExit option }
+  member this.ShouldDelete(e: LobbyEvent) =
+    match e with
+    | LobbyItemDeleted _ -> true
+    | _ -> false
 
   member this.Apply(e: LobbyEvent, meta: Marten.Events.IEvent) =
     match e with
@@ -51,6 +59,7 @@ type LobbyItem =
       { this with
           Processed = true
           Target = Some target }
+    | LobbyItemDeleted e -> this
 
 [<Action(Route = "api/auto-inbox/get-items", Policy = Policies.AuthenticatedUser)>]
 type GetLobbyItems =
@@ -92,9 +101,13 @@ type LobbyBackgroundService(logger: ILogger<LobbyBackgroundService>, factory: IS
       let! srcContainer = ctx.GetSrcContainer() |> Async.AwaitTask
       let metadata = blobItem.Metadata
 
-      let fileId = metadata |> Metadata.getId
-      let originalFilename = metadata |> Metadata.getOriginalFilename
-      let checksum = metadata |> Metadata.getLocalChecksum
+      let fileId =
+        metadata
+        |> Metadata.tryGetId
+        |> Option.defaultValue (Guid.NewGuid() |> FileId.create)
+
+      let originalFilename = metadata |> Metadata.tryGetOriginalFilename
+      let checksum = metadata |> Metadata.tryGetLocalChecksum
 
       let! x =
         ctx
@@ -106,14 +119,12 @@ type LobbyBackgroundService(logger: ILogger<LobbyBackgroundService>, factory: IS
         |> Async.AwaitTask
 
       match x with
-      | _ :: _ ->
-        // 0. if file already is in progress (maybe failed last time)
-        logger.LogWarning("file {fileid} already in progress", fileId.value ())
-        return ()
       | [] ->
-
         let! validation =
-          BlobService.validateFileAndChecksumIsNotAlreadyUploaded ctx.DocumentSession originalFilename checksum
+          match originalFilename, checksum with
+          | Some originalFilename, Some checksum ->
+            BlobService.validateFileAndChecksumIsNotAlreadyUploaded ctx.DocumentSession originalFilename checksum
+          | _, _ -> async { return Result.Ok() }
         // 1.
         // check if file is duplicate
         // let moveTarget =
@@ -178,9 +189,13 @@ type LobbyBackgroundService(logger: ILogger<LobbyBackgroundService>, factory: IS
             not (copyResult.GetRawResponse().IsError)
             && copyResult.Value.CopyStatus = CopyStatus.Success
           then
+            let name =
+              originalFilename
+              |> Option.defaultValue (blobItem.Name)
+
             (fileId,
              FileInitEvent.FileSavedToStorage
-               { Filename = originalFilename
+               { Filename = name
                  Md5Hash = properties.Value.ContentHash
                  LocalMd5Hash = checksum
                  Url = targetBlobClient.Uri.OriginalString
@@ -196,11 +211,16 @@ type LobbyBackgroundService(logger: ILogger<LobbyBackgroundService>, factory: IS
                        Location = None } })
             |> EventStore.appendFileInitEvent ctx.DocumentSession
 
-            let getStreamAsync = WebRequestContext.getBlobContentStreamAsync ctx fileId
-
             let! data =
-              Exif.readExifData (fileId, getStreamAsync)
+              Workflow.readExifDataFromCacheOrBlob ctx fileId
               |> Async.AwaitTask
+            // let getStreamAsync = WebRequestContext.getBlobContentStreamAsync ctx fileId
+            //
+            // let! data =
+            //   Exif.readExifData (fileId, getStreamAsync)
+            //   |> Async.AwaitTask
+
+            logger.LogInformation("got exif data {@exif}", data.Result)
 
             data.Result
             |> Option.iter (fun data ->
@@ -230,6 +250,29 @@ type LobbyBackgroundService(logger: ILogger<LobbyBackgroundService>, factory: IS
 
         return ()
         ()
+      | lobbyItems ->
+        // 0. if file already is in progress (maybe failed last time)
+        logger.LogWarning("file {fileid} already in progress", fileId.value ())
+
+        lobbyItems
+        |> Seq.iter (fun v ->
+          logger.LogInformation(
+            "Cleaning/Deleting Lobby Item Id {id}, File Id {fileId}, is processed={processed}, duplication check result={@check}, target = {@target}",
+            v.Id,
+            v.RawFileId,
+            v.Processed,
+            v.DuplicateCheckResult,
+            v.Target
+          )
+
+          (v.Id, LobbyEvent.LobbyItemDeleted { Reason = "Cleaning up, as this item probably had a failure" })
+          |> EventStore.appendLobbyEvent ctx.DocumentSession)
+
+        do!
+          ctx.DocumentSession.SaveChangesAsync()
+          |> Async.AwaitTask
+
+        return ()
     }
 
   override this.ExecuteAsync(cancellationToken: CancellationToken) =

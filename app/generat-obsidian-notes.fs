@@ -8,7 +8,7 @@ open FsToolkit.ErrorHandling
 
 [<Action(Route = "api/my/write-obsidian-notes", AllowAnonymous = true)>]
 type GenerateObsidianNotes() =
-  interface IRequest<ServiceResult<MediatR.Unit>>
+  interface IRequest<ApiResult<MediatR.Unit>>
 
 type BlogPhoto =
   { Id: Guid
@@ -19,7 +19,7 @@ type BlogPhoto =
    }
 
 type Handler(ctx: IWebRequestContext) =
-  interface IRequestHandler<GenerateObsidianNotes, ServiceResult<MediatR.Unit>> with
+  interface IRequestHandler<GenerateObsidianNotes, ApiResult<MediatR.Unit>> with
     member this.Handle(_, _) =
       taskResult {
         let! entities = ctx.DocumentSession.QueryAsync<FileProjection>("where data -> 'RemovedFromInboxAt' <> 'null'")
@@ -32,15 +32,20 @@ type Handler(ctx: IWebRequestContext) =
           $"[{lat},{long}]"
 
         let markdown = entities |> Seq.map FileViewmodel.FromFileProjection |> Seq.map(fun v->
+
+          let properties = v.Properties |> Seq.map(fun v-> $"{v.Name.Value()}: {v.Value}")|>String.concat "\n"
+          let ``type`` = "photo" + (if v.Tags|>List.contains("Doc") then "/doc" else "") 
           v, $"""---
-type: photo
+type: {``type``}
 url: {v.Url}
 location: {v.Location|>Option.map stringifyLocation|>Option.defaultValue ""}
-tags: is/photo {v.Tags|>String.concat ","}
-date: {v.DateTime|>Option.map(fun v->v.ToDateTimeUtc().ToString())|>Option.defaultValue ""}
-date-digitized: {v.DateTimeDigitized|>Option.map(fun v->v.ToDateTimeUtc().ToString())|>Option.defaultValue ""}
-date-original: {v.DateTimeOriginal|>Option.map(fun v->v.ToDateTimeUtc().ToString())|>Option.defaultValue ""}
+date: {v.DateTime|>Option.map(fun v->v.ToDateTimeUtc().ToString("yyyy-MM-dd"))|>Option.defaultValue ""}
+exif-date: {v.DateTime|>Option.map(fun v->v.ToDateTimeUtc().ToString())|>Option.defaultValue ""}
+exif-date-digitized: {v.DateTimeDigitized|>Option.map(fun v->v.ToDateTimeUtc().ToString())|>Option.defaultValue ""}
+exif-date-original: {v.DateTimeOriginal|>Option.map(fun v->v.ToDateTimeUtc().ToString())|>Option.defaultValue ""}
+{properties}
 ---
+#is/photo {v.Tags|>List.map(fun v->"#"+v)|>String.concat " "}
 ![{v.Filename}]({v.Url})
 """
           )

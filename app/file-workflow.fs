@@ -1,6 +1,8 @@
 ﻿namespace AzureFiles
 
+open AzFiles
 open AzFiles.Config
+open AzFiles.Exif
 open AzureFiles
 open Marten
 open System.IO
@@ -11,6 +13,10 @@ open System
 open FsToolkit.ErrorHandling
 
 module Workflow =
+
+  let readExifDataFromCacheOrBlob (ctx: IWebRequestContext) (fileId: FileId) =
+      let getStreamAsync = WebRequestContext.getBlobContentStreamAsync ctx fileId
+      Exif.readExifData (ctx.GetLogger<obj>(),fileId, getStreamAsync)
 
   // let initiallyHandleFilePath (path: string) : FileScanned =
   //   { Id = FileId.create <| System.Guid.NewGuid()
@@ -30,20 +36,36 @@ module Workflow =
 
   let createVariant (ctx: IWebRequestContext) (width: int32) (variantName: string) (fileId: FileId) =
     taskResult {
-      let! fileStream = (WebRequestContext.getBlobContentStreamAsync ctx fileId)()
+      let! fileStream = (WebRequestContext.getBlobContentStreamAsync ctx fileId) ()
       // use stream = localFile.FormFile.OpenReadStream()
+      // let! info = SixLabors.ImageSharp.Image.IdentifyAsync fileStream
+      // fileStream.Position <- 0
+      //
+      // let! x =
+      //   info
+      //   |> Result.requireNotNull ({ ApiError.Message = "Could not identify image" })
+      //
+      // fileStream.Position <- 0
       let! dimension, variantData = AzFiles.ImageProcessing.resizeImage fileStream width
       // let id = FileId.value localFile.Id
       let filename = $"{fileId.value().ToString()}-{variantName}"
       let! imgVariantsClient = ctx.GetVariantsContainer()
+
       let uploadVariant (stream: MemoryStream) (filename: string) =
         let client = imgVariantsClient.GetBlobClient(filename)
         client.UploadAsync(stream, null, null)
 
+      let! result = uploadVariant variantData filename
       let uri = imgVariantsClient.Uri
 
       (fileId,
-        FileEvent.LowresVersionCreated { LowresVersionCreated.Url = $"{uri}/{filename}";          Dimension = dimension;          VariantName = variantName })|>      ctx.DocumentSession.Events.AppendFileStream
+       FileEvent.LowresVersionCreated
+         { LowresVersionCreated.Url = $"{uri}/{filename}"
+           Dimension = dimension
+           VariantName = variantName })
+      |> ctx.DocumentSession.Events.AppendFileStream
+
+      return ()
     }
 
 //

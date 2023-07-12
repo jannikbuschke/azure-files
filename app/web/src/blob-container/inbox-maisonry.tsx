@@ -15,8 +15,18 @@ import {
   ActionIcon,
   Badge,
   Popover,
+  Card,
+  MantineProvider,
+  Chip,
+  Tooltip,
+  Collapse,
 } from "@mantine/core"
-import { useFullscreen, useHotkeys, useViewportSize } from "@mantine/hooks"
+import {
+  useDisclosure,
+  useFullscreen,
+  useHotkeys,
+  useViewportSize,
+} from "@mantine/hooks"
 import { ErrorBanner, RenderObject, useAction, useNotify } from "glow-core"
 import * as React from "react"
 import {
@@ -26,11 +36,11 @@ import {
   useParams,
   useResolvedPath,
 } from "react-router"
-import { Link, NavLink, useSearchParams } from "react-router-dom"
+import { NavLink, useSearchParams } from "react-router-dom"
 import { TypedForm, useTypedAction, useTypedQuery } from "../client/api"
 import { Guid } from "../client/System"
 import { TiArrowLeft, TiArrowRight } from "react-icons/ti"
-import { QueryWithBoundary } from "../query"
+import { QueryWithBoundary, updateQueryData } from "../query"
 import dayjs from "dayjs"
 import { FSharpOption } from "../client/Microsoft_FSharp_Core"
 import { AsyncActionIcon, AsyncButton } from "../typed-api/ActionButton"
@@ -42,105 +52,347 @@ import {
   FaInbox,
   FaRecycle,
   FaCloudRain,
+  FaTrash,
 } from "react-icons/fa"
 import { useKeyPress } from "react-use"
 import { Input, Textarea, TextInput } from "formik-mantine"
 import { Formik } from "formik"
-import { InboxMaisonry } from "./inbox-maisonry"
+import Masonry from "react-masonry-css"
+import { useQueryClient } from "react-query"
+import { match } from "ts-pattern"
+import { TbScreenShare } from "react-icons/tb"
+import { FSharpList } from "../client/Microsoft_FSharp_Collections"
+import { ExifValue } from "../client/AzFiles"
 
-function CustomLink({ to, name }: { to: string; name: React.ReactNode }) {
-  let resolved = useResolvedPath(to)
-  let match = useMatch({ path: resolved.pathname, end: true })
+function RenderExifData({ data }: { data: FSharpList<ExifValue> }) {
+  const resolutionX = data.filter((v) => v.Case === "PixelXDimension")[0]
+    ?.Fields as number | undefined
+  const resolutionY = data.filter((v) => v.Case === "PixelYDimension")[0]
+    ?.Fields as number | undefined
+  const [opened, { toggle }] = useDisclosure(false)
+
+  const orientation = data.filter((v) => v.Case === "Orientation")[0]
+  const RecommendedExposureIndex = data.filter(
+    (v) => v.Case === "RecommendedExposureIndex",
+  )[0]
+  const ISOSpeedRatings = data.filter((v) => v.Case === "ISOSpeedRatings")[0]
+
   return (
-    <Link to={to} style={{ textDecoration: match ? "underline" : "none" }}>
-      {name}
-      {/* <RenderObject {...match} /> */}
-    </Link>
+    <div>
+      {resolutionX && resolutionY ? (
+        <Text>
+          {resolutionX} x {resolutionY}
+        </Text>
+      ) : null}
+      <Text>
+        Orienation: {<RenderObject orientation={orientation} /> || null}
+      </Text>
+
+      <RenderObject {...{ RecommendedExposureIndex, ISOSpeedRatings }} />
+      <Button size="xs" color="gray" variant="subtle" onClick={toggle}>
+        {opened ? "Hide details" : "Show all exif data"}
+      </Button>
+
+      <Collapse in={opened}>
+        <RenderObject {...data} />
+      </Collapse>
+    </div>
   )
 }
 
-export function Inbox() {
-  return <InboxMaisonry />
+function ShowMoreOptions({ v }: { v: FileViewmodel }) {
+  const [opened, { toggle }] = useDisclosure(false)
+  const date = v.dateTime || v.dateTimeDigitized || v.dateTimeOriginal
+  return (
+    <>
+      <Button size="xs" color="gray" variant="subtle" onClick={toggle}>
+        {opened ? "Hide details" : "..."}
+      </Button>
+
+      <Collapse in={opened}>
+        {/* <a
+          href={`./photos/${v.id}`}
+          referrerPolicy="no-referrer"
+          target="_blank"
+        >
+          Show source image
+        </a> */}
+        <Text>{v.filename}</Text>
+        <Text>{v.id}</Text>
+        {date ? (
+          <>
+            <Text>{dayjs(date).format("L LT")}</Text>
+            <Text>{dayjs(date).format("YYYY MMM DDD")}</Text>
+          </>
+        ) : null}
+        {v.exifData ? <RenderExifData data={v.exifData} /> : null}
+      </Collapse>
+    </>
+  )
 }
 
-function InboxMasterDetail() {
+function ImageComponent({ v, input }: { v: FileViewmodel; input: any }) {
+  const [setTags, , { submitting }] = useTypedAction("/api/file/set-tags")
+  const queryClient = useQueryClient()
+
+  const { notifyInfo } = useNotify()
+  const isMarkedForCleanup = v.tags.some((v) => v === "mark-for-cleanup")
+
+  async function addTag(tag: string, fileId: FileId) {
+    notifyInfo("Tagging")
+    await setTags({ fileId, tags: [tag] })
+    console.log("update query data")
+    updateQueryData({
+      client: queryClient,
+      name: "/api/get-inbox-files",
+      input,
+      updater: (data) =>
+        data
+          ? {
+              count: data.count,
+              values: data.values.map((v) =>
+                v.id === fileId ? { ...v, tags: [...v.tags, tag] } : v,
+              ),
+            }
+          : { count: 0, values: [] },
+    })
+  }
+  const thumbnail = v.lowresVersions?.find((v) => v.name === "thumbnail")
+  const [hovering, setHovering] = React.useState(false)
+  return (
+    <div
+      style={{
+        // width: "100%",
+        position: "relative",
+      }}
+    >
+      <Card
+        shadow="sm"
+        radius="md"
+        withBorder={true}
+        opacity={isMarkedForCleanup ? 0.3 : undefined}
+      >
+        <Card.Section>
+          {match(v.fileInfo.type)
+            .with({ Case: "Image" }, () => (
+              <div style={{ position: "relative" }}>
+                <Image
+                  onMouseOver={() => {
+                    setHovering(true)
+                  }}
+                  onMouseLeave={() => {
+                    setHovering(false)
+                  }}
+                  src={thumbnail?.url || v.url!}
+                  imageProps={{ loading: "lazy" }}
+                />
+                <ActionIcon
+                  component="a"
+                  href={`./photos/${v.id}`}
+                  referrerPolicy="no-referrer"
+                  target="_blank"
+                  style={{
+                    position: "absolute",
+                    top: "10px",
+                    right: "10px",
+                    opacity: hovering ? 0.4 : 0.1,
+                  }}
+                >
+                  <TbScreenShare size="1.125rem" />
+                </ActionIcon>
+                {/* <a
+                  style={{
+                    position: "absolute",
+                    top: "10px",
+                    right: "10px",
+                    opacity: 0.1,
+                  }}
+                  href={`./photos/${v.id}`}
+                  referrerPolicy="no-referrer"
+                  target="_blank"
+                >
+                  Show source image
+                </a> */}
+              </div>
+            ))
+            .otherwise((x) => (
+              <Group pt="xs" px="md">
+                <Text>
+                  {x.Case} {v.filename}
+                </Text>
+              </Group>
+            ))}
+          <Group px="md" pt="xs" position="apart">
+            {v.dateTime ? (
+              <Badge size="xs" radius={"xl"} variant="light" color="gray">
+                <Tooltip
+                  label={v.dateTime ? dayjs(v.dateTime).format("LT") : ""}
+                >
+                  <div>{dayjs(v.dateTime).format("MMM YYYY")}</div>
+                </Tooltip>
+              </Badge>
+            ) : null}
+            {v.tags.map((v) => (
+              <Badge
+                size="xs"
+                radius={"xl"}
+                variant={v === "mark-for-cleanup" ? "filled" : "light"}
+                color={v === "mark-for-cleanup" ? "red" : "blue"}
+              >
+                {v}
+              </Badge>
+            ))}
+            <ShowMoreOptions v={v} />
+          </Group>
+        </Card.Section>
+        {match(v.fileInfo.type)
+          .with({ Case: "Image" }, () => (
+            <Card.Section>
+              <MantineProvider
+                theme={{
+                  components: {
+                    Chip: {
+                      defaultProps: { size: "xs", variant: "filled" },
+                    },
+                    ActionIcon: { defaultProps: { size: "xs" } },
+                    Button: { defaultProps: { size: "xs" } },
+                  },
+                }}
+              >
+                <Chip.Group p="md">
+                  {["PKM", "⭐", "@lena", "@wilma", "@ronja", "@me"].map(
+                    (tag) => (
+                      <Chip
+                        size="xl"
+                        checked={v.tags.some((t) => t === tag)}
+                        color="blue"
+                        onClick={() => addTag(tag, v.id)}
+                      >
+                        {tag}
+                      </Chip>
+                    ),
+                  )}
+                  {/* <Chip
+                  size="xl"
+                  checked={v.tags.some((t) => t === "PKM")}
+                  color="blue"
+                  onClick={() => addTag("PKM", v.id)}
+                >
+                  PKM
+                </Chip> */}
+                </Chip.Group>
+
+                <Group p="md" position="right">
+                  <Chip
+                    mt="xs"
+                    disabled={v.tags.some((v) => v === "mark-for-cleanup")}
+                    checked={false}
+                    size="xl"
+                    variant="filled"
+                    onClick={() => {
+                      notifyInfo("Marked for cleanup")
+                      addTag("mark-for-cleanup", v.id)
+                    }}
+                  >
+                    <FaTrash />
+                    {/* <FaTrash /> */}
+                  </Chip>
+                </Group>
+              </MantineProvider>
+            </Card.Section>
+          ))
+          .otherwise(() => null)}
+        {/* {Math.random() < 0.5 ? (
+                    <Text size="sm" color="dimmed">
+                      With Fjord Tours you can explore more of the magical fjord
+                      landscapes with tours and activities on and around the
+                      fjords of Norway
+                    </Text>
+                  ) : null}
+                  <Group position="apart" mt="xs" mb="xs">
+                    <Button
+                      size="xs"
+                      mt="md"
+                      radius="md"
+                      variant="light"
+                      color="blue"
+                    >
+                      Tag
+                    </Button>
+                    <Button
+                      size="xs"
+                      mt="md"
+                      radius="md"
+                      variant="light"
+                      color="red"
+                    >
+                      Delete
+                    </Button>
+                  </Group> */}
+      </Card>
+    </div>
+  )
+}
+
+export function InboxMaisonry() {
   const [cached, setCached] = React.useState(true)
 
+  const [input, setInput] = React.useState({
+    cached,
+    count: 50,
+    order: { Case: "Desc" },
+  } as const)
+
   return (
-    <Paper>
-      <Grid>
-        <Grid.Col span={2}>
-          <ScrollArea style={{ height: "95vh" }} scrollbarSize={0}>
-            <QueryWithBoundary
-              name="/api/get-inbox-files"
-              input={{ cached, count: 50, order: { Case: "Desc" } }}
+    <QueryWithBoundary
+      name="/api/get-inbox-files"
+      input={{ ...input, ...{ cached } }}
+    >
+      {(data, { refetch }) => (
+        <>
+          <Group
+            ml="xs"
+            style={{ position: "sticky", top: 10, zIndex: 5 }}
+            p="xs"
+            bg="blue"
+          >
+            <AsyncActionIcon
+              values={{}}
+              action="/api/remove-tagged-images-from-inbox"
+              onSuccess={refetch}
             >
-              {({ values: data, count }, { refetch }) => (
-                <>
-                  <Group ml="xs">
-                    <AsyncActionIcon
-                      values={{}}
-                      action="/api/remove-tagged-images-from-inbox"
-                      onSuccess={refetch}
-                    >
-                      <FaInbox size={20} />
-                    </AsyncActionIcon>
-                    <ActionIcon
-                      onClick={() => {
-                        setCached(!cached)
-                      }}
-                    >
-                      <FaRecycle size={20} />
-                    </ActionIcon>
-                    <Text>{count}</Text>
-                  </Group>
-                  {/* <NavTable dataSource={data} columns={[]} /> */}
-                  <div>
-                    {data.map((file, i) => (
-                      <>
-                        {/* {i > 0 && <Divider my="xs" />} */}
-                        <Box>
-                          <NavLink
-                            to={`./${file.id}`}
-                            style={{ textDecoration: "none" }}
-                          >
-                            {({ isActive }) => (
-                              <MantineNavLink
-                                // p="xs"
-                                // m="xs"
-                                style={{ textDecoration: "none" }}
-                                active={isActive}
-                                variant="light"
-                                label={file.filename}
-                                description={
-                                  <>
-                                    {dayjs(file.fileDateOrCreatedAt).format(
-                                      "YYYY-MM-DD",
-                                    )}{" "}
-                                    {file.tags.map((tag) => (
-                                      <Badge color="gray" radius={0} size="xs">
-                                        {tag}
-                                      </Badge>
-                                    ))}
-                                  </>
-                                }
-                              />
-                            )}
-                          </NavLink>
-                        </Box>
-                      </>
-                    ))}
-                  </div>
-                </>
-              )}
-            </QueryWithBoundary>
-          </ScrollArea>
-        </Grid.Col>
-        <Grid.Col span={10}>
-          <Outlet />
-        </Grid.Col>
-      </Grid>
-    </Paper>
+              <FaInbox size={20} />
+            </AsyncActionIcon>
+            <ActionIcon
+              onClick={() => {
+                setCached((v) => !v)
+              }}
+            >
+              {cached ? <FaRecycle size={20} /> : <FaInbox size={20} />}
+            </ActionIcon>
+            <Text>{data.count}</Text>
+          </Group>
+          <Masonry
+            style={{ marginTop: 40 }}
+            breakpointCols={{
+              default: 3,
+              // 900: 3,
+              // 1200: 2,
+              // 500: 1,
+            }}
+            className="my-masonry-grid"
+            columnClassName="my-masonry-grid_column"
+          >
+            {data.values.map((v, i) => {
+              // const thumbnail = v.lowresVersions?.find(
+              //   (v) => v.name === "thumbnail",
+              // )
+              return <ImageComponent v={v} input={input} />
+            })}
+          </Masonry>
+        </>
+      )}
+    </QueryWithBoundary>
   )
 }
 

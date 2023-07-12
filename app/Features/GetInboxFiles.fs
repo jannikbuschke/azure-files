@@ -10,30 +10,82 @@ open Marten
 open FsToolkit.ErrorHandling
 open Polly
 
-type FileListViewmodel =
-  { Id: FileId
-    Filename: string
-    Url: string
-    FileDateOrCreatedAt: NodaTime.Instant
-    Inbox: bool
-    Tags: string list }
+type Page<'T> = { Values: 'T list; Count: int }
 
-  static member FromFileProjection(projection: FileProjection) =
-    { Id = projection.Key()
-      Filename = projection.Filename
-      Url = projection.Url
-      FileDateOrCreatedAt = projection.FileDateOrCreatedAt
-      Tags = projection.Tags
-      Inbox = projection.Inbox }
+// type FileListViewmodel =
+//   { Id: FileId
+//     Filename: string
+//     Url: string
+//     FileDateOrCreatedAt: NodaTime.Instant
+//     Inbox: bool
+//     Tags: string list }
+//
+//   static member FromFileProjection(projection: FileProjection) =
+//     { Id = projection.Key()
+//       Filename = projection.Filename
+//       Url = projection.Url
+//       FileDateOrCreatedAt = projection.FileDateOrCreatedAt
+//       Tags = projection.Tags
+//       Inbox = projection.Inbox }
 
 type EmptyRecord =
   { Skip: Skippable<unit> }
 
   static member instance = { Skip = Skippable<unit>.Skip }
 
+type Order =
+  | Desc
+  | Asc
+
 [<Action(Route = "api/get-inbox-files", AllowAnonymous = true)>]
-type GetInboxFiles() =
-  interface IRequest<FileListViewmodel list>
+type GetInboxFiles =
+  { Cached: bool
+    Count: int
+    Order: Order }
+  interface IRequest<Page<FileViewmodel>>
+
+type Take =
+  | All
+  | Count of int
+
+module GetInboxFiles =
+  let memoryCache =
+    new Microsoft.Extensions.Caching.Memory.MemoryCache(Microsoft.Extensions.Caching.Memory.MemoryCacheOptions())
+
+  let private memoryCacheProvider =
+    Polly.Caching.Memory.MemoryCacheProvider(memoryCache)
+  // Create a Polly cache policy using that Polly.Caching.Memory.MemoryCacheProvider instance.
+  let cachePolicy = Policy.CacheAsync(memoryCacheProvider, TimeSpan.FromMinutes(30))
+
+  let resetInboxFilesCache () = memoryCache.Remove("get-inbox-files")
+
+  let getInboxFiles (ctx: IWebRequestContext, order: Order) cacheContext =
+    task {
+
+      let! entities =
+        ctx
+          .DocumentSession
+          .Query<FileProjection>()
+          .ToListAsync()
+
+      let sortBy =
+        match order with
+        | Desc -> Seq.sortBy
+        | Asc -> Seq.sortByDescending
+
+      return
+        entities
+        |> Seq.filter (fun v -> v.Inbox = true)
+        |> sortBy (fun v -> v.FileDateOrCreatedAt)
+        |> Seq.toList
+    // let result =
+    //   entities
+    //     .Where(fun v -> v.Inbox = true)
+    //     .OrderByDescending(fun v -> v.FileDateOrCreatedAt)
+    //   |> Seq.toList
+    //
+    // return result
+    }
 
 type InboxFileResult =
   { Previous: FileId option
@@ -45,57 +97,51 @@ type InboxFileResult =
 type GetInboxFile =
   { Id: FileId }
 
-  interface IRequest<InboxFileResult>
-
-module GetInboxFile =
-  let private memoryCache =
-    new Microsoft.Extensions.Caching.Memory.MemoryCache(Microsoft.Extensions.Caching.Memory.MemoryCacheOptions())
-
-  let private memoryCacheProvider =
-    Polly.Caching.Memory.MemoryCacheProvider(memoryCache)
-  // Create a Polly cache policy using that Polly.Caching.Memory.MemoryCacheProvider instance.
-  let cachePolicy = Policy.CacheAsync(memoryCacheProvider, TimeSpan.FromMinutes(3))
+  interface IRequest<ApiResult<InboxFileResult>>
 
 type GetBlobContainersHandler(ctx: IWebRequestContext) =
 
-  interface IRequestHandler<GetInboxFiles, FileListViewmodel list> with
-    member this.Handle(_, _) =
+  interface IRequestHandler<GetInboxFiles, Page<FileViewmodel>> with
+    member this.Handle(request, c) =
       task {
-        let! entities =
-          ctx
-            .DocumentSession
-            .Query<FileProjection>()
-            .ToListAsync()
+        if not request.Cached then
+          GetInboxFiles.resetInboxFilesCache ()
+
+        let! result =
+          GetInboxFiles.cachePolicy.ExecuteAndCaptureAsync(
+            (GetInboxFiles.getInboxFiles (ctx, request.Order)),
+            Context("get-inbox-files")
+          )
+
+        let mem = GetInboxFiles.memoryCache
+
+        let result = result.Result
 
         return
-          entities
-          |> Seq.filter (fun v -> v.Inbox = true)
-          |> Seq.sortBy (fun v -> v.FileDateOrCreatedAt)
-          |> Seq.map FileListViewmodel.FromFileProjection
-          |> Seq.toList
+          { Values =
+              result
+              |> List.map FileViewmodel.FromFileProjection
+              // |> List.skip 200
+              |> List.truncate request.Count
+            Count = result |> List.length }
       }
 
-  interface IRequestHandler<GetInboxFile, InboxFileResult> with
+  interface IRequestHandler<GetInboxFile, ApiResult<InboxFileResult>> with
     member this.Handle(request, _) =
-      task {
-        let getInboxFiles cacheContext =
-          task {
-            let! entities =
-              ctx
-                .DocumentSession
-                .Query<FileProjection>()
-                .ToListAsync()
+      taskResult {
+        // let! result =
+        //   GetInboxFiles.cachePolicy.ExecuteAndCaptureAsync(
+        //     (GetInboxFiles.getInboxFiles ctx),
+        //     Context("get-inbox-files")
+        //   )
 
-            let result =
-              entities
-                .Where(fun v -> v.Inbox = true)
-                .OrderBy(fun v -> v.FileDateOrCreatedAt)
-              |> Seq.toList
+        let! file = ctx.DocumentSession.LoadFile request.Id
 
-            return result
-          }
-
-        let! result = GetInboxFile.cachePolicy.ExecuteAndCaptureAsync(getInboxFiles, Context("get-inbox-files"))
+        let! result =
+          GetInboxFiles.cachePolicy.ExecuteAndCaptureAsync(
+            (GetInboxFiles.getInboxFiles (ctx, Order.Desc)),
+            Context("get-inbox-files")
+          )
 
         let result = result.Result
 
@@ -103,7 +149,7 @@ type GetBlobContainersHandler(ctx: IWebRequestContext) =
           result
           |> List.findIndex (fun v -> v.Key() = request.Id)
 
-        let item = result.[index]
+        // let item = result.[index]
 
         let prev =
           if index > 0 then
@@ -121,5 +167,5 @@ type GetBlobContainersHandler(ctx: IWebRequestContext) =
           { Next = next |> Option.map (fun v -> v.Key())
             NextUrl = next |> Option.map (fun v -> v.Url)
             Previous = prev |> Option.map (fun v -> v.Key())
-            File = item |> FileViewmodel.FromFileProjection }
+            File = file |> FileViewmodel.FromFileProjection }
       }

@@ -1,11 +1,22 @@
 import * as React from "react"
-import { Group, Text, useMantineTheme, MantineTheme } from "@mantine/core"
+import {
+  Group,
+  Text,
+  useMantineTheme,
+  MantineTheme,
+  Paper,
+} from "@mantine/core"
 import { updateNotification, showNotification } from "@mantine/notifications"
 import { Dropzone } from "@mantine/dropzone"
-import { useNotify } from "glow-core"
+import { ErrorBanner, useNotify } from "glow-core"
 import { FSharpList } from "../client/Microsoft_FSharp_Collections"
-import { FSharpResult } from "../client/Microsoft_FSharp_Core"
-import { ErrorResult, FileSavedToStorage } from "../client/AzureFiles"
+import { FSharpResult, Unit } from "../client/Microsoft_FSharp_Core"
+import {
+  ApiError,
+  ApiErrorInfo_Case_ErrorResult,
+  ErrorResult,
+  FileSavedToStorage,
+} from "../client/AzureFiles"
 import { useSubscription } from "../client/subscriptions"
 import {
   TbUpload as IconUpload,
@@ -14,8 +25,10 @@ import {
   TbFileCheck,
   TbFileUnknown,
 } from "react-icons/tb"
-import { QueryWithBoundary } from "../query"
+import { Query, QueryWithBoundary } from "../query"
 import { useTypedQuery } from "../client/api"
+import { useQuery } from "react-query"
+import { AsyncButton } from "../typed-api/ActionButton"
 
 // function getIconColor(status: DropzoneStatus, theme: MantineTheme) {
 //   return status.accepted
@@ -26,6 +39,11 @@ import { useTypedQuery } from "../client/api"
 //     ? theme.colors.dark[0]
 //     : theme.colors.gray[7]
 // }
+
+type ApiResult = FSharpResult<Unit, ApiError>
+// type UploadError = { Case: "Error"; Fields: {message:string;info:null|{Case:string}} }
+// type UploadSuccess = { Case: "Success" }
+// type UploadResult = ApiResult
 
 export const dropzoneChildren = (
   // status: DropzoneStatus,
@@ -99,9 +117,38 @@ export function UploadFile() {
   }>({})
   return (
     <>
+      <Paper mb="sm" p="md" shadow="md" radius="md">
+        <Query name={"/api/g-drive/show-files"} input={{}}>
+          {(data) =>
+            data.Case === "Ok" ? (
+              <div>
+                {data.Fields.map((v) => (
+                  <div>
+                    <div>
+                      {v.name}
+                      <AsyncButton
+                        size="xs"
+                        variant="subtle"
+                        action={"/api/g-drive/download-file-to-inbox"}
+                        values={{ id: v.id }}
+                      >
+                        download
+                      </AsyncButton>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <ErrorBanner message={data.Fields.message} />
+            )
+          }
+        </Query>
+      </Paper>
+
       <Dropzone
         multiple={true}
         onDrop={async (files) => {
+          let results: ApiResult[] = []
           for (let index = 0; index < files.length; index++) {
             // const array = files.slice(index * 5, index * 5 + 5)
             if (index === 0) {
@@ -124,7 +171,7 @@ export function UploadFile() {
               const data = new FormData()
               data.append("file", files[index]!)
 
-              const response = await fetch("/upload", {
+              const response = await fetch("/api/upload-file", {
                 headers: {
                   "x-submit-intent": "execute",
                 },
@@ -135,11 +182,15 @@ export function UploadFile() {
                 console.log("error", response)
                 const error = await response.json()
                 throw error
+              } else {
+                const data = (await response.json()) as ApiResult[]
+                results.push(...data)
+                console.log({ data })
               }
-              console.log("response", response)
-              const d = (await response.json()) as FSharpList<
-                FSharpResult<FileSavedToStorage, ErrorResult>
-              >
+              // console.log("response", response)
+              // const d = (await response.json()) as FSharpList<
+              //   FSharpResult<FileSavedToStorage, ErrorResult>
+              // >
               // updateNotification({
               //   id: "uploading-files-" + index,
               //   // title: "File successfully uploaded",
@@ -150,8 +201,9 @@ export function UploadFile() {
               // })
             } catch (E: any) {
               console.log("catch error")
+              results.push({ Case: "Error", Fields: E })
               updateNotification({
-                id: "uploading-files-" + index,
+                id: "uploading-files",
                 title: "Uploading files failed",
                 message: `Uploading ${files.length} files failed. Error ${
                   typeof E === "object" ? JSON.stringify(E) : E?.toString()
@@ -162,14 +214,51 @@ export function UploadFile() {
               })
               setloading(false)
             } finally {
-              updateNotification({
-                id: "uploading-files",
-                // title: "File successfully uploaded",
-                message: `Files successfully uploaded`,
-                color: "green",
-                loading: false,
-                autoClose: true,
-              })
+              console.log({ results })
+              if (results.filter((v) => v.Case === "Error").length === 0) {
+                updateNotification({
+                  id: "uploading-files",
+                  // title: "File successfully uploaded",
+                  message: `Files successfully uploaded`,
+                  color: "green",
+                  loading: false,
+                  autoClose: true,
+                })
+              } else {
+                const duplicates = results.filter(
+                  (v) =>
+                    v.Case === "Error" &&
+                    v.Fields.info?.Case === "FileIsDuplicate",
+                )
+                const successes = results.filter((v) => v.Case === "Ok")
+                const errors = results.filter(
+                  (v) => v.Case === "Error" && !duplicates.some((x) => x == v),
+                )
+                // const errors = results.filter(
+                //   (v) =>
+                //     v.Case === "Error"
+                // )
+
+                if (duplicates.length === results.length) {
+                  updateNotification({
+                    id: "uploading-files",
+                    title: "Uploading files skipped",
+                    message: `All files where skipped because they already exist`,
+                    color: "green",
+                    loading: false,
+                    autoClose: false,
+                  })
+                } else {
+                  updateNotification({
+                    id: "uploading-files",
+                    title: "Uploading files failed (final)",
+                    message: `Uploading ${files.length} files failed. There have been ${errors.length} Errors, ${duplicates.length} duplicates and ${successes.length} successful uploads`,
+                    color: "red",
+                    loading: false,
+                    autoClose: false,
+                  })
+                }
+              }
               setloading(false)
             }
           }

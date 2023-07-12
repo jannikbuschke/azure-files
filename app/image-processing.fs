@@ -9,64 +9,39 @@ open SkiaSharp
 
 let resizeImage (stream: Stream) (mainAxisLength: int) =
   task {
+
     let image = Image.Load(stream)
 
     let originalSize: Dimension =
       { Width = image.Width
         Height = image.Height }
 
-    let pixels = originalSize.Width * originalSize.Height
+
+    printf "original size (width=%d, height=%d)\n" originalSize.Width originalSize.Height
+
+    // let pixels = originalSize.Width * originalSize.Height
 
     let targetSize: Dimension =
       if originalSize.Width > originalSize.Height then
-        { Width = mainAxisLength
-          Height = mainAxisLength / pixels }
+        { Width = mainAxisLength; Height = 0 }
       else
-        { Height = mainAxisLength
-          Width = mainAxisLength / pixels }
+        { Height = mainAxisLength; Width = 0 }
 
-    image.Mutate
-      (fun x ->
-        x.Resize(targetSize.Width, targetSize.Height, true)
-        |> ignore)
+    printf "target size (width=%d, height=%d)\n" targetSize.Width targetSize.Height
+
+    image.Mutate (fun x ->
+      x.Resize(targetSize.Width, targetSize.Height, true)
+      |> ignore)
+
+    let targetSize =
+      { Width = image.Width
+        Height = image.Height }
+
+    printf "mutated image size (width=%d, height=%d)\n" image.Width image.Height
 
     let result = new MemoryStream()
 
     do! image.SaveAsync(result, JpegEncoder())
-
-    result.Position <- 0
-
-    return targetSize, result
-  }
-
-let resizeWithImageSharp (path: string) (mainAxisLength: int) =
-  async {
-    let image = Image.Load(path)
-
-    let originalSize: Dimension =
-      { Width = image.Width
-        Height = image.Height }
-
-    let pixels = originalSize.Width * originalSize.Height
-
-    let targetSize: Dimension =
-      if originalSize.Width > originalSize.Height then
-        { Width = mainAxisLength
-          Height = mainAxisLength / pixels }
-      else
-        { Height = mainAxisLength
-          Width = mainAxisLength / pixels }
-
-    image.Mutate
-      (fun x ->
-        x.Resize(targetSize.Width, targetSize.Height, true)
-        |> ignore)
-
-    let result = new MemoryStream()
-
-    do!
-      image.SaveAsync(result, JpegEncoder())
-      |> Async.AwaitTask
 
     result.Position <- 0
 
@@ -90,12 +65,3 @@ let resize (stream: System.IO.Stream) (dimension: Dimension) (quality: SKFilterQ
   use skaledImage = SKImage.FromBitmap skaledBitmap
   use data = skaledImage.Encode()
   data, dimension
-
-let printTotalFileBytes (input: string) = async { return 5 }
-
-let asyncListProcess (input: string list) =
-  input
-  |> Seq.map printTotalFileBytes
-  |> Async.Sequential
-  |> Async.Ignore
-  |> Async.RunSynchronously

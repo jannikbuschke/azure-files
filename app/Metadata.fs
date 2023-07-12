@@ -34,17 +34,18 @@ module Metadata =
 
   let getValue (dict: IDictionary<string, string>) (key: string) = dict[key] |> HttpUtility.HtmlDecode
 
-  let getLocalChecksum (dict: IDictionary<string, string>) =
-    getValue dict "local_checksum"
-    |> Checksum.Checksum
+  let tryGetLocalChecksum (dict: IDictionary<string, string>) =
+    tryGetValue dict "local_checksum"
+    |> Option.map Checksum.Checksum
 
-  let getOriginalFilename (dict: IDictionary<string, string>) = dict["original_filename"]
+  let tryGetOriginalFilename (dict: IDictionary<string, string>) =
+    tryGetValue dict "original_filename"
 
-  let getId (dict: IDictionary<string, string>) =
-    getValue dict "id"
-    |> HttpUtility.HtmlDecode
-    |> Guid.Parse
-    |> FileId.create
+  let tryGetId (dict: IDictionary<string, string>) =
+    tryGetValue dict "id"
+    |> Option.map HttpUtility.HtmlDecode
+    |> Option.map Guid.Parse
+    |> Option.map FileId.create
 
   let encodeLocation (location: Rational array) =
     location
@@ -83,6 +84,7 @@ module Metadata =
           formatProvider = null,
           styles = DateTimeStyles.AssumeLocal
         )
+
       x)
 
   let createMetadata (localChecksum: Checksum) (originalFilename: string) (id: FileId) (image: Image) =
@@ -100,18 +102,19 @@ module Metadata =
     }
     |> Seq.iter d.Add
 
-    d.Add("width", image.Width.ToString())
-    d.Add("height", image.Height.ToString())
+    if image <> null then
+      d.Add("width", image.Width.ToString())
+      d.Add("height", image.Height.ToString())
 
-    let exifProperties =
-      AzFiles.Exif.readExif image.Metadata.ExifProfile
-      |> Option.map Seq.toList
+    // let exifProperties =
+    //   AzFiles.Exif.readExif image.Metadata.ExifProfile
+    //   |> Option.map Seq.toList
 
-    let image = exifProperties |> Option.map(fun properties-> {|
-                  Width = image.Width
-                  Height = image.Height
-                  ExifProperties = properties
-                     |}) 
-    
+    // let image = exifProperties |> Option.map(fun properties-> {|
+    //               Width = image.Width
+    //               Height = image.Height
+    //               ExifProperties = properties
+    //                  |})
+
     // TODO: maybe add to dictionary?
     d

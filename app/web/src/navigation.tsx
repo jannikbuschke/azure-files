@@ -1,7 +1,7 @@
 import * as React from "react"
 import { Route, Routes, Outlet } from "react-router"
 import { BlobItemDetail } from "./blob-container/blob-detail"
-import { IndexedFileDetail, Înbox } from "./blob-container/inbox"
+import { Inbox, IndexedFileDetail } from "./blob-container/inbox"
 import { BlobContainerDetail, BlobContainerList } from "./blob-container/list"
 import { UploadFile } from "./blob-container/upload-file"
 import { GenerateBlogActions } from "./my-actions/generate-blog"
@@ -12,6 +12,9 @@ import { EsEventListWithoutValidation } from "./debug-views/event-list-without-v
 import { PgsqlActivities } from "./debug-views/pgsql"
 import { Nav } from "glow-mantine/lib/nav"
 import { ImagesGallery } from "./blob-container/images"
+import { GalleryPreview } from "./blob-container/gallery-editor"
+import { PdfPage } from "./blob-container/pdf-viewer"
+import { Fsi } from "./fsi/fsi-view"
 
 export function AllContentRoutes() {
   return (
@@ -23,7 +26,7 @@ export function AllContentRoutes() {
       </Route>
       <Route path="/upload-file" element={<UploadFile />} />
       <Route path="/untagged-files" element={<UntaggedFilesView />} />
-      <Route path="/inbox" element={<Înbox />}>
+      <Route path="/inbox" element={<Inbox />}>
         <Route
           path=":id"
           element={
@@ -33,7 +36,10 @@ export function AllContentRoutes() {
           }
         />
       </Route>
+      <Route path="/fsi" element={<Fsi />} />
+      <Route path="/gallery-preview" element={<GalleryPreview />} />
       <Route path="/images" element={<ImagesGallery />} />
+      <Route path="/pdfs/:id" element={<PdfPage />} />
       <Route path="/actions" element={<GenerateBlogActions />} />
       <Route
         path="/debug"

@@ -9,6 +9,7 @@ import {
 } from "glow-core"
 import { TypedNotificationsProvider } from "glow-core/lib/notifications/type-notifications"
 import React from "react"
+import { ReactQueryDevtools } from "react-query/devtools"
 
 const client = new QueryClient()
 
@@ -33,6 +34,7 @@ export function RootProvider({ children }: { children: React.ReactNode }) {
             </GlowNotificationProvider>
           </VnextAuthenticationProvider>
         </GlowProvider>
+        <ReactQueryDevtools initialIsOpen={false} />
       </QueryClientProvider>
     </BrowserRouter>
   )

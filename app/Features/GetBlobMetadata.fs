@@ -45,7 +45,7 @@ type GetExifDataFromBlobFileHandler(ctx: IWebRequestContext) =
             return s.Value.Content
           }
 
-        let! result = Exif.readExifData (request.BlobId, getStream)
+        let! result = Exif.readExifData (ctx.GetLogger<obj>(), request.BlobId, getStream)
         //
         // let exif =
         //   Exif.readExifFromStream s.Value.Content

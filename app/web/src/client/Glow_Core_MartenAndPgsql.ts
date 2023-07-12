@@ -5,13 +5,26 @@
 import * as System from "./System"
 import * as MediatR from "./MediatR"
 import * as System_Collections_Generic from "./System_Collections_Generic"
-import * as NodaTime from "./NodaTime"
 
 export type GetDocuments = {
   documentName: System.String
 }
 export var defaultGetDocuments: GetDocuments = {
   documentName: ''
+}
+
+export type ArchiveEvents = {
+  typeName: System.String
+}
+export var defaultArchiveEvents: ArchiveEvents = {
+  typeName: ''
+}
+
+export type RestoreEvents = {
+  typeName: System.String
+}
+export var defaultRestoreEvents: RestoreEvents = {
+  typeName: ''
 }
 
 export type ArchiveEvent = {
@@ -146,27 +159,27 @@ export var defaultEventViewmodel: EventViewmodel = {
   aggregateTypeName: ''
 }
 
-export type EventViewmodel2 = {
+export type RawEventModel = {
   seq_id: System.Int64
   id: System.Guid
   stream_id: System.Guid
   version: System.Int64
   data: System.String
   type: System.String
-  timestamp: NodaTime.Instant
+  timestamp: System.DateTime
   tenant_id: System.String
   mt_dotnet_type: System.String
   headers: System.String
   is_archived: System.Boolean
 }
-export var defaultEventViewmodel2: EventViewmodel2 = {
+export var defaultRawEventModel: RawEventModel = {
   seq_id: 0,
   id: '00000000-0000-0000-0000-000000000000',
   stream_id: '00000000-0000-0000-0000-000000000000',
   version: 0,
   data: '',
   type: '',
-  timestamp: "9999-12-31T23:59:59.999999999Z",
+  timestamp: "0001-01-01T00:00:00",
   tenant_id: '',
   mt_dotnet_type: '',
   headers: '',

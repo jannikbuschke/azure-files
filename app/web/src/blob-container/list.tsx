@@ -3,6 +3,7 @@ import { Button, Container, Grid, Stack } from "@mantine/core"
 import { Outlet, useParams } from "react-router"
 import { Link } from "react-router-dom"
 import { useTypedAction, useTypedQuery } from "../client/api"
+import { AsyncButton } from "../typed-api/ActionButton"
 // import { RenderObject } from "glow-core"
 
 export function BlobContainerDetail() {
@@ -14,14 +15,13 @@ export function BlobContainerDetail() {
   const [deleteAll] = useTypedAction("/api/blob/delete-all-in-container")
   return (
     <Stack>
-      <Button
-        onClick={async () => {
-          await deleteAll({ containerName: name! })
-          refetch()
-        }}
+      <AsyncButton
+        action="/api/blob/delete-all-in-container"
+        values={{ containerName: name! }}
       >
-        Delete all
-      </Button>
+        Delete all in {name!}
+      </AsyncButton>
+
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
         <div>
           {data.map((v) => (

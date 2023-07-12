@@ -3,7 +3,6 @@
 //////////////////////////////////////
 
 import * as System from "./System"
-import * as SixLabors_ImageSharp from "./SixLabors_ImageSharp"
 import * as AzureFiles from "./AzureFiles"
 import * as Microsoft_FSharp_Core from "./Microsoft_FSharp_Core"
 import * as System_Collections_Generic from "./System_Collections_Generic"
@@ -142,15 +141,15 @@ export type ExifValue_Case_GPSDestLongitudeRef = { Case: "GPSDestLongitudeRef", 
 export type ExifValue_Case_GPSDestBearingRef = { Case: "GPSDestBearingRef", Fields: System.String }
 export type ExifValue_Case_GPSDestDistanceRef = { Case: "GPSDestDistanceRef", Fields: System.String }
 export type ExifValue_Case_GPSDateStamp = { Case: "GPSDateStamp", Fields: System.String }
-export type ExifValue_Case_ImageWidth = { Case: "ImageWidth", Fields: SixLabors_ImageSharp.Number }
-export type ExifValue_Case_ImageLength = { Case: "ImageLength", Fields: SixLabors_ImageSharp.Number }
-export type ExifValue_Case_RowsPerStrip = { Case: "RowsPerStrip", Fields: SixLabors_ImageSharp.Number }
-export type ExifValue_Case_TileWidth = { Case: "TileWidth", Fields: SixLabors_ImageSharp.Number }
-export type ExifValue_Case_TileLength = { Case: "TileLength", Fields: SixLabors_ImageSharp.Number }
-export type ExifValue_Case_BadFaxLines = { Case: "BadFaxLines", Fields: SixLabors_ImageSharp.Number }
-export type ExifValue_Case_ConsecutiveBadFaxLines = { Case: "ConsecutiveBadFaxLines", Fields: SixLabors_ImageSharp.Number }
-export type ExifValue_Case_PixelXDimension = { Case: "PixelXDimension", Fields: SixLabors_ImageSharp.Number }
-export type ExifValue_Case_PixelYDimension = { Case: "PixelYDimension", Fields: SixLabors_ImageSharp.Number }
+export type ExifValue_Case_ImageWidth = { Case: "ImageWidth", Fields: System.Int32 }
+export type ExifValue_Case_ImageLength = { Case: "ImageLength", Fields: System.Int32 }
+export type ExifValue_Case_RowsPerStrip = { Case: "RowsPerStrip", Fields: System.Int32 }
+export type ExifValue_Case_TileWidth = { Case: "TileWidth", Fields: System.Int32 }
+export type ExifValue_Case_TileLength = { Case: "TileLength", Fields: System.Int32 }
+export type ExifValue_Case_BadFaxLines = { Case: "BadFaxLines", Fields: System.Int32 }
+export type ExifValue_Case_ConsecutiveBadFaxLines = { Case: "ConsecutiveBadFaxLines", Fields: System.Int32 }
+export type ExifValue_Case_PixelXDimension = { Case: "PixelXDimension", Fields: System.Int32 }
+export type ExifValue_Case_PixelYDimension = { Case: "PixelYDimension", Fields: System.Int32 }
 export type ExifValue_Case_OldSubfileType = { Case: "OldSubfileType", Fields: System.UInt16 }
 export type ExifValue_Case_Compression = { Case: "Compression", Fields: System.UInt16 }
 export type ExifValue_Case_PhotometricInterpretation = { Case: "PhotometricInterpretation", Fields: System.UInt16 }
@@ -257,10 +256,10 @@ export type ExifValue_Case_IntergraphPacketData = { Case: "IntergraphPacketData"
 export type ExifValue_Case_ISOSpeedRatings = { Case: "ISOSpeedRatings", Fields: System_Collections_Generic.IEnumerable<System.UInt16> }
 export type ExifValue_Case_SubjectArea = { Case: "SubjectArea", Fields: System_Collections_Generic.IEnumerable<System.UInt16> }
 export type ExifValue_Case_SubjectLocation = { Case: "SubjectLocation", Fields: System_Collections_Generic.IEnumerable<System.UInt16> }
-export type ExifValue_Case_StripOffsets = { Case: "StripOffsets", Fields: System_Collections_Generic.IEnumerable<SixLabors_ImageSharp.Number> }
-export type ExifValue_Case_StripByteCounts = { Case: "StripByteCounts", Fields: System_Collections_Generic.IEnumerable<SixLabors_ImageSharp.Number> }
-export type ExifValue_Case_TileByteCounts = { Case: "TileByteCounts", Fields: System_Collections_Generic.IEnumerable<SixLabors_ImageSharp.Number> }
-export type ExifValue_Case_ImageLayer = { Case: "ImageLayer", Fields: System_Collections_Generic.IEnumerable<SixLabors_ImageSharp.Number> }
+export type ExifValue_Case_StripOffsets = { Case: "StripOffsets", Fields: System_Collections_Generic.IEnumerable<System.Int32> }
+export type ExifValue_Case_StripByteCounts = { Case: "StripByteCounts", Fields: System_Collections_Generic.IEnumerable<System.Int32> }
+export type ExifValue_Case_TileByteCounts = { Case: "TileByteCounts", Fields: System_Collections_Generic.IEnumerable<System.Int32> }
+export type ExifValue_Case_ImageLayer = { Case: "ImageLayer", Fields: System_Collections_Generic.IEnumerable<System.Int32> }
 export type ExifValue_Case_FreeOffsets = { Case: "FreeOffsets", Fields: System_Collections_Generic.IEnumerable<System.UInt32> }
 export type ExifValue_Case_FreeByteCounts = { Case: "FreeByteCounts", Fields: System_Collections_Generic.IEnumerable<System.UInt32> }
 export type ExifValue_Case_ColorResponseUnit = { Case: "ColorResponseUnit", Fields: System_Collections_Generic.IEnumerable<System.UInt32> }
@@ -373,15 +372,15 @@ export var defaultExifValue_Case_GPSDestLongitudeRef = { Case: "GPSDestLongitude
 export var defaultExifValue_Case_GPSDestBearingRef = { Case: "GPSDestBearingRef", Fields: '' }
 export var defaultExifValue_Case_GPSDestDistanceRef = { Case: "GPSDestDistanceRef", Fields: '' }
 export var defaultExifValue_Case_GPSDateStamp = { Case: "GPSDateStamp", Fields: '' }
-export var defaultExifValue_Case_ImageWidth = { Case: "ImageWidth", Fields: SixLabors_ImageSharp.defaultNumber }
-export var defaultExifValue_Case_ImageLength = { Case: "ImageLength", Fields: SixLabors_ImageSharp.defaultNumber }
-export var defaultExifValue_Case_RowsPerStrip = { Case: "RowsPerStrip", Fields: SixLabors_ImageSharp.defaultNumber }
-export var defaultExifValue_Case_TileWidth = { Case: "TileWidth", Fields: SixLabors_ImageSharp.defaultNumber }
-export var defaultExifValue_Case_TileLength = { Case: "TileLength", Fields: SixLabors_ImageSharp.defaultNumber }
-export var defaultExifValue_Case_BadFaxLines = { Case: "BadFaxLines", Fields: SixLabors_ImageSharp.defaultNumber }
-export var defaultExifValue_Case_ConsecutiveBadFaxLines = { Case: "ConsecutiveBadFaxLines", Fields: SixLabors_ImageSharp.defaultNumber }
-export var defaultExifValue_Case_PixelXDimension = { Case: "PixelXDimension", Fields: SixLabors_ImageSharp.defaultNumber }
-export var defaultExifValue_Case_PixelYDimension = { Case: "PixelYDimension", Fields: SixLabors_ImageSharp.defaultNumber }
+export var defaultExifValue_Case_ImageWidth = { Case: "ImageWidth", Fields: 0 }
+export var defaultExifValue_Case_ImageLength = { Case: "ImageLength", Fields: 0 }
+export var defaultExifValue_Case_RowsPerStrip = { Case: "RowsPerStrip", Fields: 0 }
+export var defaultExifValue_Case_TileWidth = { Case: "TileWidth", Fields: 0 }
+export var defaultExifValue_Case_TileLength = { Case: "TileLength", Fields: 0 }
+export var defaultExifValue_Case_BadFaxLines = { Case: "BadFaxLines", Fields: 0 }
+export var defaultExifValue_Case_ConsecutiveBadFaxLines = { Case: "ConsecutiveBadFaxLines", Fields: 0 }
+export var defaultExifValue_Case_PixelXDimension = { Case: "PixelXDimension", Fields: 0 }
+export var defaultExifValue_Case_PixelYDimension = { Case: "PixelYDimension", Fields: 0 }
 export var defaultExifValue_Case_OldSubfileType = { Case: "OldSubfileType", Fields: System.defaultUInt16 }
 export var defaultExifValue_Case_Compression = { Case: "Compression", Fields: System.defaultUInt16 }
 export var defaultExifValue_Case_PhotometricInterpretation = { Case: "PhotometricInterpretation", Fields: System.defaultUInt16 }

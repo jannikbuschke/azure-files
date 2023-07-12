@@ -3,26 +3,43 @@
 open AzureFiles
 open Glow.Core.Actions
 open MediatR
-open System.Linq
-open Marten
 open FsToolkit.ErrorHandling
 
 [<Action(Route = "api/remove-tagged-images-from-inbox", AllowAnonymous = true)>]
 type RemoveTaggedImagesFromInbox() =
-  interface IRequest<ServiceResult<unit>>
+  interface IRequest<ApiResult<unit>>
 
-type Handler(ctx: IWebRequestContext) =
+module RemoveTaggedImagesFromInbox =
+  type Handler(ctx: IWebRequestContext) =
 
-  interface IRequestHandler<RemoveTaggedImagesFromInbox, ServiceResult<unit>> with
-    member this.Handle(_, _) =
-      taskResult {
-        let! entities = ctx.DocumentSession.QueryAsync<FileProjection>("where data -> 'RemovedFromInboxAt' = 'null'")
+    interface IRequestHandler<RemoveTaggedImagesFromInbox, ApiResult<unit>> with
+      member this.Handle(_, _) =
+        taskResult {
+          let! taggedImages =
+            ctx.DocumentSession.QueryAsync<FileProjection>("where data -> 'RemovedFromInboxAt' <> 'null'")
 
-        entities
-        |> Seq.filter (fun v -> v.Tags |> List.length > 0)
-        |> Seq.map (fun v -> (v.Key(), FileEvent.RemovedFromInbox EmptyRecord.Instance))
-        |> Seq.iter ctx.DocumentSession.Events.AppendFileStream
+          let! entities = ctx.DocumentSession.QueryAsync<FileProjection>("where data -> 'RemovedFromInboxAt' = 'null'")
+          GetInboxFiles.GetInboxFiles.resetInboxFilesCache ()
 
-        do! ctx.DocumentSession.SaveChangesAsync()
-        return ()
-      }
+          taggedImages
+          |> Seq.filter (fun v ->
+            v.Tags
+            |> List.contains (SpecialTag.MarkForCleanup))
+          |> Seq.map (fun v -> (v.Key(), FileEvent.Deleted EmptyRecord.Instance))
+          |> Seq.iter ctx.DocumentSession.Events.AppendFileStream
+
+          entities
+          |> Seq.filter (fun v -> v.Tags |> List.length > 0)
+          |> Seq.map (fun v ->
+            if
+              v.Tags
+              |> List.contains (SpecialTag.MarkForCleanup)
+            then
+              (v.Key(), FileEvent.Deleted EmptyRecord.Instance)
+            else
+              (v.Key(), FileEvent.RemovedFromInbox EmptyRecord.Instance))
+          |> Seq.iter ctx.DocumentSession.Events.AppendFileStream
+
+          do! ctx.DocumentSession.SaveChangesAsync()
+          return ()
+        }

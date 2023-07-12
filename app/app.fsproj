@@ -6,30 +6,48 @@
     <DefaultItemExcludes>$(DefaultItemExcludes);$(SpaRoot)node_modules\**</DefaultItemExcludes>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="DbMigrate.fs" />
     <Compile Include="ConnectionStrings.fs" />
-    <Compile Include="background-queue.fs" />
     <Compile Include="Policies.fs" />
     <Compile Include="FileId.fs" />
+    <Compile Include="Exif.fs" />
     <Compile Include="domain.fs" />
+    <Compile Include="Metadata.fs" />
     <Compile Include="marten-extensions.fs" />
     <Compile Include="projections.fs" />
     <Compile Include="blob-service.fs" />
     <Compile Include="image-processing.fs" />
-    <Compile Include="utils.fs" />
+    <Compile Include="get-Md5Hash.fs" />
     <Compile Include="file-workflow.fs" />
-    <Compile Include="upload-file-controller.fs" />
+    <Compile Include="LowresCreatorBackgroundservice.fs" />
+    <Compile Include="LobbyBackgroundService.fs" />
     <Compile Include="Features\GetInboxFiles.fs" />
+    <Compile Include="Features\DownloadFile.fs" />
     <Compile Include="Features\SetTags.fs" />
+    <Compile Include="Features\TagMany.fs" />
     <Compile Include="Features\GetTaggedImages.fs" />
     <Compile Include="Features\DeleteFile.fs" />
     <Compile Include="Features\GetNavbar.fs" />
-    <Compile Include="scan-files.fs" />
+    <Compile Include="Features\debug.fs" />
+    <Compile Include="Features\GetBlobMetadata.fs" />
+    <Compile Include="Features\blob-actions.fs" />
+    <Compile Include="Features\RemoveTaggedFromInbox.fs" />
+    <Compile Include="Features\EditProperty.fs" />
+    <Compile Include="Features\GoogleDrive\ShowFiles.fs" />
+    <Compile Include="Features\Fsi\EvaluateFs.fs" />
     <Compile Include="generate-blog-data.fs" />
-    <Compile Include="EventPublisher.fs" />
+    <Compile Include="generat-obsidian-notes.fs" />
+    <Compile Include="UploadController.fs" />
+    <Compile Include="TestController.fs" />
     <Compile Include="Program.fs" />
+    <None Include="Fsi.fsx" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Dapper" Version="1.50.5" />
+    <PackageReference Include="Npgsql.FSharp" Version="5.7.0" />
     <PackageReference Include="FSharp.Control.AsyncSeq" Version="3.2.1" />
+    <PackageReference Include="FSharp.Control.TaskSeq" Version="0.3.0" />
+    <PackageReference Include="FSharp.SystemTextJson" Version="1.0.5" />
     <PackageReference Include="Jering.Javascript.NodeJS" Version="6.0.1" />
     <PackageReference Include="SkiaSharp" Version="2.80.3" />
     <PackageReference Include="SixLabors.ImageSharp" Version="2.1.1" />
@@ -37,21 +55,37 @@
     <PackageReference Include="FsToolkit.ErrorHandling" Version="2.13.0" />
     <PackageReference Include="FsToolkit.ErrorHandling.TaskResult" Version="2.13.0" />
     <PackageReference Include="FsToolkit.ErrorHandling.AsyncSeq" Version="2.13.0" />
+    <PackageReference Include="Polly" Version="7.2.3" />
+    <PackageReference Include="Polly.Caching.Memory" Version="3.0.2" />
   </ItemGroup>
   <!--  <ItemGroup>-->
   <!--    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="3.1.2" />-->
   <!--  </ItemGroup>-->
   <ItemGroup>
 <!--    <PackageReference Include="Marten" Version="5.10.1" />-->
-    <PackageReference Include="Azure.Storage.Blobs" Version="12.10.0" />
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.16.0" />
+    <PackageReference Include="Microsoft.Identity.Client" Version="4.47.2" />
+    <PackageReference Include="Azure.Identity" Version="1.4.1" />
+    <PackageReference Include="Google.Apis.Drive.v3" Version="1.61.0.3082" />
+    <PackageReference Include="FSharp.Compiler.Service" Version="43.7.300"/>
+    
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\glow\glow.core.fs\glow.core.fs.fsproj" />
     <ProjectReference Include="..\glow\glow.meta\glow.meta.csproj" />
-    <!--    <ProjectReference Include="..\glow\core\glow.core.csproj" />-->
+    <ProjectReference Include="..\glow\glow.ts.fs\glow.ts.fs.fsproj" />
+    <ProjectReference Include="..\glow\glow.core.fs\glow.core.fs.fsproj" />
+    <ProjectReference Include="..\glow\glow.ts\glow.ts.csproj" />
+    <ProjectReference Include="..\glow\core\glow.core.csproj" />
+<!--    <ProjectReference Include="..\glow\glow.legacy\glow.legacy.csproj" />-->
     <!--    <ProjectReference Include="..\glow\glow.azdo\glow.azdo.csproj" />-->
     <!--    <ProjectReference Include="..\glow\glow.azure\glow.azure.csproj" />-->
     <!--    <ProjectReference Include="..\glow\glow.beta\glow.beta.csproj" />-->
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Remove="Features\GDrive\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Remove="Features\GDrive\**" />
   </ItemGroup>
   <Target Name="PublishRunWebpack" AfterTargets="ComputeFilesToPublish">
     <ItemGroup>

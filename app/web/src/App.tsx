@@ -132,12 +132,9 @@ export function App() {
       navbar={
         <Navbar
           hidden={!opened}
-          hiddenBreakpoint="sm"
+          hiddenBreakpoint="xs"
           width={{ sm: 200, lg: 300 }}
         >
-          {/* Navbar content */}
-          {/* First section with normal height (depends on section content) */}
-          {/* <Navbar.Section>First section</Navbar.Section> */}
           {data.message && (
             <Navbar.Section>
               <Card radius={0}>
@@ -147,12 +144,9 @@ export function App() {
               </Card>
             </Navbar.Section>
           )}
-          {/* Grow section will take all available space that is not taken by first and last sections */}
           <Navbar.Section grow>
             <MainLinks data={navbarLinks} size="xl" />
           </Navbar.Section>
-          {/* Last section with normal height (depends on section content) */}
-          {/* <Navbar.Section>Last section</Navbar.Section> */}
         </Navbar>
       }
       // header={
