@@ -1,4 +1,4 @@
-﻿namespace AzureFiles
+﻿namespace AzFiles
 
 
 type FileId =

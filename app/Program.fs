@@ -1,4 +1,4 @@
-namespace AzureFiles
+namespace AzFiles
 
 open System.Threading
 open System.Threading.Tasks
@@ -381,7 +381,7 @@ module Program =
       app.UseAuthentication()
       app.UseAuthorization()
 
-      // app.UseCors()
+      app.UseCors("AllowAll")
 
       app.UseEndpoints(fun routes -> routes.MapControllers() |> ignore)
 

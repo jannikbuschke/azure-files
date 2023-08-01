@@ -17,6 +17,7 @@ import Masonry from "react-masonry-css"
 import "./images.css"
 import { useLocation } from "react-router"
 import dayjs from "dayjs"
+import { defaultImageFilter } from "../client/AzFiles_Features"
 
 export function ImagesGallery() {
   const [selectedTag, setSelectedTag] = React.useState<string | null>(null)
@@ -41,15 +42,21 @@ export function ImagesGallery() {
       <QueryWithBoundary
         name="/api/get-images"
         input={{
-          date: date,
-          includingTags:
-            selectedTag === "all" ? [] : selectedTag ? [selectedTag] : [],
+          pagination: { Case: "NoPagination" },
+          chronologicalSortDirection: { Case: "Asc" },
+          filter:
+            selectedTag !== null
+              ? { Case: "Tagged", Fields: [selectedTag] }
+              : { Case: "All" },
+          // date: date,
+          // includingTags:
+          //   selectedTag === "all" ? [] : selectedTag ? [selectedTag] : [],
         }}
       >
         {(data) => (
           <Masonry
             breakpointCols={{
-              default: 1,
+              default: 3,
               // default: 3,
               // 1200: 2,
               // 500: 1,
@@ -82,12 +89,14 @@ export function ImagesGallery() {
                   >
                     <Card.Section>
                       <Image
-                        style={{
-                          height: "95vh",
-                          maxHeight: "95vh",
-                          maxWidth: "95vw",
-                        }}
-                        fit="cover"
+                        style={
+                          {
+                            // height: "95vh",
+                            // maxHeight: "75vh",
+                            // maxWidth: "75vw",
+                          }
+                        }
+                        fit="contain"
                         // fit={isSmallScreen ? "contain" : "cover"}
                         // radius="md"
                         src={thumbnail?.url || v.url!}

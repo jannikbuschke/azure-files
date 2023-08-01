@@ -1,6 +1,6 @@
 ﻿namespace AzFiles.Features.DownloadFile
 
-open AzureFiles
+open AzFiles
 open Microsoft.AspNetCore.Mvc
 
 type DownloadFileController(ctx: IWebRequestContext) =

@@ -4,7 +4,7 @@ open System
 open System.Text.Json.Serialization
 open System.Threading
 open Azure.Storage.Blobs.Models
-open AzureFiles
+open AzFiles
 open FSharp.Control
 open MediatR
 open Microsoft.Extensions.DependencyInjection
@@ -292,14 +292,13 @@ type LobbyBackgroundService(logger: ILogger<LobbyBackgroundService>, factory: IS
           |> TaskSeq.toListAsync
           |> Async.AwaitTask
 
-        //
-        let! result =
+        let! _ =
           x
           |> Seq.map removeFromLobby
           |> fun x -> (x, 5)
           |> Async.Parallel
 
-        let blobs = inboxContainer.GetBlobsAsync(cancellationToken = cancellationToken)
+        // let blobs = inboxContainer.GetBlobsAsync(cancellationToken = cancellationToken)
 
         // Wait for 30 seconds before checking for new messages
         do! Async.Sleep(TimeSpan.FromSeconds(5.0))

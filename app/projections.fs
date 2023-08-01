@@ -1,4 +1,4 @@
-﻿namespace AzureFiles
+﻿namespace AzFiles
 
 open System
 open System.Globalization
@@ -351,7 +351,7 @@ type FileViewmodel =
         | Some lat, Some lon -> Some(lat, lon)
         | _ -> None }
 
-namespace AzureFiles
+namespace AzFiles
 
 open System
 open System.Runtime.CompilerServices
@@ -370,8 +370,6 @@ type Extensions2() =
   [<Extension>]
   static member GetFiles(ty: IDocumentSession, filter: Filter) =
     task {
-      let serializer = ty.DocumentStore.Options.Serializer()
-
       let (where, parameters) =
         match filter with
         | Date date -> "data ->> 'OriginalDateTime' = @date", [ "@date", Sql.string date ]

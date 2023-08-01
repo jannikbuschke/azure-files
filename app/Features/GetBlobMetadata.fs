@@ -3,7 +3,7 @@
 open System.Collections.Generic
 open AzFiles
 open AzFiles.Exif
-open AzureFiles
+open AzFiles
 open Glow.Core.Actions
 open MediatR
 

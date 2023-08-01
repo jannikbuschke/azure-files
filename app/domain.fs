@@ -1,4 +1,4 @@
-namespace AzureFiles
+namespace AzFiles
 
 open System
 open System.Text.Json.Serialization

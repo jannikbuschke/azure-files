@@ -6,6 +6,7 @@
     <DefaultItemExcludes>$(DefaultItemExcludes);$(SpaRoot)node_modules\**</DefaultItemExcludes>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="OptionEx.fs" />
     <Compile Include="DbMigrate.fs" />
     <Compile Include="ConnectionStrings.fs" />
     <Compile Include="Policies.fs" />
@@ -23,10 +24,11 @@
     <Compile Include="LobbyBackgroundService.fs" />
     <Compile Include="Features\GetInboxFiles.fs" />
     <Compile Include="Features\DownloadFile.fs" />
-    <Compile Include="Features\SetTags.fs" />
-    <Compile Include="Features\TagMany.fs" />
     <Compile Include="Features\GetTaggedImages.fs" />
+    <Compile Include="Features\TagMany.fs" />
+    <Compile Include="Features\SetTags.fs" />
     <Compile Include="Features\DeleteFile.fs" />
+    <Compile Include="Features\Gallery.fs" />
     <Compile Include="Features\GetNavbar.fs" />
     <Compile Include="Features\debug.fs" />
     <Compile Include="Features\GetBlobMetadata.fs" />
@@ -35,12 +37,12 @@
     <Compile Include="Features\EditProperty.fs" />
     <Compile Include="Features\GoogleDrive\ShowFiles.fs" />
     <Compile Include="Features\Fsi\EvaluateFs.fs" />
+    <Compile Include="Features\Gallery\DynamicGallery.fs" />
+    <Compile Include="Features\Gallery\CreateGallery.fs" />
     <Compile Include="generate-blog-data.fs" />
     <Compile Include="generat-obsidian-notes.fs" />
     <Compile Include="UploadController.fs" />
-    <Compile Include="TestController.fs" />
     <Compile Include="Program.fs" />
-    <None Include="Fsi.fsx" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Dapper" Version="1.50.5" />
@@ -67,7 +69,7 @@
     <PackageReference Include="Microsoft.Identity.Client" Version="4.47.2" />
     <PackageReference Include="Azure.Identity" Version="1.4.1" />
     <PackageReference Include="Google.Apis.Drive.v3" Version="1.61.0.3082" />
-    <PackageReference Include="FSharp.Compiler.Service" Version="43.7.300"/>
+    <PackageReference Include="FSharp.Compiler.Service" Version="43.7.300" />
     
   </ItemGroup>
   <ItemGroup>

@@ -2,10 +2,9 @@
 
 open System
 open System.Text.Json.Serialization
-open AzureFiles
+open AzFiles
 open Glow.Core.Actions
 open MediatR
-open System.Linq
 open Marten
 open FsToolkit.ErrorHandling
 open Polly

@@ -4,7 +4,7 @@ open System
 open System.Text.Json.Serialization
 open System.Threading
 open Azure.Storage.Blobs.Models
-open AzureFiles
+open AzFiles
 open FSharp.Control
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
@@ -53,14 +53,15 @@ type VariantCreatorBackgroundService(logger: ILogger<VariantCreatorBackgroundSer
 
         imagesWithoutExifData
         |> Seq.iter (fun (file, exifResult) ->
-          logger.LogInformation("files with new exif data {@f}", file.Id)
+          logger.LogInformation("files with no exif data {@f}", file.Id)
 
           match exifResult.Result with
           | Some exifData ->
             logger.LogInformation("append exif data")
             ctx.DocumentSession.Events.AppendFileStream(file.Id, FileEvent.ExifDataUpdated { Data = exifData })
           | None ->
-            logger.LogInformation("no exif")
+            logger.LogInformation("no exif data found, set to empty list")
+            ctx.DocumentSession.Events.AppendFileStream(file.Id, FileEvent.ExifDataUpdated { Data = [] })
 
             ())
         // v

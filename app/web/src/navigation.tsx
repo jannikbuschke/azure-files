@@ -15,6 +15,11 @@ import { ImagesGallery } from "./blob-container/images"
 import { GalleryPreview } from "./blob-container/gallery-editor"
 import { PdfPage } from "./blob-container/pdf-viewer"
 import { Fsi } from "./fsi/fsi-view"
+import { DynamicGalleryPage } from "./my-actions/get-dynamic-gallery"
+import { CreateGalleryView } from "./my-actions/create-gallery"
+import { EditGalleryView } from "./my-actions/edit-gallery"
+import { GalleriesListView } from "./my-actions/galleries-list"
+import { ViewGallery } from "./my-actions/view-gallery"
 
 export function AllContentRoutes() {
   return (
@@ -38,6 +43,13 @@ export function AllContentRoutes() {
       </Route>
       <Route path="/fsi" element={<Fsi />} />
       <Route path="/gallery-preview" element={<GalleryPreview />} />
+      <Route path="/gallery">
+        <Route path="create" element={<CreateGalleryView />} />
+        <Route path=":id" element={<EditGalleryView />} />
+        <Route index={true} element={<GalleriesListView />} />
+      </Route>
+      <Route path="/g/:name" element={<ViewGallery />} />
+      <Route path="/dynamic-gallery" element={<DynamicGalleryPage />} />
       <Route path="/images" element={<ImagesGallery />} />
       <Route path="/pdfs/:id" element={<PdfPage />} />
       <Route path="/actions" element={<GenerateBlogActions />} />

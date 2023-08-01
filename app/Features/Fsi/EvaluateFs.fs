@@ -1,7 +1,7 @@
 ﻿namespace AzFiles.Features.Fsi
 
 
-open AzureFiles
+open AzFiles
 open FSharp.Compiler.Interactive.Shell
 open FSharp.Compiler.Tokenization
 
@@ -12,7 +12,22 @@ open MediatR
 open Glow.Core.Actions
 
 type SampleObject() =
+  let mutable result: obj = null
   member this.Hello() = "Hello World!"
+  member this.SetResult(v) = result <- v
+  member this.GetResult() = result
+
+type EvalResult =
+  { Out: string option
+    Error: string option
+    Result: obj }
+
+module Option =
+  let fromString s =
+    if String.IsNullOrWhiteSpace(s) then
+      None
+    else
+      Some s
 
 module CompilerService =
 
@@ -33,21 +48,26 @@ module CompilerService =
   let fsiSession =
     FsiEvaluationSession.Create(fsiConfig, allArgs, inStream, outStream, errStream)
 
-
-  fsiSession.AddBoundValue("x", SampleObject())
-
   /// Evaluate expression & return the result
   let evalExpression text =
+    let sample = SampleObject()
+    // fsiSession.ValueBound.AddHandler
+    fsiSession.AddBoundValue("x", sample)
+
     match fsiSession.EvalExpression(text) with
     | Some value -> printfn "%A" value.ReflectionValue
     | None -> printfn "Got no result!"
 
-  try
-    evalExpression "42+1" // prints '43'
-  with
-  | e ->
-    printfn "Error: %A" e
-    printfn "Error stream %s" (sbErr.ToString())
+    { EvalResult.Out = outStream.ToString() |> Option.fromString
+      Error = errStream.ToString() |> Option.fromString
+      Result = sample.GetResult() }
+
+// try
+//   evalExpression "42+1" // prints '43'
+// with
+// | e ->
+//   printfn "Error: %A" e
+//   printfn "Error stream %s" (sbErr.ToString())
 
 /// Evaluate expression & return the result, strongly typed
 // let evalExpressionTyped<'T> (text) =
@@ -62,14 +82,15 @@ module CompilerService =
 [<Action(Route = "api/fsi/evaluate", AllowAnonymous = true)>]
 type EvaluateFs =
   { Expression: string }
-  interface IRequest<Result<obj, ApiError>>
+  interface IRequest<Result<EvalResult, ApiError>>
 
 type EvaluateFsHandler() =
-  interface IRequestHandler<EvaluateFs, Result<obj, ApiError>> with
+  interface IRequestHandler<EvaluateFs, Result<EvalResult, ApiError>> with
     member this.Handle(request, token) =
       task {
         let stopWatch = System.Diagnostics.Stopwatch.StartNew()
-        CompilerService.evalExpression request.Expression
+        let result = CompilerService.evalExpression request.Expression
         stopWatch.Stop()
-        return Result.Ok()
+        printfn "Result type %A value = %A" (result.Result.GetType()) (result.Result)
+        return result |> Result.Ok
       }

@@ -1,7 +1,7 @@
 ﻿module AzFiles.ImageProcessing
 
 open System.IO
-open AzureFiles
+open AzFiles
 open SixLabors.ImageSharp
 open SixLabors.ImageSharp.Formats.Jpeg
 open SixLabors.ImageSharp.Processing

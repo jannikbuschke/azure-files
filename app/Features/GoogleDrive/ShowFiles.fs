@@ -1,6 +1,6 @@
 ﻿namespace AzFiles.Features.GoogleDrive
 
-open AzureFiles
+open AzFiles
 open Glow.Core.Actions
 open Google.Apis.Download
 open Marten
@@ -31,7 +31,7 @@ module Google =
   let clientid =
     "237488411962-lfuk9tmbg7u96t57kpelpvuvhgcnnrcm.apps.googleusercontent.com"
 
-  let clientSecret = "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"
+  let clientSecret = "xxx"
 
   // let key = "AIzaSyDc6iJVK3ZRwyppe3yXKYAsEmn1Usd5T8E"
 

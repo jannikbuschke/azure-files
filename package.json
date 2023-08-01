@@ -27,7 +27,7 @@
     "glow/glow.mantine-web",
     "glow/shared"
   ],
-    "dependencies": {
+  "dependencies": {
     "@changesets/cli": "2.22.0",
     "@changesets/types": "5.0.0",
     "@microsoft/applicationinsights-react-js": "^3.3.3",

@@ -1,23 +1,41 @@
 ﻿module AzFiles.Features.GetTaggedImages
 
 open System
-open System.Text.Json.Serialization
-open AzureFiles
+open AzFiles
 open Glow.Core.Actions
 open MediatR
 open Polly
 open Marten
-open System.Linq
 
 [<Action(Route = "api/get-tags", AllowAnonymous = true)>]
 type GetTags =
   { None: EmptyRecord }
   interface IRequest<string list>
 
+type ImageFilter =
+  | All
+  | Tagged of string list
+  | DateRange of NodaTime.Instant * NodaTime.Instant
+  | And of ImageFilter * ImageFilter
+  | Or of ImageFilter * ImageFilter
+
+type ChronologicalSortDirection =
+  | Asc
+  | Desc
+
+type Page = { PageNumber: int; PageSize: int }
+
+type Pagination =
+  | NoPagination
+  | Page of Page
+
 [<Action(Route = "api/get-images", AllowAnonymous = true)>]
 type GetImages =
-  { IncludingTags: string list
-    Date: string option }
+  { ChronologicalSortDirection: ChronologicalSortDirection
+    Pagination: Pagination
+    // IncludingTags: string list
+    // Date: string option
+    Filter: ImageFilter }
   interface IRequest<FileViewmodel list>
 
 module GetImages =
@@ -31,7 +49,7 @@ module GetImages =
 
   let resetTaggedFiles () = memoryCache.Remove("get-taged-files")
 
-  let getTagedFiles (ctx: IWebRequestContext) (request: GetImages) (cacheContext: Context) =
+  let getFiles (ctx: IWebRequestContext) (request: GetImages) (cacheContext: Context) =
     task {
       let! entities =
         ctx
@@ -39,55 +57,33 @@ module GetImages =
           .Query<FileProjection>()
           .ToListAsync()
 
-      let tagFilter file =
-        request.IncludingTags.IsEmpty
-        || file.Tags
-           |> List.exists (fun tag -> request.IncludingTags |> List.contains tag)
+      let rec applyFilter (seq: FileProjection seq) (filter: ImageFilter) =
+        seq
+        |> Seq.filter (fun v ->
+          match filter with
+          | ImageFilter.All -> true
+          | ImageFilter.Tagged tags ->
+            v.Tags
+            |> List.exists (fun tag -> tags |> List.contains tag)
+          | ImageFilter.DateRange (start, until) ->
+            printfn ("Using date range filter")
+            printf "Comparing created at %A to with start=%A and end=%A" v.FileDateOrCreatedAt start until
+            // v.FileDateOrCreatedAt
+            v.FileDateOrCreatedAt >= start
+            && v.FileDateOrCreatedAt <= until
+          | ImageFilter.And (left, right) -> true
+          | ImageFilter.Or (left, right) -> true)
 
-      let date =
-        request.Date
-        |> Option.map (fun v -> NodaTime.LocalDate.FromDateTime(DateTime.Parse(v)))
-
-      let dateFilter file =
-        let dateTimeOriginal =
-          file.DateTimeOriginal
-          |> Option.map NodaTime.asLocalDate
-
-        match date, file.DateTimeOriginal with
-        | Some dateFilter, Some dateTimeOriginal ->
-          let localDate = dateTimeOriginal |> NodaTime.asLocalDate
-          dateFilter.Equals(localDate)
-        | _ -> true
-
-      let entities = entities |> Seq.toList
-
-
-      let result0 =
-        entities
+      return
+        applyFilter entities request.Filter
         |> Seq.filter (fun v -> v.Inbox = false)
         |> Seq.map FileViewmodel.FromFileProjection
-
-      // let resultXXX =
-      //   entities
-      //   |> Seq.filter (fun v -> v.Inbox = false)
-      //   |> Seq.map FileViewmodel.FromFileProjection
-      //   |> Seq.map (fun v -> v.DateTimeAsLocalDate())
-      //   |> Seq.choose id
-      //   |> Seq.toList
-
-
-      let result =
-        entities
-        |> Seq.filter (fun v -> v.Inbox = false)
-        |> Seq.map FileViewmodel.FromFileProjection
-        // |> Seq.filter (fun v ->
-        //   v.DateTimeAsLocalDate() = Some(NodaTime.LocalDate.FromDateTime(DateTime.Parse("2023-12-13"))))
-        |> Seq.filter tagFilter
-        // |> Seq.filter dateFilter
-        |> Seq.sortByDescending (fun v -> v.FileDateOrCreatedAt)
+        |> (match request.ChronologicalSortDirection with
+            | Desc -> Seq.sortByDescending (fun v -> v.FileDateOrCreatedAt)
+            | Asc -> Seq.sortBy (fun v -> v.FileDateOrCreatedAt))
         |> Seq.toList
 
-      return result
+    // return result
     }
 
   let getTags (ctx: IWebRequestContext) cacheContext =
@@ -101,6 +97,24 @@ module GetImages =
         |> Seq.toList
     }
 
+
+  let getCachedTaggedFiles (ctx: IWebRequestContext) (request: GetImages) =
+    cachePolicy.ExecuteAndCaptureAsync((getFiles ctx request), Context("get-tagged-files"))
+
+  let getFilesByFilter (ctx: IWebRequestContext) (request: GetImages) =
+    let filterKey =
+      match request.Filter with
+      | ImageFilter.All -> "all"
+      | ImageFilter.Tagged tags -> "tagged-" + (tags |> String.concat "-")
+      | ImageFilter.DateRange (start, until) ->
+        "date-range-"
+        + (start.ToString())
+        + "-"
+        + (until.ToString())
+      | _ -> failwith ("Not handled")
+
+    cachePolicy.ExecuteAndCaptureAsync((getFiles ctx request), Context("filter-" + filterKey))
+
   type Handler(ctx: IWebRequestContext) =
     interface IRequestHandler<GetTags, string list> with
       member this.Handle(request, token) =
@@ -112,21 +126,7 @@ module GetImages =
     interface IRequestHandler<GetImages, FileViewmodel list> with
       member this.Handle(request, token) =
         task {
-          let! result = cachePolicy.ExecuteAndCaptureAsync((getTagedFiles ctx request), Context("get-taged-files"))
+          let! result = getCachedTaggedFiles ctx request
 
-          return result.Result // |> List.take 100
-
-        // let! entity = ctx.DocumentSession.GetFiles()
-        //
-        // let entity = entity |> Seq.sortBy (fun v -> v.CreatedAt)
-        //
-        // match request.IncludingTags with
-        // | [] -> return entity |> Seq.toList
-        // | _ ->
-        //   return
-        //     entity
-        //     |> Seq.filter (fun v ->
-        //       request.IncludingTags
-        //       |> List.forall (fun t -> v.Tags |> List.contains t))
-        //     |> Seq.toList
+          return result.Result
         }

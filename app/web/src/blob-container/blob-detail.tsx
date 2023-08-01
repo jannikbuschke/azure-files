@@ -2,7 +2,7 @@ import { Button, Container } from "@mantine/core"
 import { ErrorBanner, RenderObject } from "glow-core"
 import { useNavigate, useParams } from "react-router"
 import { useTypedAction, useTypedQuery } from "../client/api"
-import { defaultAzureFilesBlobProperties } from "../client/AzureFiles"
+import { defaultAzureFilesBlobProperties } from "../client/AzFiles"
 
 export function BlobItemDetail() {
   const { id: containerId, itemId } = useParams<"id" | "itemId">()

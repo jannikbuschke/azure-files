@@ -1,6 +1,6 @@
 ﻿namespace AzFiles.Features
 
-open AzureFiles
+open AzFiles
 open Glow.Core.Actions
 open MediatR
 
@@ -138,7 +138,6 @@ module EditProperty =
               | PropertyDiff.Removed p -> PropertyChanged.PropertyRemoved p |> Some
               | PropertyDiff.Updated p -> PropertyChanged.PropertyUpdated p |> Some
               | PropertyDiff.NoChange _ -> None)
-          //|> List.iter (fun e -> ctx.DocumentSession.Events.AppendFileStream(file.Key(), FileEvent.PropertyChanged e))
           if not propertyChanges.IsEmpty then
             ctx.DocumentSession.Events.AppendFileStream(file.Key(), FileEvent.PropertiesChanged propertyChanges)
 

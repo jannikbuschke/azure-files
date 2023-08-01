@@ -1,4 +1,4 @@
-﻿namespace AzureFiles
+﻿namespace AzFiles
 
 open System.Runtime.CompilerServices
 open Marten.Events

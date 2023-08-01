@@ -1,8 +1,8 @@
 import { Button, Group } from "@mantine/core"
 import * as React from "react"
-import { useTypedAction } from "../ts-models/api"
 import { showNotification, updateNotification } from "@mantine/notifications"
 import { AsyncButton } from "../typed-api/ActionButton"
+import { useTypedAction } from "../client/api"
 
 let i = 0
 

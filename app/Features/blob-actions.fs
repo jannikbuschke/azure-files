@@ -1,4 +1,4 @@
-﻿namespace AzureFiles
+﻿namespace AzFiles
 
 open AzFiles.Config
 open Azure.Storage.Blobs

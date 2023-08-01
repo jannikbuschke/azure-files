@@ -1,6 +1,6 @@
 ﻿namespace AzFiles.Features
 
-open AzureFiles
+open AzFiles
 open Glow.Core.Actions
 open MediatR
 open FsToolkit.ErrorHandling

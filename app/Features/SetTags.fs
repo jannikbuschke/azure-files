@@ -1,6 +1,7 @@
 ﻿module AzFiles.Features.TagMany
 
-open AzureFiles
+open AzFiles
+open AzFiles.Features.GetTaggedImages
 open Glow.Core.Actions
 open MediatR
 
@@ -8,7 +9,7 @@ open FsToolkit.ErrorHandling
 
 [<Action(Route = "api/file/tag-many")>]
 type TagMany =
-  { Filter: Filter
+  { Filter: ImageFilter
     Tags: string list }
   interface IRequest<ApiResult<unit>>
 
@@ -18,14 +19,19 @@ module TagMany =
     interface IRequestHandler<TagMany, ApiResult<unit>> with
       member this.Handle(request, _) =
         taskResult {
+          let! result =
+            AzFiles.Features.GetTaggedImages.GetImages.getCachedTaggedFiles
+              ctx
+              { Filter = request.Filter
+                ChronologicalSortDirection = Asc
+                Pagination = NoPagination }
 
-          let! files = ctx.DocumentSession.GetFiles request.Filter
-
-          files
-          |> Seq.collect (fun file ->
+          result.Result
+          |> Seq.iter (fun file ->
             request.Tags
-            |> Seq.map (fun tag -> (file.Key(), FileEvent.TagAdded { Name = tag })))
-          |> Seq.iter ctx.DocumentSession.Events.AppendFileStream
+            |> Seq.iter (fun tag ->
+              if not (file.Tags |> List.contains tag) then
+                ctx.DocumentSession.Events.AppendFileStream(file.Id, FileEvent.TagAdded { Name = tag })))
 
           do! ctx.DocumentSession.SaveChangesAsync()
 

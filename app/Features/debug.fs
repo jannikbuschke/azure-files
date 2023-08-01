@@ -1,7 +1,7 @@
 ﻿namespace Glow.Core.MartenAndPgsql
 
 open System.Collections.Generic
-open AzureFiles
+open AzFiles
 open FSharp.Control
 open Glow.Core.Actions
 open Marten

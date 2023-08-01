@@ -1,86 +1,134 @@
-﻿module AzFiles.FileUploads
+﻿namespace AzFiles
 
 open System
 open System.Diagnostics
-open AzureFiles
+open AzFiles
 open BlobService
 open System.IO
 open FsToolkit.ErrorHandling
 open Microsoft.Extensions.DependencyInjection
 open SixLabors.ImageSharp
 
-let validateAndUpload (ctx: IWebRequestContext) (serviceProvider: IServiceProvider) file =
-  asyncResult {
 
-    do!
-      validateFileIsNotAlreadyUploaded ctx.DocumentSession file
-      |> AsyncResult.mapError ErrorResult.FileIsDuplicate
+module FileUploads =
 
-    let stopwatch = Stopwatch()
-    stopwatch.Start()
-    let fileStream = file.FormFile.OpenReadStream()
-    let! info = Image.IdentifyAsync(fileStream)
-    // sprintf "After Identify: %s" (stopwatch.Elapsed.ToString())
-    fileStream.Position <- 0
+  let validateAndUpload (ctx: IWebRequestContext) (serviceProvider: IServiceProvider) file =
+    asyncResult {
 
-    let! _ = Image.DetectFormatAsync(fileStream)
-    // sprintf "After DetectFormat: %s" (stopwatch.Elapsed.ToString())
-    fileStream.Position <- 0
+      do!
+        validateFileIsNotAlreadyUploaded ctx.DocumentSession file
+        |> AsyncResult.mapError ErrorResult.FileIsDuplicate
 
-    use! image =
-      if info = null then
-        System.Threading.Tasks.Task.FromResult null
-      else
-        Image.LoadAsync(fileStream)
+      let stopwatch = Stopwatch()
+      stopwatch.Start()
+      let fileStream = file.FormFile.OpenReadStream()
+      let! info = Image.IdentifyAsync(fileStream)
+      // sprintf "After Identify: %s" (stopwatch.Elapsed.ToString())
+      fileStream.Position <- 0
 
-    fileStream.Position <- 0
-    // let getStream () =
-    //   fileStream
-    //   |> System.Threading.Tasks.Task.FromResult
-    // just to add it to the cache
-    let! _ =
-      Exif.readExifData (
-        ctx.GetLogger<obj>(),
-        file.Id,
-        fun () ->
-          fileStream
-          |> System.Threading.Tasks.Task.FromResult
-      )
+      let! _ = Image.DetectFormatAsync(fileStream)
+      // sprintf "After DetectFormat: %s" (stopwatch.Elapsed.ToString())
+      fileStream.Position <- 0
 
-    fileStream.Position <- 0
-    use stream = new MemoryStream()
-    fileStream.CopyTo(stream)
-    stream.Position <- 0
+      use! image =
+        if info = null then
+          System.Threading.Tasks.Task.FromResult null
+        else
+          Image.LoadAsync(fileStream)
 
-    use scope = serviceProvider.CreateScope()
-    let ctx = scope.ServiceProvider.GetRequiredService<IWebRequestContext>()
+      fileStream.Position <- 0
+      // let getStream () =
+      //   fileStream
+      //   |> System.Threading.Tasks.Task.FromResult
+      // just to add it to the cache
+      let! _ =
+        Exif.readExifData (
+          ctx.GetLogger<obj>(),
+          file.Id,
+          fun () ->
+            fileStream
+            |> System.Threading.Tasks.Task.FromResult
+        )
 
-    let! result = asyncUploadFile ctx file stream image
+      fileStream.Position <- 0
+      use stream = new MemoryStream()
+      fileStream.CopyTo(stream)
+      stream.Position <- 0
 
-    return result
-  }
+      use scope = serviceProvider.CreateScope()
+      let ctx = scope.ServiceProvider.GetRequiredService<IWebRequestContext>()
 
-// type TestController(logger: ILogger<TestController>, ctx: IWebRequestContext, serviceProvider: IServiceProvider) =
-//
-//   inherit ControllerBase()
-//
-//   [<HttpGet("api/html")>]
-//   member this.Get() = this.Ok("hello world")
-//
-//   [<HttpPost("api/files/upload-files-async")>]
-//   member this.AsyncUploadFiles() =
-//     async {
-//       failwith "not working"
-//
-//       logger.LogInformation("handle upload form files {@formfiles}", ctx.HttpContext.Request.Form.Files)
-//
-//       let! init =
-//         ctx.HttpContext.Request.Form.Files
-//         |> Seq.map Workflow.initiallyHandleFormFile
-//         |> Seq.map (validateAndUpload ctx serviceProvider)
-//         |> fun x -> x, 5
-//         |> Async.Parallel
-//
-//       return init
-//     }
-//     |> Async.StartAsTask
+      let! result = asyncUploadFile ctx file stream image
+
+      return result
+    }
+
+
+open System
+open AzFiles
+open Microsoft.AspNetCore.Cors
+open Microsoft.AspNetCore.Mvc
+open Microsoft.Extensions.Logging
+open BlobService
+open System.IO
+open FsToolkit.ErrorHandling
+open Microsoft.Extensions.DependencyInjection
+open SixLabors.ImageSharp
+open System.Threading.Tasks
+
+[<Route("api")>]
+type TestControlle2r(logger: ILogger<TestControlle2r>, ctx: IWebRequestContext, serviceProvider: IServiceProvider) =
+
+  inherit ControllerBase()
+
+  [<EnableCors("AllowAll")>]
+  [<HttpGet("html")>]
+  member this.Get() = this.Ok("hello world")
+
+  [<HttpPost("upload-file")>]
+  member this.UploadFile() =
+    async {
+      let ctx = this.HttpContext.RequestServices.GetRequiredService<IWebRequestContext>()
+
+      let serviceProvider =
+        this.HttpContext.RequestServices.GetRequiredService<IServiceProvider>()
+
+      let logger = ctx.GetLogger<obj>()
+      logger.LogInformation("handle upload form files {@formfiles}", ctx.HttpContext.Request.Form.Files)
+
+      // let validateAndUpload = x ctx serviceProvider
+
+      let! result =
+        try
+          task {
+            let! init =
+              ctx.HttpContext.Request.Form.Files
+              |> Seq.map Workflow.initiallyHandleFormFile
+              |> Seq.map (FileUploads.validateAndUpload ctx serviceProvider)
+              |> fun x -> x, 5
+              |> Async.Parallel
+
+            return
+              init
+              |> Seq.map (fun v ->
+                v
+                |> Result.mapError (fun error ->
+                  { ApiError.Message = ""
+                    Info = Some(ErrorResult error) }))
+              |> Seq.toList
+          }
+          |> Async.AwaitTask
+        with
+        | e ->
+          [ Error(
+              { ApiError.Message = e.Message
+                Info = None }
+            ) ]
+          |> Task.FromResult
+          |> Async.AwaitTask
+      // sprintf "Error %s" e.Message
+      // None
+
+      return result
+    }
+    |> Async.StartAsTask

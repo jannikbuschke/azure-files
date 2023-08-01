@@ -1,7 +1,7 @@
-﻿namespace AzureFiles
+﻿namespace AzFiles
 
 open System.IO
-open AzureFiles
+open AzFiles
 open System
 
 module WorkflowUtils =

@@ -3,7 +3,6 @@
 open System
 open System.Text.Json.Serialization
 open System.Threading.Tasks
-open AzureFiles
 open Microsoft.Extensions.Logging
 open Polly
 open SixLabors.ImageSharp
@@ -517,6 +516,19 @@ let getDate exifValues =
 // public static ExifTag<Rational[]> LensSpecification { get; } = new ExifTag<Rational[]>(ExifTagValue.LensSpecification);
 // }
 
+
+let tryGetWidth (exifData: ExifValue list) =
+  exifData |> List.tryPick(fun value ->
+    match value with
+    | ExifValue.PixelXDimension v -> Some v
+    | _ -> None)
+
+let tryGetHeight (exifData: ExifValue list) =
+  exifData |> List.tryPick(fun value ->
+    match value with
+    | ExifValue.PixelYDimension v -> Some v
+    | _ -> None)
+  
 
 let readExif (exifProfile: ExifProfile) =
   if exifProfile = null then

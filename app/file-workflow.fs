@@ -1,9 +1,9 @@
-﻿namespace AzureFiles
+﻿namespace AzFiles
 
 open AzFiles
 open AzFiles.Config
 open AzFiles.Exif
-open AzureFiles
+open AzFiles
 open Marten
 open System.IO
 open Microsoft.AspNetCore.Http

@@ -1,7 +1,7 @@
 ﻿namespace AzFiles.GenerateObsidianNotes
 
 open System
-open AzureFiles
+open AzFiles
 open MediatR
 open Glow.Core.Actions
 open FsToolkit.ErrorHandling

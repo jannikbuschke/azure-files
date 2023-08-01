@@ -45,7 +45,7 @@ import dayjs from "dayjs"
 import { FSharpOption } from "../client/Microsoft_FSharp_Core"
 import { AsyncActionIcon, AsyncButton } from "../typed-api/ActionButton"
 import { defaultInboxFileResult, SetTags } from "../client/AzFiles_Features"
-import { FileId, FileViewmodel } from "../client/AzureFiles"
+import { FileId, FileViewmodel } from "../client/AzFiles"
 import { FiSun } from "react-icons/fi"
 import {
   FaFileInvoiceDollar,
@@ -260,18 +260,25 @@ function ImageComponent({ v, input }: { v: FileViewmodel; input: any }) {
                 }}
               >
                 <Chip.Group p="md">
-                  {["PKM", "⭐", "@lena", "@wilma", "@ronja", "@me"].map(
-                    (tag) => (
-                      <Chip
-                        size="xl"
-                        checked={v.tags.some((t) => t === tag)}
-                        color="blue"
-                        onClick={() => addTag(tag, v.id)}
-                      >
-                        {tag}
-                      </Chip>
-                    ),
-                  )}
+                  {[
+                    "PKM",
+                    "⭐",
+                    "@lena",
+                    "@wilma",
+                    "@ronja",
+                    "@me",
+                    "@yaren",
+                    "info-tafel",
+                  ].map((tag) => (
+                    <Chip
+                      size="xl"
+                      checked={v.tags.some((t) => t === tag)}
+                      color="blue"
+                      onClick={() => addTag(tag, v.id)}
+                    >
+                      {tag}
+                    </Chip>
+                  ))}
                   {/* <Chip
                   size="xl"
                   checked={v.tags.some((t) => t === "PKM")}

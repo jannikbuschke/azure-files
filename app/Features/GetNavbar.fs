@@ -1,7 +1,7 @@
 ﻿module AzFiles.Features.GetNavbar
 
 open AzFiles
-open AzureFiles
+open AzFiles
 open Glow.Core.Actions
 open MediatR
 open Microsoft.Extensions.Configuration
