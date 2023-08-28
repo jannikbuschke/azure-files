@@ -43,6 +43,11 @@
     <Compile Include="generat-obsidian-notes.fs" />
     <Compile Include="UploadController.fs" />
     <Compile Include="Program.fs" />
+    <None Include="BasicFileOperations.fsx" />
+    <Compile Include="ListCe.fs" />
+    <Compile Include="ListCe0.fs" />
+    <Compile Include="CE.fs" />
+    <None Include="ResultCE.fsx" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Dapper" Version="1.50.5" />
