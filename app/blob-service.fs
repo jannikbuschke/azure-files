@@ -31,9 +31,10 @@ module BlobService =
       if box filename = null then
         failwith "filename is null"
 
+      // FileHandledProjection
       let! result =
         session
-          .Query<FileProjection>()
+          .Query<FileHandledProjection>()
           .Where(fun v ->
             v.MatchesSql("data ->> 'Md5Hash' = ?", rawChecksum.value ())
             && v.Filename = filename)

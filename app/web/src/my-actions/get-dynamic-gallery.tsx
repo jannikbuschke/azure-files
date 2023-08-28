@@ -81,6 +81,9 @@ export function DynamicGalleryPage() {
 
   const startDateRaw = searchParams.get("startDate")
   const endDateRaw = searchParams.get("endDate")
+  const hideControls = Boolean(searchParams.get("hide-controls"))
+  const rowHeightRaw = searchParams.get("row-height")
+  const rowHeight = rowHeightRaw ? parseInt(rowHeightRaw) : 400
 
   const filter: ImageFilter =
     Boolean(startDateRaw) && Boolean(endDateRaw)
@@ -144,76 +147,85 @@ export function DynamicGalleryPage() {
     }
   })
   return (
-    <Box>
-      <Box p="xs" bg="gray.2">
-        <Group>
-          <DatePicker
-            name="startDate"
-            value={startDateRaw ? new Date(startDateRaw) : null}
-            label="Start"
-            placeholder="Pick date and time"
-            onChange={(v) => {
-              setSearchParams(
-                new URLSearchParams({
-                  // ...data,
-                  startDate: v === null ? "" : dayjs(v).format("YYYY-MM-DD"),
-                  endDate: endDateRaw || "",
-                }).toString(),
-                { replace: true },
-              )
-            }}
-            // maw={400}
-            // mx="auto"
-          />
-          <DatePicker
-            name="endDate"
-            value={endDateRaw ? new Date(endDateRaw) : null}
-            onChange={(v) => {
-              setSearchParams(
-                new URLSearchParams({
-                  startDate: startDateRaw || "",
-                  // ...data,
-                  endDate: v === null ? "" : dayjs(v).format("YYYY-MM-DD"),
-                }),
-                { replace: true },
-              )
-            }}
-            label="End"
-            placeholder="Pick date and time"
-            // maw={400}
-            // mx="auto"
-          />
-          <TypedForm
-            actionName="/api/file/tag-many"
-            initialValues={{ filter, tags: [] }}
-            onSuccess={() => notifySuccess()}
-          >
-            {(f, _) => (
-              <Group>
-                <Button
-                  onClick={f.submitForm}
-                  loading={f.isSubmitting}
-                  style={{ alignSelf: "flex-end" }}
-                >
-                  Add tags
-                </Button>
-                <TextInput
-                  value={f.values.tags.join(" ")}
-                  onChange={(v) =>
-                    f.setFieldValue(_.tags._PATH_, v.target.value.split(" "))
-                  }
-                  label="Tags"
-                />
-              </Group>
-            )}
-          </TypedForm>
-        </Group>
-      </Box>
+    <Box
+      css={css`
+        img {
+          object-fit: cover;
+        }
+      `}
+    >
+      {hideControls ? null : (
+        <Box p="xs" bg="gray.2">
+          <Group>
+            <DatePicker
+              name="startDate"
+              value={startDateRaw ? new Date(startDateRaw) : null}
+              label="Start"
+              placeholder="Pick date and time"
+              onChange={(v) => {
+                setSearchParams(
+                  new URLSearchParams({
+                    // ...data,
+                    startDate: v === null ? "" : dayjs(v).format("YYYY-MM-DD"),
+                    endDate: endDateRaw || "",
+                  }).toString(),
+                  { replace: true },
+                )
+              }}
+              // maw={400}
+              // mx="auto"
+            />
+            <DatePicker
+              name="endDate"
+              value={endDateRaw ? new Date(endDateRaw) : null}
+              onChange={(v) => {
+                setSearchParams(
+                  new URLSearchParams({
+                    startDate: startDateRaw || "",
+                    // ...data,
+                    endDate: v === null ? "" : dayjs(v).format("YYYY-MM-DD"),
+                  }),
+                  { replace: true },
+                )
+              }}
+              label="End"
+              placeholder="Pick date and time"
+              // maw={400}
+              // mx="auto"
+            />
+            <TypedForm
+              actionName="/api/file/tag-many"
+              initialValues={{ filter, tags: [] }}
+              onSuccess={() => notifySuccess()}
+            >
+              {(f, _) => (
+                <Group>
+                  <Button
+                    onClick={f.submitForm}
+                    loading={f.isSubmitting}
+                    style={{ alignSelf: "flex-end" }}
+                  >
+                    Add tags
+                  </Button>
+                  <TextInput
+                    value={f.values.tags.join(" ")}
+                    onChange={(v) =>
+                      f.setFieldValue(_.tags._PATH_, v.target.value.split(" "))
+                    }
+                    label="Tags"
+                  />
+                </Group>
+              )}
+            </TypedForm>
+          </Group>
+        </Box>
+      )}
       {/* <RenderObject Case={data.Case} Fields={data.Fields} /> */}
       <PhotoAlbum
         spacing={(containerWidth) => (containerWidth < 1200 ? 4 : 4)}
         layout="rows"
         photos={photos}
+        targetRowHeight={rowHeight}
         onClick={(e) => {
           setCurrentImage(e.index)
           setBasicExampleOpen(true)

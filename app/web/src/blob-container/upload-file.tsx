@@ -117,7 +117,7 @@ export function UploadFile() {
   }>({})
   return (
     <>
-      <Paper mb="sm" p="md" shadow="md" radius="md">
+      {/* <Paper mb="sm" p="md" shadow="md" radius="md">
         <Query name={"/api/g-drive/show-files"} input={{}}>
           {(data) =>
             data.Case === "Ok" ? (
@@ -143,7 +143,7 @@ export function UploadFile() {
             )
           }
         </Query>
-      </Paper>
+      </Paper> */}
 
       <Dropzone
         multiple={true}

@@ -1,6 +1,7 @@
 import {
   Box,
   Button,
+  Collapse,
   Group,
   Pagination as MantinePagination,
   Popover,
@@ -19,9 +20,17 @@ import { useTypedQuery } from "../typed-api/use-query"
 import { match } from "ts-pattern"
 import { UpdateGallery } from "../client/AzFiles_Features_Gallery"
 import { NumberInput } from "formik-mantine"
-
-import PhotoAlbum from "react-photo-album"
+import PhotoAlbum, {
+  RenderContainer,
+  RenderPhoto,
+  RenderRowContainer,
+  Image as PhotoAlbumImage,
+} from "react-photo-album"
 import Lightbox from "yet-another-react-lightbox"
+import { FSharpList } from "../client/Microsoft_FSharp_Collections"
+import { ExifValue } from "../client/AzFiles"
+import { useDisclosure } from "@mantine/hooks"
+import { Text } from "@mantine/core"
 
 const _ = pathProxy<UpdateGallery, UpdateGallery>()
 
@@ -159,6 +168,175 @@ function usePagination() {
   }
 }
 
+const renderContainer: RenderContainer = ({
+  containerProps,
+  children,
+  containerRef,
+}) => (
+  <div
+    style={{
+      border: "2px solid #eee",
+      borderRadius: "10px",
+      padding: "20px",
+    }}
+  >
+    <div ref={containerRef} {...containerProps}>
+      {children}
+    </div>
+  </div>
+)
+
+const renderRowContainer: RenderRowContainer = ({
+  rowContainerProps,
+  rowIndex,
+  rowsCount,
+  children,
+}) => (
+  <>
+    <div {...rowContainerProps}>{children}</div>
+    {/* {rowIndex < rowsCount - 1 && (
+      <div
+        style={{
+          borderTop: "2px solid #eee",
+          marginBottom: "20px",
+        }}
+      />
+    )} */}
+  </>
+)
+
+function RenderExifData({ data }: { data: FSharpList<ExifValue> }) {
+  const resolutionX = data.filter((v) => v.Case === "PixelXDimension")[0]
+    ?.Fields as number | undefined
+  const resolutionY = data.filter((v) => v.Case === "PixelYDimension")[0]
+    ?.Fields as number | undefined
+  const [opened, { toggle }] = useDisclosure(false)
+
+  const orientation = data
+    .map((v) => (v.Case === "Orientation" ? v.Fields : null))
+    .filter((v) => v !== null)[0]
+
+  const RecommendedExposureIndex = data.filter(
+    (v) => v.Case === "RecommendedExposureIndex",
+  )[0]
+  const ISOSpeedRatings = data.filter((v) => v.Case === "ISOSpeedRatings")[0]
+
+  return (
+    <div>
+      {resolutionX && resolutionY ? (
+        <Text>
+          Image Size = {resolutionX} x {resolutionY}
+        </Text>
+      ) : null}
+      <Text>Orienation: {orientation || null}</Text>
+
+      <Button size="xs" color="gray" variant="subtle" onClick={toggle}>
+        {opened ? "Hide details" : "Show all exif data"}
+      </Button>
+
+      <Collapse in={opened}>
+        <RenderObject {...data} />
+      </Collapse>
+    </div>
+  )
+}
+
+const renderPhoto: RenderPhoto<MyPhoto> = (props) => {
+  const {
+    layout,
+    layoutOptions,
+    imageProps: { alt, style, ...restImageProps },
+    photo,
+  } = props
+  const {
+    values: { items },
+    setFieldValue,
+  } = useFormikContext<UpdateGallery>()
+  const [hovering, setHovering] = React.useState(false)
+  const isSelected = false
+
+  const index = photo.index
+  const item = items[photo.index]!
+  return (
+    <div
+      style={{
+        border: "2px solid #eee",
+        borderRadius: "4px",
+        boxSizing: "content-box",
+        alignItems: "center",
+        width: style?.width,
+        padding: `${layoutOptions.padding - 2}px`,
+        paddingBottom: 0,
+      }}
+    >
+      <img
+        alt={alt}
+        style={{ ...style, width: "100%", padding: 0 }}
+        {...restImageProps}
+      />
+      <div
+        style={{
+          padding: 8,
+          // paddingTop: "8px",
+          // paddingBottom: "8px",
+          overflow: "visible",
+          whiteSpace: "nowrap",
+          // textAlign: "center",
+        }}
+      >
+        <div>
+          Layout ={" "}
+          {Math.round(layout.width) + " x " + Math.round(layout.height)}
+        </div>
+        <div>
+          photo.width/height = {photo.width} x {photo.height}
+        </div>
+
+        <Group>
+          <Button
+            size="xs"
+            variant="default"
+            onClick={() =>
+              setFieldValue(_.items[index]!.hidden._PATH_, !item.hidden)
+            }
+            // color="dark"
+            // variant={item.hidden ? "light" : "filled"}
+          >
+            {item.hidden === true ? "Show" : "Hide"}
+          </Button>
+          {/* <Checkbox name={_.items[index]!.hidden._PATH_} /> */}
+          <NumberInput
+            size="xs"
+            name={_.items[index]!.dimension.columnSpan._PATH_}
+            style={{ width: 80 }}
+          />
+          <NumberInput
+            size="xs"
+            name={_.items[index]!.dimension.rowSpan._PATH_}
+            style={{ width: 80 }}
+          />
+        </Group>
+
+        <RenderExifData data={props.photo.image.file.exifData || []} />
+        {/* <RenderObject props={props} /> */}
+      </div>
+    </div>
+  )
+}
+
+type MyPhoto = {
+  src: string
+  // width,
+  // height,
+  width: number
+  height: number
+  createdAt: NodaTime.Instant
+  selected: boolean
+  image: Image
+  srcSet: PhotoAlbumImage[]
+  index: number
+}
+
 export function EditGalleryView() {
   const { id } = useParams<{ id: Guid }>()
   const { pagination, setPage } = usePagination()
@@ -194,7 +372,7 @@ export function EditGalleryView() {
   }
   const { count, value: galleryItems } = items.Fields
 
-  const photos = galleryItems.map((v) => {
+  const photos = galleryItems.map((v, i) => {
     console.log({ v })
     const width = v.dimension.columnSpan
     const height = v.dimension.rowSpan
@@ -205,6 +383,7 @@ export function EditGalleryView() {
       width > height ? { width: 3, height: 2 } : { width: 2, height: 3 }
 
     return {
+      index: i,
       src: v.file.lowresVersions[0]?.url || v.file.url, // 'http://example.com/example/img1.jpg',
       // width,
       // height,
@@ -261,7 +440,7 @@ export function EditGalleryView() {
                     />
                   </Group>
 
-                  <PhotoAlbum
+                  <PhotoAlbum<MyPhoto>
                     spacing={(containerWidth) =>
                       containerWidth < 1200 ? 4 : 4
                     }
@@ -271,6 +450,9 @@ export function EditGalleryView() {
                       setCurrentImage(e.index)
                       setBasicExampleOpen(true)
                     }}
+                    // renderContainer={renderContainer}
+                    // renderRowContainer={renderRowContainer}
+                    renderPhoto={renderPhoto}
                   />
 
                   <Lightbox

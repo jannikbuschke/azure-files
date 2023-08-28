@@ -159,10 +159,10 @@ module Program =
     let services = builder.Services
 
     services.AddCors (fun c ->
-      c.AddDefaultPolicy (fun p ->
-        p.AllowAnyHeader()
-        p.AllowAnyMethod()
-        p.AllowAnyOrigin() |> ignore)
+      // c.AddDefaultPolicy (fun p ->
+      //   p.AllowAnyHeader()
+      //   p.AllowAnyMethod()
+      //   p.AllowAnyOrigin() |> ignore)
 
       c.AddPolicy(
         "AllowAll",
@@ -403,10 +403,6 @@ module Program =
 
         if (env.IsDevelopment()) then
           spa.UseProxyToSpaDevelopmentServer("http://localhost:3000"))
-
-      // app
-      //   .MapGet("/test-html", (fun ctx -> ctx.Response.WriteAsync("<h1>Hello world</h1><div>foo</div>")))
-      //   .RequireCors("AllowAll")
 
       app.MapGet(
         "/photos/{id}",

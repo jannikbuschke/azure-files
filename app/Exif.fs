@@ -518,17 +518,25 @@ let getDate exifValues =
 
 
 let tryGetWidth (exifData: ExifValue list) =
-  exifData |> List.tryPick(fun value ->
+  exifData
+  |> List.tryPick (fun value ->
     match value with
     | ExifValue.PixelXDimension v -> Some v
     | _ -> None)
 
 let tryGetHeight (exifData: ExifValue list) =
-  exifData |> List.tryPick(fun value ->
+  exifData
+  |> List.tryPick (fun value ->
     match value with
     | ExifValue.PixelYDimension v -> Some v
     | _ -> None)
-  
+
+let tryGetOrientation (exifData: ExifValue list) =
+  exifData
+  |> List.tryPick (fun value ->
+    match value with
+    | ExifValue.Orientation v -> Some v
+    | _ -> None)
 
 let readExif (exifProfile: ExifProfile) =
   if exifProfile = null then

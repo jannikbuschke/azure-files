@@ -197,6 +197,25 @@ module PersistentGallery =
                 return values |> Seq.head
               }
 
+          let map (v: Image) =
+            let orientation =
+              (v.File.ExifData |> Skippable.defaultValue [])
+              |> Exif.tryGetOrientation
+
+            let size: Size =
+              match orientation with
+              | Some 6us
+              | Some 8us
+              | Some 5us
+              | Some 7us ->
+                { Width = v.Size.Height
+                  Height = v.Size.Width }
+              | _ -> v.Size
+
+            { v with Size = size }
+
+          let gallery = { gallery with Items = gallery.Items |> List.map map }
+
           return
             match request.Pagination with
             | Pagination.NoPagination ->

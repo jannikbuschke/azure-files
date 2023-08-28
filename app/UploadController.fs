@@ -81,7 +81,7 @@ type TestControlle2r(logger: ILogger<TestControlle2r>, ctx: IWebRequestContext, 
 
   inherit ControllerBase()
 
-  [<EnableCors("AllowAll")>]
+  // [<EnableCors("AllowAll")>]
   [<HttpGet("html")>]
   member this.Get() = this.Ok("hello world")
 

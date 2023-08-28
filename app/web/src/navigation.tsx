@@ -12,7 +12,6 @@ import { EsEventListWithoutValidation } from "./debug-views/event-list-without-v
 import { PgsqlActivities } from "./debug-views/pgsql"
 import { Nav } from "glow-mantine/lib/nav"
 import { ImagesGallery } from "./blob-container/images"
-import { GalleryPreview } from "./blob-container/gallery-editor"
 import { PdfPage } from "./blob-container/pdf-viewer"
 import { Fsi } from "./fsi/fsi-view"
 import { DynamicGalleryPage } from "./my-actions/get-dynamic-gallery"
@@ -42,13 +41,11 @@ export function AllContentRoutes() {
         />
       </Route>
       <Route path="/fsi" element={<Fsi />} />
-      <Route path="/gallery-preview" element={<GalleryPreview />} />
       <Route path="/gallery">
         <Route path="create" element={<CreateGalleryView />} />
         <Route path=":id" element={<EditGalleryView />} />
         <Route index={true} element={<GalleriesListView />} />
       </Route>
-      <Route path="/g/:name" element={<ViewGallery />} />
       <Route path="/dynamic-gallery" element={<DynamicGalleryPage />} />
       <Route path="/images" element={<ImagesGallery />} />
       <Route path="/pdfs/:id" element={<PdfPage />} />
