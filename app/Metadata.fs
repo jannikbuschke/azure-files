@@ -10,36 +10,25 @@ open SixLabors.ImageSharp.Metadata.Profiles.Exif
 module Metadata =
 
   let tryGetExifValue (exif: ExifProfile) (tag: ExifTag<string>) =
-    exif.GetValue(tag)
-    |> Option.ofObj
-    |> Option.map (fun v -> v.Value)
+    exif.GetValue(tag) |> Option.ofObj |> Option.map (fun v -> v.Value)
 
   let tryGetUint16ArrayExifValue (exif: ExifProfile) (tag: ExifTag<uint16 array>) =
-    exif.GetValue(tag)
-    |> Option.ofObj
-    |> Option.map (fun v -> v.Value)
+    exif.GetValue(tag) |> Option.ofObj |> Option.map (fun v -> v.Value)
 
   let tryGetRationalArrayExifValue (exif: ExifProfile) (tag: ExifTag<Rational array>) =
-    exif.GetValue(tag)
-    |> Option.ofObj
-    |> Option.map (fun v -> v.Value)
+    exif.GetValue(tag) |> Option.ofObj |> Option.map (fun v -> v.Value)
 
   let tryGetValue (dict: IDictionary<string, string>) (key: string) =
     match dict.TryGetValue key with
-    | true, value ->
-      value
-      |> Option.ofObj
-      |> Option.map HttpUtility.HtmlDecode
+    | true, value -> value |> Option.ofObj |> Option.map HttpUtility.HtmlDecode
     | false, _ -> None
 
   let getValue (dict: IDictionary<string, string>) (key: string) = dict[key] |> HttpUtility.HtmlDecode
 
   let tryGetLocalChecksum (dict: IDictionary<string, string>) =
-    tryGetValue dict "local_checksum"
-    |> Option.map Checksum.Checksum
+    tryGetValue dict "local_checksum" |> Option.map Checksum.Checksum
 
-  let tryGetOriginalFilename (dict: IDictionary<string, string>) =
-    tryGetValue dict "original_filename"
+  let tryGetOriginalFilename (dict: IDictionary<string, string>) = tryGetValue dict "original_filename"
 
   let tryGetId (dict: IDictionary<string, string>) =
     tryGetValue dict "id"
@@ -94,11 +83,7 @@ module Metadata =
       ("local_checksum", localChecksum.value () |> HttpUtility.HtmlEncode)
       ("original_filename", originalFilename |> HttpUtility.HtmlEncode)
 
-      ("id",
-       id
-       |> FileId.value
-       |> (fun v -> v.ToString())
-       |> HttpUtility.HtmlEncode)
+      ("id", id |> FileId.value |> (fun v -> v.ToString()) |> HttpUtility.HtmlEncode)
     }
     |> Seq.iter d.Add
 

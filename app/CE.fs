@@ -1,4 +1,5 @@
-﻿
+﻿module CE
+
 type TraceBuilder() =
     member this.Bind(m, f) =
         match m with

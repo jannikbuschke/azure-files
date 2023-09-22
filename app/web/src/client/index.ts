@@ -7,8 +7,8 @@ import * as AzFiles_Features_GoogleDrive from './AzFiles_Features_GoogleDrive'
 import * as AzFiles_Features_Fsi from './AzFiles_Features_Fsi'
 import * as AzFiles_GenerateObsidianNotes from './AzFiles_GenerateObsidianNotes'
 import * as AzFiles_Features_Gallery from './AzFiles_Features_Gallery'
-import * as NodaTime from './NodaTime'
 import * as AzFiles_Galleries from './AzFiles_Galleries'
+import * as NodaTime from './NodaTime'
 import * as Microsoft_FSharp_Core from './Microsoft_FSharp_Core'
 import * as System_Text_Json_Serialization from './System_Text_Json_Serialization'
 import * as Glow_TestAutomation from './Glow_TestAutomation'
@@ -28,8 +28,8 @@ export { AzFiles_Features_GoogleDrive }
 export { AzFiles_Features_Fsi }
 export { AzFiles_GenerateObsidianNotes }
 export { AzFiles_Features_Gallery }
-export { NodaTime }
 export { AzFiles_Galleries }
+export { NodaTime }
 export { Microsoft_FSharp_Core }
 export { System_Text_Json_Serialization }
 export { Glow_TestAutomation }

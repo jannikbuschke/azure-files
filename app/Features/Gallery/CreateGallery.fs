@@ -10,19 +10,40 @@ open AzFiles.Galleries
 open Utils
 open System.Linq
 open Marten
-
-type GalleryItem = { Width: int; Height: int }
-
-type Gallery =
-  { Id: System.Guid
-    Name: string
-    Description: string option
-    Items: Image list }
-  member this.Key() = this.Id |> GalleryId.GalleryId
-
-type GalleryBasedOn = Filter of ImageFilter
+open AzFiles.Features.Gallery
 
 module PersistentGallery =
+
+  let getImagesOnBase filter ctx =
+    task {
+      let! result =
+        match filter with
+        | Filter filter ->
+          AzFiles.Features.GetTaggedImages.GetImages.getCachedTaggedFiles
+            ctx
+            { Filter = filter
+              ChronologicalSortDirection = Asc
+              Pagination = NoPagination }
+
+      return result.Result |> List.filter (fun v -> v.FileInfo.Type = FileType.Image)
+    }
+
+  let mapFileViewmodelToGalleryImage v =
+    let exifData = (v.ExifData |> Skippable.defaultValue [])
+
+    let width = exifData |> Exif.tryGetWidth |> Option.defaultValue -1
+
+    let height = exifData |> Exif.tryGetHeight |> Option.defaultValue -1
+
+    let dim = GetDynamicGallery.getDesiredDimension v
+
+    printfn "image %A" v.Filename
+
+    { Dimension = dim
+      Size = { Width = width; Height = height }
+      DimensionAdjustment = Skip
+      File = v
+      Hidden = Include false }
 
   let gridColumns = 3
 
@@ -30,25 +51,46 @@ module PersistentGallery =
     { Image: Image
       Placement: GridPlacement }
 
+  [<Action(Route = "api/features/gallery/remove-item", AllowAnonymous = true)>]
+  type RemoveItemFromGallery =
+    { GalleryId: GalleryId
+      FileId: FileId }
+
+    interface IRequest<ApiResult<unit>>
+
   [<Action(Route = "api/features/gallery/create-gallery", AllowAnonymous = true)>]
   type CreateGallery =
     { Name: string
       BasedOn: GalleryBasedOn
       Description: string }
+
     interface IRequest<ApiResult<GalleryId>>
+
+  [<Action(Route = "api/features/gallery/add-images-on-base", AllowAnonymous = true)>]
+  type AddImagesOnBasedOn =
+    { GalleryId: GalleryId
+      BasedOn: GalleryBasedOn }
+
+    interface IRequest<ApiResult<unit>>
 
   [<Action(Route = "api/features/gallery/update-gallery", AllowAnonymous = true)>]
   type UpdateGallery =
     { Id: GalleryId
       Items: Image list }
+
     interface IRequest<ApiResult<unit>>
 
   [<Action(Route = "api/features/gallery/get-galleries", AllowAnonymous = true)>]
   type GetGalleries() =
     class
+      interface IRequest<ApiResult<Gallery list>>
     end
 
-    interface IRequest<ApiResult<Gallery list>>
+  [<Action(Route = "api/features/gallery/delete-gallery", AllowAnonymous = true)>]
+  type DeleteGallery =
+    { Id: GalleryId }
+
+    interface IRequest<ApiResult<unit>>
 
   type GetGalleryParameter =
     | Id of GalleryId
@@ -59,53 +101,46 @@ module PersistentGallery =
   [<Action(Route = "api/features/gallery/get-gallery", AllowAnonymous = true)>]
   type GetGallery =
     { Argument: GetGalleryParameter }
+
     interface IRequest<ApiResult<Gallery>>
 
   [<Action(Route = "api/features/gallery/get-gallery-items", AllowAnonymous = true)>]
   type GetGalleryItems =
     { Argument: GetGalleryParameter
       Pagination: Pagination }
+
     interface IRequest<ApiResult<PaginatedResult<Image>>>
 
-  type CreateGalleryHandler(ctx: IWebRequestContext) =
+  type GalleryHandler(ctx: IWebRequestContext) =
+    interface IRequestHandler<DeleteGallery, ApiResult<unit>> with
+      member this.Handle(request, _) =
+        taskResult {
+          ctx.DocumentSession.Delete<Gallery>(request.Id.value ())
+          do! ctx.DocumentSession.SaveChangesAsync()
+          return ()
+        }
+
+    interface IRequestHandler<RemoveItemFromGallery, ApiResult<unit>> with
+      member this.Handle(request, _) =
+        taskResult {
+          let! gallery = request.GalleryId.value () |> ctx.DocumentSession.LoadAsync<Gallery>
+
+          let gallery =
+            { gallery with Items = gallery.Items |> List.filter (fun v -> v.File.Id <> request.FileId) }
+
+          ctx.DocumentSession.Store gallery
+          do! ctx.DocumentSession.SaveChangesAsync()
+          return ()
+        }
+
     interface IRequestHandler<CreateGallery, ApiResult<GalleryId>> with
       member this.Handle(request, _) =
         taskResult {
-          let! result =
-            match request.BasedOn with
-            | Filter filter ->
-              AzFiles.Features.GetTaggedImages.GetImages.getCachedTaggedFiles
-                ctx
-                { Filter = filter
-                  ChronologicalSortDirection = Asc
-                  Pagination = NoPagination }
+          let! result = getImagesOnBase request.BasedOn ctx
 
-          printfn "Found images %A" result.Result.Length
+          printfn "Found images %A" result.Length
 
-          let images =
-            result.Result
-            |> List.filter (fun v -> v.FileInfo.Type = FileType.Image)
-            |> List.map (fun v ->
-              let exifData = (v.ExifData |> Skippable.defaultValue [])
-
-              let width =
-                exifData
-                |> Exif.tryGetWidth
-                |> Option.defaultValue 99
-
-              let height =
-                exifData
-                |> Exif.tryGetHeight
-                |> Option.defaultValue 99
-
-              let dim = GetDynamicGallery.getDesiredDimension v
-
-              printfn "image %A" v.Filename
-
-              { Dimension = dim
-                Size = { Width = width; Height = height }
-                File = v
-                Hidden = Skippable.Include false })
+          let images = result |> List.map mapFileViewmodelToGalleryImage
 
           let gallery: Gallery =
             { Id = System.Guid.NewGuid()
@@ -122,35 +157,56 @@ module PersistentGallery =
     interface IRequestHandler<GetGalleries, ApiResult<Gallery list>> with
       member this.Handle(_, cancellationToken) =
         taskResult {
-          let! x =
-            ctx
-              .DocumentSession
-              .Query<Gallery>()
-              .ToListAsync(cancellationToken)
+          let! x = ctx.DocumentSession.Query<Gallery>().ToListAsync(cancellationToken)
 
           return x |> Seq.toList
+        }
+
+    interface IRequestHandler<AddImagesOnBasedOn, ApiResult<unit>> with
+      member this.Handle(request, _) =
+        taskResult {
+          let! gallery = request.GalleryId.value () |> ctx.DocumentSession.LoadAsync<Gallery>
+          let! result = getImagesOnBase request.BasedOn ctx
+
+          let filtered =
+            result
+            |> List.filter (fun v -> not (gallery.Items |> List.exists (fun i -> i.File.Id = v.Id)))
+            |> List.map mapFileViewmodelToGalleryImage
+
+          let g =
+            { gallery with
+                Items =
+                  (gallery.Items @ filtered)
+                  |> List.sortByDescending (fun v -> v.File.FileDateOrCreatedAt) }
+
+          ctx.DocumentSession.Store(g)
+          do! ctx.DocumentSession.SaveChangesAsync()
+          return ()
         }
 
     interface IRequestHandler<UpdateGallery, ApiResult<unit>> with
       member this.Handle(request, _) =
         taskResult {
-          let! gallery =
-            request.Id.value ()
-            |> ctx.DocumentSession.LoadAsync<Gallery>
+          let! gallery = request.Id.value () |> ctx.DocumentSession.LoadAsync<Gallery>
 
           let items =
             gallery.Items
             |> List.map (fun v ->
-              let updatedItem =
-                request.Items
-                |> List.tryFind (fun x -> x.File.Id = v.File.Id)
+              let updatedItem = request.Items |> List.tryFind (fun x -> x.File.Id = v.File.Id)
 
               match updatedItem with
-              | Some updatedItem -> updatedItem
+              | Some updatedItem ->
+                { v with
+                    Hidden = updatedItem.Hidden
+                    File = v.File
+                    Dimension = updatedItem.Dimension
+                    // Size = updatedItem.Size
+                    DimensionAdjustment = updatedItem.DimensionAdjustment }
               | None -> v)
 
           ctx.DocumentSession.Store({ gallery with Items = items })
           do! ctx.DocumentSession.SaveChangesAsync()
+          do! AzFiles.GenerateBlogData.generateStaticGallery ctx { GalleryId = gallery.Key() }
           return ()
         }
 
@@ -159,17 +215,10 @@ module PersistentGallery =
         taskResult {
           let! gallery =
             match request.Argument with
-            | Id id ->
-              id.value ()
-              |> ctx.DocumentSession.LoadAsync<Gallery>
+            | Id id -> id.value () |> ctx.DocumentSession.LoadAsync<Gallery>
             | Name name ->
               task {
-                let! values =
-                  ctx
-                    .DocumentSession
-                    .Query<Gallery>()
-                    .Where(fun v -> v.Name = name)
-                    .ToListAsync()
+                let! values = ctx.DocumentSession.Query<Gallery>().Where(fun v -> v.Name = name).ToListAsync()
 
                 return values |> Seq.head
               }
@@ -182,39 +231,18 @@ module PersistentGallery =
         taskResult {
           let! gallery =
             match request.Argument with
-            | Id id ->
-              id.value ()
-              |> ctx.DocumentSession.LoadAsync<Gallery>
+            | Id id -> id.value () |> ctx.DocumentSession.LoadAsync<Gallery>
             | Name name ->
               task {
-                let! values =
-                  ctx
-                    .DocumentSession
-                    .Query<Gallery>()
-                    .Where(fun v -> v.Name = name)
-                    .ToListAsync()
+                let! values = ctx.DocumentSession.Query<Gallery>().Where(fun v -> v.Name = name).ToListAsync()
 
                 return values |> Seq.head
               }
 
-          let map (v: Image) =
-            let orientation =
-              (v.File.ExifData |> Skippable.defaultValue [])
-              |> Exif.tryGetOrientation
-
-            let size: Size =
-              match orientation with
-              | Some 6us
-              | Some 8us
-              | Some 5us
-              | Some 7us ->
-                { Width = v.Size.Height
-                  Height = v.Size.Width }
-              | _ -> v.Size
-
-            { v with Size = size }
-
-          let gallery = { gallery with Items = gallery.Items |> List.map map }
+          let gallery =
+            { gallery with Items = gallery.Items
+            //                                  |> List.map Image.fixWidthAndHeightAccordingToOrientation
+             }
 
           return
             match request.Pagination with

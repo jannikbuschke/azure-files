@@ -9,7 +9,6 @@ open FsToolkit.ErrorHandling
 open Microsoft.Extensions.DependencyInjection
 open SixLabors.ImageSharp
 
-
 module FileUploads =
 
   let validateAndUpload (ctx: IWebRequestContext) (serviceProvider: IServiceProvider) file =
@@ -45,9 +44,7 @@ module FileUploads =
         Exif.readExifData (
           ctx.GetLogger<obj>(),
           file.Id,
-          fun () ->
-            fileStream
-            |> System.Threading.Tasks.Task.FromResult
+          fun () -> fileStream |> System.Threading.Tasks.Task.FromResult
         )
 
       fileStream.Position <- 0
@@ -62,7 +59,6 @@ module FileUploads =
 
       return result
     }
-
 
 open System
 open AzFiles
@@ -118,8 +114,7 @@ type TestControlle2r(logger: ILogger<TestControlle2r>, ctx: IWebRequestContext, 
               |> Seq.toList
           }
           |> Async.AwaitTask
-        with
-        | e ->
+        with e ->
           [ Error(
               { ApiError.Message = e.Message
                 Info = None }

@@ -75,7 +75,6 @@ module EditProperty =
 
     result @ removed
 
-
   type Handler(ctx: IWebRequestContext) =
     interface IRequestHandler<AddProperty, ApiResult<unit>> with
       member this.Handle(request, token) =

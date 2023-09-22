@@ -1,4 +1,5 @@
-﻿
+﻿module ListCE0
+
 type ListWorkflowBuilder() =
   member this.Bind(x,f)=
       printfn "collect %A" x

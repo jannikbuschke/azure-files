@@ -16,5 +16,7 @@
       "path": "glow\\glow.ts"
     }
   ],
-  "settings": {}
+  "settings": {
+    "editor.inlayHints.enabled": "offUnlessPressed"
+  }
 }

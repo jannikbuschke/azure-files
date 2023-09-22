@@ -42,6 +42,18 @@ const navbarLinks: MainLinkProps[] = [
     to: "/images",
   },
   {
+    icon: <TbPolaroid />,
+    color: "blue",
+    label: "Galleries",
+    to: "/gallery",
+  },
+  {
+    icon: <TbPolaroid />,
+    color: "blue",
+    label: "Dynamic/Tagmany",
+    to: "/dynamic-gallery",
+  },
+  {
     icon: <VscAzure />,
     color: "blue",
     label: "Blob containers",

@@ -7,6 +7,7 @@ import * as NodaTime from "./NodaTime"
 import * as Microsoft_FSharp_Core from "./Microsoft_FSharp_Core"
 import * as Microsoft_FSharp_Collections from "./Microsoft_FSharp_Collections"
 import * as System_Text_Json_Serialization from "./System_Text_Json_Serialization"
+import * as AzFiles_Galleries from "./AzFiles_Galleries"
 import * as Azure_Storage_Blobs_Models from "./Azure_Storage_Blobs_Models"
 import * as System_Collections_Generic from "./System_Collections_Generic"
 
@@ -104,13 +105,6 @@ export type Property = {
 export var defaultProperty: Property = {
   name: defaultPropertyName,
   value: ''
-}
-
-export type GenerateBlogData = {
-  tagName: System.String
-}
-export var defaultGenerateBlogData: GenerateBlogData = {
-  tagName: ''
 }
 
 export type Checksum_Case_Checksum = System.String
@@ -691,6 +685,20 @@ export var defaultFileViewmodel: FileViewmodel = {
   fileDateOrCreatedAt: "9999-12-31T23:59:59.999999999Z",
   location: null,
   fileInfo: defaultFileInfo
+}
+
+export type GenerateStaticGallery = {
+  galleryId: AzFiles_Galleries.GalleryId
+}
+export var defaultGenerateStaticGallery: GenerateStaticGallery = {
+  galleryId: AzFiles_Galleries.defaultGalleryId
+}
+
+export type GenerateBlogData = {
+  tagName: System.String
+}
+export var defaultGenerateBlogData: GenerateBlogData = {
+  tagName: ''
 }
 
 export type EmptyRecord = {

@@ -35,19 +35,16 @@
     <Compile Include="Features\blob-actions.fs" />
     <Compile Include="Features\RemoveTaggedFromInbox.fs" />
     <Compile Include="Features\EditProperty.fs" />
+    <Compile Include="Features\RotateImage.fs" />
     <Compile Include="Features\GoogleDrive\ShowFiles.fs" />
     <Compile Include="Features\Fsi\EvaluateFs.fs" />
+    <Compile Include="GalleryDomain.fs" />
+    <Compile Include="generate-blog-data.fs" />
     <Compile Include="Features\Gallery\DynamicGallery.fs" />
     <Compile Include="Features\Gallery\CreateGallery.fs" />
-    <Compile Include="generate-blog-data.fs" />
     <Compile Include="generat-obsidian-notes.fs" />
     <Compile Include="UploadController.fs" />
     <Compile Include="Program.fs" />
-    <None Include="BasicFileOperations.fsx" />
-    <Compile Include="ListCe.fs" />
-    <Compile Include="ListCe0.fs" />
-    <Compile Include="CE.fs" />
-    <None Include="ResultCE.fsx" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Dapper" Version="1.50.5" />
@@ -69,13 +66,12 @@
   <!--    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="3.1.2" />-->
   <!--  </ItemGroup>-->
   <ItemGroup>
-<!--    <PackageReference Include="Marten" Version="5.10.1" />-->
+    <!--    <PackageReference Include="Marten" Version="5.10.1" />-->
     <PackageReference Include="Azure.Storage.Blobs" Version="12.16.0" />
     <PackageReference Include="Microsoft.Identity.Client" Version="4.47.2" />
     <PackageReference Include="Azure.Identity" Version="1.4.1" />
     <PackageReference Include="Google.Apis.Drive.v3" Version="1.61.0.3082" />
     <PackageReference Include="FSharp.Compiler.Service" Version="43.7.300" />
-    
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\glow\glow.meta\glow.meta.csproj" />
@@ -83,7 +79,7 @@
     <ProjectReference Include="..\glow\glow.core.fs\glow.core.fs.fsproj" />
     <ProjectReference Include="..\glow\glow.ts\glow.ts.csproj" />
     <ProjectReference Include="..\glow\core\glow.core.csproj" />
-<!--    <ProjectReference Include="..\glow\glow.legacy\glow.legacy.csproj" />-->
+    <!--    <ProjectReference Include="..\glow\glow.legacy\glow.legacy.csproj" />-->
     <!--    <ProjectReference Include="..\glow\glow.azdo\glow.azdo.csproj" />-->
     <!--    <ProjectReference Include="..\glow\glow.azure\glow.azure.csproj" />-->
     <!--    <ProjectReference Include="..\glow\glow.beta\glow.beta.csproj" />-->

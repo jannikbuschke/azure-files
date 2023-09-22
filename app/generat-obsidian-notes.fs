@@ -55,4 +55,3 @@ exif-date-original: {v.DateTimeOriginal|>Option.map(fun v->v.ToDateTimeUtc().ToS
         
         return MediatR.Unit.Value
       }
-

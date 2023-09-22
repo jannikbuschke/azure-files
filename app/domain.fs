@@ -12,9 +12,11 @@ open Microsoft.Extensions.Logging
 
 type PropertyName =
   | PropertyName of string
+
   member this.Value() =
     let (PropertyName s) = this
     s
+
 type Property = { Name: PropertyName; Value: string }
 
 type PropertyChanged =
@@ -35,6 +37,7 @@ type ErrorResult =
 
 type Checksum =
   | Checksum of string
+
   member this.value() =
     match this with
     | Checksum s -> s
@@ -98,6 +101,7 @@ type TagRemoved = { Name: string }
 
 type EmptyRecord =
   { Skip: Skippable<unit> }
+
   static member Instance = { Skip = Skippable.Skip }
 
 type ExifDataUpdated = { Data: ExifValue list }
@@ -113,16 +117,6 @@ type FileEvent =
   | RemovedFromInbox of EmptyRecord
   | PropertyChanged of PropertyChanged
   | PropertiesChanged of PropertyChanged list
-
-
-// type GlowWebRequestContext =
-//   { HttpContext: HttpContext
-//     UserId: string option
-//     DocumentSession: IDocumentSession }
-
-// type AuthenticatedWebRequestContext =
-//   { HttpContext: HttpContext
-//     UserId: string }
 
 type GetContainer = unit -> Task<BlobContainerClient>
 
@@ -141,26 +135,17 @@ module WebRequestContext =
     fun () ->
       task {
         let! container = ctx.GetSrcContainer()
+
         let blobClient = container.GetBlobClient(fileId.value().ToString())
+
         let! s = blobClient.DownloadStreamingAsync()
         return s.Value.Content
       }
 
-// type WebRequestContext =
-//   { HttpContext: HttpContext
-//     UserId: string option
-//     DocumentSession: IDocumentSession
-//     GetSrcContainer: GetContainer
-//     GetInboxContainer: GetContainer
-//     GetVariantsContainer: GetContainer
-//     Configuration: IConfiguration
-//     GetLogger<'T> : unit -> ILogger<'T>
-//     }
+type ApiErrorInfo = ErrorResult of ErrorResult
 
-
-type ApiErrorInfo =
-  | ErrorResult of ErrorResult
-
-type ApiError = { Message: string; Info: ApiErrorInfo option }
+type ApiError =
+  { Message: string
+    Info: ApiErrorInfo option }
 
 type ApiResult<'T> = Result<'T, ApiError>

@@ -32,6 +32,7 @@ export function ImagesGallery() {
       >
         {(data) => (
           <SegmentedControl
+            mb="xs"
             value={selectedTag || ""}
             onChange={setSelectedTag}
             data={[...data, "all"].map((v) => ({ label: v, value: v }))}
@@ -48,97 +49,104 @@ export function ImagesGallery() {
             selectedTag !== null
               ? { Case: "Tagged", Fields: [selectedTag] }
               : { Case: "All" },
-          // date: date,
-          // includingTags:
-          //   selectedTag === "all" ? [] : selectedTag ? [selectedTag] : [],
+        }}
+        queryOptions={{
+          enabled: selectedTag !== null,
         }}
       >
-        {(data) => (
-          <Masonry
-            breakpointCols={{
-              default: 3,
-              // default: 3,
-              // 1200: 2,
-              // 500: 1,
-            }}
-            className="my-masonry-grid"
-            columnClassName="my-masonry-grid_column"
-          >
-            {data.map((v, i) => {
-              const thumbnail = v.lowresVersions.find(
-                (v) => v.name == "thumbnail",
-              )
-              return (
-                <div
-                  style={{
-                    // width: "100%",
-                    position: "relative",
-                  }}
-                >
-                  {/* {v.url!} */}
-                  {/* // width={isSmallScreen ? "100%" : undefined}
-                // height={isSmallScreen ? undefined : 200} */}
-                  <Card
-                    shadow="sm"
-                    radius="md"
-                    withBorder={true}
-                    // style={{
-                    //   maxHeight: "95vh",
-                    //   maxWidth: "95vw",
-                    // }}
+        {(data) =>
+          data === null ? (
+            selectedTag === null ? (
+              <div>no filter selected</div>
+            ) : (
+              <div>loading...</div>
+            )
+          ) : (
+            <Masonry
+              breakpointCols={{
+                default: 3,
+                // default: 3,
+                // 1200: 2,
+                // 500: 1,
+              }}
+              className="my-masonry-grid"
+              columnClassName="my-masonry-grid_column"
+            >
+              {data.map((v, i) => {
+                const thumbnail = v.lowresVersions.find(
+                  (v) => v.name == "thumbnail",
+                )
+                return (
+                  <div
+                    style={{
+                      // width: "100%",
+                      position: "relative",
+                    }}
                   >
-                    <Card.Section>
-                      <Image
-                        style={
-                          {
-                            // height: "95vh",
-                            // maxHeight: "75vh",
-                            // maxWidth: "75vw",
+                    {/* {v.url!} */}
+                    {/* // width={isSmallScreen ? "100%" : undefined}
+                // height={isSmallScreen ? undefined : 200} */}
+                    <Card
+                      shadow="sm"
+                      radius="md"
+                      withBorder={true}
+                      // style={{
+                      //   maxHeight: "95vh",
+                      //   maxWidth: "95vw",
+                      // }}
+                    >
+                      <Card.Section>
+                        <Image
+                          style={
+                            {
+                              // height: "95vh",
+                              // maxHeight: "75vh",
+                              // maxWidth: "75vw",
+                            }
                           }
-                        }
-                        fit="contain"
-                        // fit={isSmallScreen ? "contain" : "cover"}
-                        // radius="md"
-                        src={thumbnail?.url || v.url!}
-                        imageProps={{ loading: "lazy" }}
-                      />
-                      <Group
-                        position="apart"
-                        m="xs"
-                        // style={{
-                        //   opacity: 0.8,
-                        //   position: "absolute",
-                        //   bottom: 8,
-                        //   left: 8,
-                        // }}
-                        // spacing={4}
-                      >
-                        {thumbnail ? <Badge>Thumbnail</Badge> : null}
-                        {v.dateTime ? (
-                          <Badge
-                            size="xs"
-                            radius={"xl"}
-                            variant="light"
-                            color="gray"
-                          >
-                            {dayjs(v.dateTime).format("MMM YYYY")}
-                          </Badge>
-                        ) : null}
-                        <Group>
-                          {v.tags.map((v) => (
+                          fit="contain"
+                          // fit={isSmallScreen ? "contain" : "cover"}
+                          // radius="md"
+                          src={thumbnail?.url || v.url!}
+                          imageProps={{ loading: "lazy" }}
+                        />
+                        <Group
+                          position="apart"
+                          m="xs"
+                          // style={{
+                          //   opacity: 0.8,
+                          //   position: "absolute",
+                          //   bottom: 8,
+                          //   left: 8,
+                          // }}
+                          // spacing={4}
+                        >
+                          {thumbnail ? <Badge>Thumbnail</Badge> : null}
+                          {v.dateTime ? (
                             <Badge
                               size="xs"
                               radius={"xl"}
                               variant="light"
-                              color="pink"
+                              color="gray"
                             >
-                              {v}
+                              {dayjs(v.dateTime).format("MMM YYYY")}
                             </Badge>
-                          ))}
+                          ) : null}
+                          <Group>
+                            {v.tags.map((v) => (
+                              <Badge
+                                size="xs"
+                                radius={"xl"}
+                                variant="light"
+                                color="pink"
+                              >
+                                {v}
+                              </Badge>
+                            ))}
+                          </Group>
                         </Group>
-                      </Group>
-                    </Card.Section>
-                    {/* {Math.random() < 0.5 ? (
+                      </Card.Section>
+                      {/* {Math.random() < 0.5 ? (
                     <Text size="sm" color="dimmed">
                       With Fjord Tours you can explore more of the magical fjord
                       landscapes with tours and activities on and around the
@@ -165,12 +173,13 @@ export function ImagesGallery() {
                       Delete
                     </Button>
                   </Group> */}
-                  </Card>
-                </div>
-              )
-            })}
-          </Masonry>
-        )}
+                    </Card>
+                  </div>
+                )
+              })}
+            </Masonry>
+          )
+        }
       </QueryWithBoundary>
 
       {/* <QueryWithBoundary

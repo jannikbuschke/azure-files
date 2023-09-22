@@ -38,7 +38,7 @@ type D = delegate of unit -> string
 module Program =
 
   let initializeMarten (connectionString: string) (serializer: SystemTextJsonSerializer) =
-    FuncConvert.FromFunc (fun (sp: IServiceProvider) ->
+    FuncConvert.FromFunc(fun (sp: IServiceProvider) ->
       let options = StoreOptions()
       options.Connection(connectionString)
 
@@ -81,7 +81,7 @@ module Program =
 
       let persistenceSerializer = SystemTextJsonSerializer()
 
-      persistenceSerializer.Customize (fun v ->
+      persistenceSerializer.Customize(fun v ->
         v.WriteIndented <- false
 
         v.Converters.Add(
@@ -111,12 +111,7 @@ module Program =
                 [ [ ("@data", Sql.jsonb (e.Data |> persistenceSerializer.ToCleanJson))
                     ("@id", (Sql.uuid (e.Id))) ] ]
 
-              {|
-                 // Event = e
-                 // NewJson = e.Data |> persistenceSerializer.ToCleanJson
-                 Command = transaction |}
-            // OldJsonFormat = e.Data |> webSerializer.ToCleanJson
-            )
+              {| Command = transaction |})
             |> Seq.toList
             |> List.map (fun v -> v.Command)
 
@@ -138,8 +133,7 @@ module Program =
       do! daemon.StartDaemon()
 
       let projections =
-        (documentStore :> IDocumentStore)
-          .Options.Events.Projections()
+        (documentStore :> IDocumentStore).Options.Events.Projections()
         // |> Seq.filter (fun v -> v.Lifecycle = ProjectionLifecycle.Inline)
         |> Seq.map (fun v -> v.ProjectionName)
         |> Seq.toList
@@ -158,11 +152,7 @@ module Program =
 
     let services = builder.Services
 
-    services.AddCors (fun c ->
-      // c.AddDefaultPolicy (fun p ->
-      //   p.AllowAnyHeader()
-      //   p.AllowAnyMethod()
-      //   p.AllowAnyOrigin() |> ignore)
+    services.AddCors(fun c ->
 
       c.AddPolicy(
         "AllowAll",
@@ -180,8 +170,7 @@ module Program =
     let assemblies =
       [| Assembly.GetEntryAssembly()
          typedefof<GetProfileHandler>.Assembly
-         typedefof<Glow.Core.MartenAndPgsql.GetEventsHandler2>
-           .Assembly |]
+         typedefof<Glow.Core.MartenAndPgsql.GetEventsHandler2>.Assembly |]
 
     services.AddGlowApplicationServices(
       (fun options ->
@@ -207,9 +196,7 @@ module Program =
         o.SlidingExpiration <- true
         o.ExpireTimeSpan <- TimeSpan.FromDays 7.0
 
-    services
-      .AddAuthentication(authScheme)
-      .AddCookie(cookieAuth)
+    services.AddAuthentication(authScheme).AddCookie(cookieAuth)
     // .AddAzdoClientServices(fun options ->
     //   options.Pat <- builder.Configuration.Item("azdo:Pat")
     //   options.OrganizationBaseUrl <- builder.Configuration.Item("azdo:OrganizationBaseUrl"))
@@ -220,11 +207,8 @@ module Program =
 
     services.AddSingleton(connectionStrings)
 
-    services.AddTransient<IWebRequestContext> (fun v ->
-      let httpContext =
-        v
-          .GetRequiredService<IHttpContextAccessor>()
-          .HttpContext
+    services.AddTransient<IWebRequestContext>(fun v ->
+      let httpContext = v.GetRequiredService<IHttpContextAccessor>().HttpContext
 
       let session = v.GetRequiredService<IDocumentSession>()
       let configuration = v.GetRequiredService<IConfiguration>()
@@ -261,8 +245,9 @@ module Program =
 
     let persistenceSerializer = SystemTextJsonSerializer()
 
-    persistenceSerializer.Customize (fun v ->
+    persistenceSerializer.Customize(fun v ->
       v.WriteIndented <- false
+
       let settings = Glow.JsonSerializationSettings.JsonDefaultSerializationUnionEncoding
 
       v.Converters.Add(
@@ -284,15 +269,12 @@ module Program =
 
     builder.Services.AddGlowAadIntegration(builder.Environment, builder.Configuration)
 
-    services.AddAuthorization (fun options ->
+    services.AddAuthorization(fun options ->
       options.AddPolicy("Authenticated", (fun v -> v.RequireAuthenticatedUser() |> ignore))
       options.AddPolicy("admin", (fun v -> v.RequireAuthenticatedUser() |> ignore)))
 
     let workspaces: Workspace list =
-      builder
-        .Configuration
-        .GetSection("Workspaces")
-        .GetChildren()
+      builder.Configuration.GetSection("Workspaces").GetChildren()
       |> Seq.map (fun v ->
         let ws: Workspace =
           { Name = v.GetValue<string>("Name")
@@ -302,8 +284,7 @@ module Program =
       |> Seq.toList
 
     let workspace =
-      workspaces
-      |> List.find (fun v -> v.Name = builder.Environment.EnvironmentName)
+      workspaces |> List.find (fun v -> v.Name = builder.Environment.EnvironmentName)
 
     services.AddSingleton(workspaces)
     services.AddSingleton(workspace)
@@ -341,10 +322,7 @@ module Program =
 
     Log.Logger.Information("Starting application")
 
-    let app =
-      buildAppAsync (args)
-      |> Async.AwaitTask
-      |> Async.RunSynchronously
+    let app = buildAppAsync (args) |> Async.AwaitTask |> Async.RunSynchronously
 
     match app with
     | None -> 0
@@ -398,7 +376,24 @@ module Program =
       app.UseStaticFiles()
       app.UseSpaStaticFiles()
 
-      app.UseSpa (fun spa ->
+      app.Map(
+        "/svelte",
+        fun (app: IApplicationBuilder) ->
+          app.UseSpa(fun spa ->
+            spa.Options.SourcePath <- "svelte-client"
+
+            if (env.IsDevelopment()) then
+              spa.UseProxyToSpaDevelopmentServer("http://localhost:5173/svelte"))
+      )
+
+
+      //            app.UseSpa
+      //                (fun spa ->
+      //                    spa.Options.SourcePath <- "svelte-client"
+      //
+      //                    if (env.IsDevelopment()) then
+      //                        spa.UseProxyToSpaDevelopmentServer("http://localhost:5173/svelte"))
+      app.UseSpa(fun spa ->
         spa.Options.SourcePath <- "web"
 
         if (env.IsDevelopment()) then
@@ -406,17 +401,15 @@ module Program =
 
       app.MapGet(
         "/photos/{id}",
-        (Func<HttpContext, Task<IResult>> (fun (http: HttpContext) ->
+        (Func<HttpContext, Task<IResult>>(fun (http: HttpContext) ->
           taskResult {
             let ctx = http.RequestServices.GetRequiredService<IWebRequestContext>()
-            let id = http.Request.RouteValues["id"] :?> string
+
+            let id = http.Request.RouteValues.["id"] :?> string
+
             printfn "Get photo %A" id
 
-            let! file =
-              id
-              |> Guid.Parse
-              |> FileId.create
-              |> ctx.DocumentSession.LoadFile
+            let! file = id |> Guid.Parse |> FileId.create |> ctx.DocumentSession.LoadFile
 
             return
               $"""<div style='display:flex;align-items:center;justify-items:center'><img style='max-width:95vw;max-height:95vh' src='{file.Url}' /></div>"""
@@ -432,7 +425,7 @@ module Program =
 
       app.MapGet(
         "/photos",
-        (Func<HttpContext, Task<IResult>> (fun (http: HttpContext) ->
+        (Func<HttpContext, Task<IResult>>(fun (http: HttpContext) ->
           task {
             let ctx = http.RequestServices.GetRequiredService<IWebRequestContext>()
 
@@ -464,9 +457,9 @@ module Program =
             // flex-direction: column;
             // align-items: center;
             // img {{height: 500px; object-fit: contain; object-position: center;}}
-//             body {
-//   overflow: hidden; /* Hide scrollbars */
-// }
+            //             body {
+            //   overflow: hidden; /* Hide scrollbars */
+            // }
 
             let imgStyle =
               """
@@ -499,7 +492,7 @@ img {{ {imgStyle} }}</style></head>
 
       app.MapGet(
         "/hello",
-        (Func<HttpContext, Task<string>> (fun (http: HttpContext) ->
+        (Func<HttpContext, Task<string>>(fun (http: HttpContext) ->
           task {
             let ctx = http.RequestServices.GetRequiredService<IWebRequestContext>()
 
@@ -510,7 +503,7 @@ img {{ {imgStyle} }}</style></head>
 
       app.MapPost(
         "/upload",
-        Func<HttpContext, Task<Result<unit, ApiError> list>> (fun (requestContext: HttpContext) ->
+        Func<HttpContext, Task<Result<unit, ApiError> list>>(fun (requestContext: HttpContext) ->
           async {
             let ctx = requestContext.RequestServices.GetRequiredService<IWebRequestContext>()
 
@@ -518,6 +511,7 @@ img {{ {imgStyle} }}</style></head>
               requestContext.RequestServices.GetRequiredService<IServiceProvider>()
 
             let logger = ctx.GetLogger<obj>()
+
             logger.LogInformation("handle upload form files {@formfiles}", ctx.HttpContext.Request.Form.Files)
 
             // let validateAndUpload = x ctx serviceProvider
@@ -542,8 +536,7 @@ img {{ {imgStyle} }}</style></head>
                     |> Seq.toList
                 }
                 |> Async.AwaitTask
-              with
-              | e ->
+              with e ->
                 [ Error(
                     { ApiError.Message = e.Message
                       Info = None }

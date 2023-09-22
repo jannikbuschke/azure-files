@@ -13,8 +13,8 @@ import * as AzFiles_Features_GoogleDrive from "./AzFiles_Features_GoogleDrive"
 import * as AzFiles_Features_Fsi from "./AzFiles_Features_Fsi"
 import * as AzFiles_GenerateObsidianNotes from "./AzFiles_GenerateObsidianNotes"
 import * as AzFiles_Features_Gallery from "./AzFiles_Features_Gallery"
-import * as NodaTime from "./NodaTime"
 import * as AzFiles_Galleries from "./AzFiles_Galleries"
+import * as NodaTime from "./NodaTime"
 import * as Microsoft_FSharp_Core from "./Microsoft_FSharp_Core"
 import * as System_Text_Json_Serialization from "./System_Text_Json_Serialization"
 import * as Glow_TestAutomation from "./Glow_TestAutomation"
@@ -99,12 +99,17 @@ export type Outputs = {
   "/UpdateProperty": Microsoft_FSharp_Core.FSharpResult<Microsoft_FSharp_Core.Unit,AzFiles.ApiError>,
   "/api/upsert-properties": Microsoft_FSharp_Core.FSharpResult<Microsoft_FSharp_Core.Unit,AzFiles.ApiError>,
   "/api/upsert-properties-raw": Microsoft_FSharp_Core.FSharpResult<Microsoft_FSharp_Core.Unit,AzFiles.ApiError>,
+  "/api/rotate": Microsoft_FSharp_Core.FSharpResult<Microsoft_FSharp_Core.Unit,AzFiles.ApiError>,
   "/api/g-drive/download-file-to-inbox": Microsoft_FSharp_Core.FSharpResult<Microsoft_FSharp_Core.Unit,AzFiles.ApiError>,
   "/api/fsi/evaluate": Microsoft_FSharp_Core.FSharpResult<AzFiles_Features_Fsi.EvalResult,AzFiles.ApiError>,
   "/api/my/write-obsidian-notes": Microsoft_FSharp_Core.FSharpResult<MediatR.Unit,AzFiles.ApiError>,
-  "/api/my/write-blog-data": MediatR.Unit,
+  "/api/features/gallery/remove-item": Microsoft_FSharp_Core.FSharpResult<Microsoft_FSharp_Core.Unit,AzFiles.ApiError>,
   "/api/features/gallery/create-gallery": Microsoft_FSharp_Core.FSharpResult<AzFiles_Galleries.GalleryId,AzFiles.ApiError>,
+  "/api/features/gallery/add-images-on-base": Microsoft_FSharp_Core.FSharpResult<Microsoft_FSharp_Core.Unit,AzFiles.ApiError>,
   "/api/features/gallery/update-gallery": Microsoft_FSharp_Core.FSharpResult<Microsoft_FSharp_Core.Unit,AzFiles.ApiError>,
+  "/api/features/gallery/delete-gallery": Microsoft_FSharp_Core.FSharpResult<Microsoft_FSharp_Core.Unit,AzFiles.ApiError>,
+  "/api/my/create-static-gallery": Microsoft_FSharp_Core.FSharpResult<Microsoft_FSharp_Core.Unit,AzFiles.ApiError>,
+  "/api/my/write-blog-data": MediatR.Unit,
   "/api/file/delete-file": Microsoft_FSharp_Core.FSharpResult<Microsoft_FSharp_Core.Unit,AzFiles.ApiError>,
   "/api/file/tag-many": Microsoft_FSharp_Core.FSharpResult<Microsoft_FSharp_Core.Unit,AzFiles.ApiError>,
   "/api/file/set-tags": Microsoft_FSharp_Core.FSharpResult<Microsoft_FSharp_Core.Unit,AzFiles.ApiError>,
@@ -129,12 +134,17 @@ export type Actions = {
   "/UpdateProperty": AzFiles_Features.UpdateProperty,
   "/api/upsert-properties": AzFiles_Features.UpsertProperties,
   "/api/upsert-properties-raw": AzFiles_Features.UpsertPropertiesRaw,
+  "/api/rotate": AzFiles_Features.Rotate,
   "/api/g-drive/download-file-to-inbox": AzFiles_Features_GoogleDrive.DownloadFileToInbox,
   "/api/fsi/evaluate": AzFiles_Features_Fsi.EvaluateFs,
   "/api/my/write-obsidian-notes": AzFiles_GenerateObsidianNotes.GenerateObsidianNotes,
-  "/api/my/write-blog-data": AzFiles.GenerateBlogData,
+  "/api/features/gallery/remove-item": AzFiles_Features_Gallery.RemoveItemFromGallery,
   "/api/features/gallery/create-gallery": AzFiles_Features_Gallery.CreateGallery,
+  "/api/features/gallery/add-images-on-base": AzFiles_Features_Gallery.AddImagesOnBasedOn,
   "/api/features/gallery/update-gallery": AzFiles_Features_Gallery.UpdateGallery,
+  "/api/features/gallery/delete-gallery": AzFiles_Features_Gallery.DeleteGallery,
+  "/api/my/create-static-gallery": AzFiles.GenerateStaticGallery,
+  "/api/my/write-blog-data": AzFiles.GenerateBlogData,
   "/api/file/delete-file": AzFiles_Features.DeleteFile,
   "/api/file/tag-many": AzFiles_Features.TagMany,
   "/api/file/set-tags": AzFiles_Features.SetTags,

@@ -65,6 +65,15 @@ export var defaultUpsertPropertiesRaw: UpsertPropertiesRaw = {
   values: ''
 }
 
+export type Rotate = {
+  id: AzFiles.FileId
+  property: AzFiles.Property
+}
+export var defaultRotate: Rotate = {
+  id: AzFiles.defaultFileId,
+  property: AzFiles.defaultProperty
+}
+
 
 // This type has cyclic dependencies: AzFiles.Features.GetTaggedImages+ImageFilter
 // in general this should be avoided. We render a 'stub' value here that will be changed at the bottom of this file

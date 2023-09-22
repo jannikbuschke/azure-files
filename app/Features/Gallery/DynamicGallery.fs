@@ -43,9 +43,7 @@ module GetDynamicGallery =
   let getSpace columns i desiredDimension =
     let startColumn, startRow = getPosition columns i
 
-    let endColumn =
-      startColumn + desiredDimension.ColumnSpan.value ()
-      - 1
+    let endColumn = startColumn + desiredDimension.ColumnSpan.value () - 1
 
     let endRow = startRow + desiredDimension.RowSpan.value () - 1
     printfn "get space for i=%d" i
@@ -53,9 +51,7 @@ module GetDynamicGallery =
 
     let result =
       [ startColumn..endColumn ]
-      |> List.collect (fun col ->
-        [ startRow..endRow ]
-        |> List.map (fun row -> (Col col, Row row)))
+      |> List.collect (fun col -> [ startRow..endRow ] |> List.map (fun row -> (Col col, Row row)))
 
     printfn "result=%A" result
     result
@@ -103,10 +99,7 @@ module GetDynamicGallery =
 
     let isHighlight = el.Tags |> List.contains "⭐"
 
-    let height =
-      exif
-      |> Exif.tryGetHeight
-      |> Option.defaultValue 99
+    let height = exif |> Exif.tryGetHeight |> Option.defaultValue -1
 
     let imageType = getImageType width height
 
@@ -147,8 +140,7 @@ module GetDynamicGallery =
 
     let nextPosition =
       (head |> fst |> (fun (Col col) -> col))
-      + (head |> snd |> (fun (Row row) -> row))
-        * gridColumns
+      + (head |> snd |> (fun (Row row) -> row)) * gridColumns
       + desiredDimension.ColumnSpan.value ()
 
     printfn "Next position %d" nextPosition
@@ -172,13 +164,12 @@ module GetDynamicGallery =
   [<Action(Route = "api/features/gallery/get-dynamic-gallery", AllowAnonymous = true)>]
   type GetDynamicGallery =
     { Filter: ImageFilter }
+
     interface IRequest<ApiResult<GalleryViewmodel>>
 
   let computeGallery images =
 
-    let gallery =
-      images
-      |> List.fold placeItem (getInitialState (), 1)
+    let gallery = images |> List.fold placeItem (getInitialState (), 1)
 
     printfn "Gallery = %A" gallery
 
@@ -199,20 +190,15 @@ module GetDynamicGallery =
         |> List.map (fun v ->
           let exifData = (v.ExifData |> Skippable.defaultValue [])
 
-          let width =
-            exifData
-            |> Exif.tryGetWidth
-            |> Option.defaultValue 99
+          let width = exifData |> Exif.tryGetWidth |> Option.defaultValue -1
 
-          let height =
-            exifData
-            |> Exif.tryGetHeight
-            |> Option.defaultValue 99
+          let height = exifData |> Exif.tryGetHeight |> Option.defaultValue -1
 
           let dim = getDesiredDimension v
 
           { Dimension = dim
             Hidden = Skippable.Include false
+            DimensionAdjustment = Skip
             Size = { Width = width; Height = height }
             File = v })
 
@@ -221,21 +207,16 @@ module GetDynamicGallery =
 
   let getGallery (ctx: IWebRequestContext) (id: GalleryId) =
     taskResult {
-      let! gallery =
-        id.value ()
-        |> ctx.DocumentSession.LoadAsync<Gallery>
+      let! gallery = id.value () |> ctx.DocumentSession.LoadAsync<Gallery>
 
       let ids =
         gallery.Images
         |> List.choose (fun v ->
           match v with
-          | GalleryImage.GalleryImage (id, placement) -> Some(id.value (), placement)
+          | GalleryImage.GalleryImage(id, placement) -> Some(id.value (), placement)
           | _ -> None)
 
-      let! files =
-        ids
-        |> Seq.map fst
-        |> ctx.DocumentSession.LoadManyAsync<FileProjection>
+      let! files = ids |> Seq.map fst |> ctx.DocumentSession.LoadManyAsync<FileProjection>
 
       let images =
         files
@@ -246,7 +227,7 @@ module GetDynamicGallery =
             gallery.Images
             |> List.tryFind (fun v ->
               match v with
-              | GalleryImage.GalleryImage (id, _) -> id.value () = file.Id
+              | GalleryImage.GalleryImage(id, _) -> id.value () = file.Id
               | _ -> false)
             |> Option.defaultValue (
               GalleryImage.GalleryImage(
@@ -260,6 +241,7 @@ module GetDynamicGallery =
             { Size = { Width = 0; Height = 0 }
               File = fileViewmodel
               Hidden = Skippable.Include false
+              DimensionAdjustment = Skip
               Dimension =
                 { RowSpan = RowSpan 0
                   ColumnSpan = Colspan 0 } }
@@ -278,8 +260,5 @@ module GetDynamicGallery =
 
           return
             { PositionedImages = state.Images
-              Positions =
-                state.Positions
-                |> Array.toList
-                |> List.map (fun v -> v |> Array.toList) }
+              Positions = state.Positions |> Array.toList |> List.map (fun v -> v |> Array.toList) }
         }

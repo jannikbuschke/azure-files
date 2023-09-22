@@ -26,6 +26,9 @@
     },
     {
       "path": "glow\\glow.mantine-formik-web"
+    },
+    {
+      "path": "app/svelte-client"
     }
   ],
   "settings": {}

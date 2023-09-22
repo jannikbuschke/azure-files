@@ -15,67 +15,6 @@ import PhotoAlbum from "react-photo-album"
 import Lightbox from "yet-another-react-lightbox"
 import { useTypedQuery } from "../typed-api/use-query"
 
-// function SelectedImage({
-//   index,
-//   left,
-//   top,
-//   photo,
-//   onClick,
-//   margin,
-//   ...rest
-// }: RenderImageProps<{
-//   createdAt: NodaTime.Instant
-//   selected: boolean
-// }>) {
-//   const [hovering, setHovering] = React.useState(false)
-//   const isSelected = false
-
-//   const sx = (100 - (30 / photo.width) * 100) / 100
-//   const sy = (100 - (30 / photo.height) * 100) / 100
-//   const transform = `translateZ(0px) scale3d(${sx}, ${sy}, 1)`
-//   return (
-//     <div style={{ position: "relative" }}>
-//       {isSelected ? <Checkmark selected={true} /> : null}
-//       <img
-//         onClick={onClick as any}
-//         // key={key}
-//         width={photo.width}
-//         height={photo.height}
-//         // {...photo}
-//         src={photo.src}
-//         style={{ left, top, margin: isSelected ? 8 : 2 }}
-//       />
-//       <div
-//         onMouseOver={() => setHovering(true)}
-//         onMouseLeave={() => setHovering(false)}
-//         style={{
-//           position: "absolute",
-//           left: 12,
-//           bottom: 16,
-//           opacity: hovering ? 1 : 0,
-//           transition: "opacity 0.2s ease-in-out",
-//         }}
-//       >
-//         <Group
-//           position="apart"
-//           onMouseOver={() => setHovering(true)}
-//           onMouseLeave={() => setHovering(false)}
-//           style={{
-//             position: "absolute",
-//             left: 12,
-//             bottom: 16,
-//             // opacity: hovering ? 1 : 0,
-//             // transition: "opacity 0.2s ease-in-out",
-//           }}
-//         >
-//           <Button size="xs">Like</Button>
-//         </Group>
-//       </div>
-//       {/* <div>{photo.createdAt}</div> */}
-//     </div>
-//   )
-// }
-
 export function DynamicGalleryPage() {
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -99,6 +38,11 @@ export function DynamicGalleryPage() {
     input: {
       filter,
     },
+    placeholder: {
+      Case: "Ok",
+      Fields: { positionedImages: [], positions: [] },
+    },
+    queryOptions: { enabled: false },
   })
 
   const { notifySuccess } = useNotify()

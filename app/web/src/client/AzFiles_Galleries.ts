@@ -3,8 +3,8 @@
 //////////////////////////////////////
 
 import * as System from "./System"
-import * as AzFiles from "./AzFiles"
 import * as System_Text_Json_Serialization from "./System_Text_Json_Serialization"
+import * as AzFiles from "./AzFiles"
 import * as System_Collections_Generic from "./System_Collections_Generic"
 
 export type GalleryId_Case_GalleryId = System.Guid
@@ -46,16 +46,31 @@ export var defaultGridPlacementDimension: GridPlacementDimension = {
   rowSpan: defaultRowSpan
 }
 
+export type DimensionAdjustment = {
+  top: System_Text_Json_Serialization.Skippable<System.Int32>
+  left: System_Text_Json_Serialization.Skippable<System.Int32>
+  width: System_Text_Json_Serialization.Skippable<System.Int32>
+  height: System_Text_Json_Serialization.Skippable<System.Int32>
+}
+export var defaultDimensionAdjustment: DimensionAdjustment = {
+  top: undefined,
+  left: undefined,
+  width: undefined,
+  height: undefined
+}
+
 export type Image = {
   size: Size
   file: AzFiles.FileViewmodel
   dimension: GridPlacementDimension
+  dimensionAdjustment: System_Text_Json_Serialization.Skippable<DimensionAdjustment>
   hidden: System_Text_Json_Serialization.Skippable<System.Boolean>
 }
 export var defaultImage: Image = {
   size: defaultSize,
   file: AzFiles.defaultFileViewmodel,
   dimension: defaultGridPlacementDimension,
+  dimensionAdjustment: undefined,
   hidden: undefined
 }
 

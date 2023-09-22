@@ -13,6 +13,7 @@ open Microsoft.Extensions.Logging
 open System.Linq
 open Marten
 open Glow.Core.Actions
+open Azure.Storage.Sas
 
 type LobbyExit =
   | Delete
@@ -40,6 +41,7 @@ type LobbyItem =
     DuplicateCheckResult: DuplicateCheckResult
     Processed: bool
     Target: LobbyExit option }
+
   member this.ShouldDelete(e: LobbyEvent) =
     match e with
     | LobbyItemDeleted _ -> true
@@ -64,6 +66,7 @@ type LobbyItem =
 [<Action(Route = "api/auto-inbox/get-items", Policy = Policies.AuthenticatedUser)>]
 type GetLobbyItems =
   { FilterActive: bool }
+
   interface IRequest<LobbyItem list>
 
 type GetLobbyItemsHandler(ctx: IWebRequestContext) =
@@ -145,15 +148,11 @@ type LobbyBackgroundService(logger: ILogger<LobbyBackgroundService>, factory: IS
              DuplicateCheckResult = duplicateCheckResult })
         |> EventStore.appendLobbyEvent ctx.DocumentSession
 
-        do!
-          ctx.DocumentSession.SaveChangesAsync()
-          |> Async.AwaitTask
+        do! ctx.DocumentSession.SaveChangesAsync() |> Async.AwaitTask
 
         match moveTarget with
         | Delete ->
-          let! deleteResult =
-            inboxContainer.DeleteBlobAsync(blobItem.Name)
-            |> Async.AwaitTask
+          let! deleteResult = inboxContainer.DeleteBlobAsync(blobItem.Name) |> Async.AwaitTask
 
           if deleteResult.IsError then
             // if already deleted, its fine
@@ -162,36 +161,28 @@ type LobbyBackgroundService(logger: ILogger<LobbyBackgroundService>, factory: IS
             (id, LobbyEvent.LobbyItemRemoved { Target = LobbyExit.Delete })
             |> EventStore.appendLobbyEvent ctx.DocumentSession
 
-            do!
-              ctx.DocumentSession.SaveChangesAsync()
-              |> Async.AwaitTask
+            do! ctx.DocumentSession.SaveChangesAsync() |> Async.AwaitTask
 
             ()
         | MoveToSrc ->
           let blobClient = inboxContainer.GetBlobClient(blobItem.Name)
           let targetBlobClient = srcContainer.GetBlobClient(fileId.value().ToString())
 
-          // BlobCopyFromUriOptions()
-          // inboxContainer.Sas
-          let! copyResult =
-            targetBlobClient.SyncCopyFromUriAsync(blobClient.Uri)
-            |> Async.AwaitTask
+          let uri =
+            blobClient.GenerateSasUri(BlobSasBuilder(BlobSasPermissions.Read, DateTimeOffset.UtcNow.AddMinutes(5)))
 
-          let! properties =
-            targetBlobClient.GetPropertiesAsync()
-            |> Async.AwaitTask
+          let! (copyResult: Azure.Response<BlobCopyInfo>) =
+            targetBlobClient.SyncCopyFromUriAsync(uri) |> Async.AwaitTask
 
-          let dateTime =
-            properties.Value.Metadata
-            |> Metadata.tryGetDateTime
+          let! properties = targetBlobClient.GetPropertiesAsync() |> Async.AwaitTask
+
+          let dateTime = properties.Value.Metadata |> Metadata.tryGetDateTime
 
           if
             not (copyResult.GetRawResponse().IsError)
             && copyResult.Value.CopyStatus = CopyStatus.Success
           then
-            let name =
-              originalFilename
-              |> Option.defaultValue (blobItem.Name)
+            let name = originalFilename |> Option.defaultValue (blobItem.Name)
 
             (fileId,
              FileInitEvent.FileSavedToStorage
@@ -211,9 +202,7 @@ type LobbyBackgroundService(logger: ILogger<LobbyBackgroundService>, factory: IS
                        Location = None } })
             |> EventStore.appendFileInitEvent ctx.DocumentSession
 
-            let! data =
-              Workflow.readExifDataFromCacheOrBlob ctx fileId
-              |> Async.AwaitTask
+            let! data = Workflow.readExifDataFromCacheOrBlob ctx fileId |> Async.AwaitTask
             // let getStreamAsync = WebRequestContext.getBlobContentStreamAsync ctx fileId
             //
             // let! data =
@@ -227,9 +216,7 @@ type LobbyBackgroundService(logger: ILogger<LobbyBackgroundService>, factory: IS
               (fileId, FileEvent.ExifDataUpdated { Data = data })
               |> EventStore.appendFileEvent ctx.DocumentSession)
 
-            do!
-              ctx.DocumentSession.SaveChangesAsync()
-              |> Async.AwaitTask
+            do! ctx.DocumentSession.SaveChangesAsync() |> Async.AwaitTask
 
             let! deleteResult = blobClient.DeleteAsync() |> Async.AwaitTask
 
@@ -238,9 +225,7 @@ type LobbyBackgroundService(logger: ILogger<LobbyBackgroundService>, factory: IS
               (id, LobbyEvent.LobbyItemRemoved { Target = LobbyExit.MoveToSrc })
               |> EventStore.appendLobbyEvent ctx.DocumentSession
 
-              do!
-                ctx.DocumentSession.SaveChangesAsync()
-                |> Async.AwaitTask
+              do! ctx.DocumentSession.SaveChangesAsync() |> Async.AwaitTask
             else
               failwith "Could copy inbox blob item to src folder but could not delete inbox blob item"
           else
@@ -268,9 +253,7 @@ type LobbyBackgroundService(logger: ILogger<LobbyBackgroundService>, factory: IS
           (v.Id, LobbyEvent.LobbyItemDeleted { Reason = "Cleaning up, as this item probably had a failure" })
           |> EventStore.appendLobbyEvent ctx.DocumentSession)
 
-        do!
-          ctx.DocumentSession.SaveChangesAsync()
-          |> Async.AwaitTask
+        do! ctx.DocumentSession.SaveChangesAsync() |> Async.AwaitTask
 
         return ()
     }
@@ -292,11 +275,7 @@ type LobbyBackgroundService(logger: ILogger<LobbyBackgroundService>, factory: IS
           |> TaskSeq.toListAsync
           |> Async.AwaitTask
 
-        let! _ =
-          x
-          |> Seq.map removeFromLobby
-          |> fun x -> (x, 5)
-          |> Async.Parallel
+        let! _ = x |> Seq.map removeFromLobby |> (fun x -> (x, 5)) |> Async.Parallel
 
         // let blobs = inboxContainer.GetBlobsAsync(cancellationToken = cancellationToken)
 

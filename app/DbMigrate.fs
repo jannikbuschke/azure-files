@@ -1,11 +1,9 @@
 ﻿module AzFiles.DbMigrate
 
-open System
 open System.Data
 open System.Threading.Tasks
 open Dapper
 open FsToolkit.ErrorHandling
-open Marten
 open Microsoft.Extensions.Logging
 open Npgsql
 open Npgsql.FSharp
@@ -52,8 +50,7 @@ let conditionallyApplyMigration
     let! result = ensureMigrateTableExists connection
     let! appliedMigrations = getAppliedMigrations connection
 
-    if appliedMigrations
-       |> List.exists (fun m -> m.Id = migrationId) then
+    if appliedMigrations |> List.exists (fun m -> m.Id = migrationId) then
       return []
     else
 

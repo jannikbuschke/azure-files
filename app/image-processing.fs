@@ -7,15 +7,28 @@ open SixLabors.ImageSharp.Formats.Jpeg
 open SixLabors.ImageSharp.Processing
 open SkiaSharp
 
+let rotateImage2 (stream:Stream,encoder:Formats.IImageEncoder)=
+  task{
+    let! image = stream |> Image.LoadAsync
+    image.Mutate(fun img ->
+      img.Rotate(RotateMode.Rotate90)|>ignore
+      )
+    let result = new MemoryStream()
+    do! image.SaveAsync(result, encoder)
+    result.Position <- 0
+    return result
+  }
+
+let rotateImage(stream:Stream)=
+  rotateImage2(stream,JpegEncoder())
+
 let resizeImage (stream: Stream) (mainAxisLength: int) =
   task {
-
     let image = Image.Load(stream)
 
     let originalSize: Dimension =
       { Width = image.Width
         Height = image.Height }
-
 
     printf "original size (width=%d, height=%d)\n" originalSize.Width originalSize.Height
 

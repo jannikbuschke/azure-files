@@ -3,10 +3,14 @@ import * as React from "react"
 import { showNotification, updateNotification } from "@mantine/notifications"
 import { AsyncButton } from "../typed-api/ActionButton"
 import { useTypedAction } from "../client/api"
+import { QueryWithBoundary } from "../query"
 
 let i = 0
 
 export function GenerateBlogActions() {
+  const [generateStaticGallery] = useTypedAction(
+    "/api/my/create-static-gallery",
+  )
   const [generateBlogData] = useTypedAction("/api/my/write-blog-data")
   async function generateData(tagName: "publish" | "stage-for-blog") {
     const id = i++
@@ -28,6 +32,22 @@ export function GenerateBlogActions() {
   }
   return (
     <Group>
+      <QueryWithBoundary name="/api/features/gallery/get-galleries" input={{}}>
+        {(data) => (
+          <>
+            {data.Case === "Ok"
+              ? data.Fields.map((gallery) => (
+                  <AsyncButton
+                    action="/api/my/create-static-gallery"
+                    values={{ galleryId: gallery.id }}
+                  >
+                    {gallery.name}
+                  </AsyncButton>
+                ))
+              : null}
+          </>
+        )}
+      </QueryWithBoundary>
       <Button
         onClick={async () => {
           await generateData("stage-for-blog")

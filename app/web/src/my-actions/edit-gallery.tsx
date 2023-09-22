@@ -5,6 +5,7 @@ import {
   Group,
   Pagination as MantinePagination,
   Popover,
+  Stack,
 } from "@mantine/core"
 import { useFormikContext } from "formik"
 import { RenderObject } from "glow-core"
@@ -15,7 +16,7 @@ import { useSearchParams } from "react-router-dom"
 import { pathProxy, TypedForm } from "../client/api"
 import { useParams } from "react-router"
 import { Guid } from "../client/System"
-import { Image } from "../client/AzFiles_Galleries"
+import { GalleryId, Image } from "../client/AzFiles_Galleries"
 import { useTypedQuery } from "../typed-api/use-query"
 import { match } from "ts-pattern"
 import { UpdateGallery } from "../client/AzFiles_Features_Gallery"
@@ -28,125 +29,13 @@ import PhotoAlbum, {
 } from "react-photo-album"
 import Lightbox from "yet-another-react-lightbox"
 import { FSharpList } from "../client/Microsoft_FSharp_Collections"
-import { ExifValue } from "../client/AzFiles"
+import { ExifValue, FileId } from "../client/AzFiles"
 import { useDisclosure } from "@mantine/hooks"
 import { Text } from "@mantine/core"
+import { AsyncButton } from "../typed-api/ActionButton"
+import { TagAutoComplete } from "./create-gallery"
 
 const _ = pathProxy<UpdateGallery, UpdateGallery>()
-
-// function SelectedImage({
-//   index,
-//   left,
-//   top,
-//   photo,
-//   onClick,
-//   margin,
-//   ...rest
-// }: RenderImageProps<{
-//   createdAt: NodaTime.Instant
-//   selected: boolean
-//   image: Image
-// }>) {
-//   const {
-//     values: { items },
-//     setFieldValue,
-//   } = useFormikContext<UpdateGallery>()
-//   const [hovering, setHovering] = React.useState(false)
-//   const isSelected = false
-
-//   const item = items[index]!
-//   const sx = (100 - (30 / photo.width) * 100) / 100
-//   const sy = (100 - (30 / photo.height) * 100) / 100
-//   const transform = `translateZ(0px) scale3d(${sx}, ${sy}, 1)`
-//   return (
-//     <div
-//       onMouseOver={() => setHovering(true)}
-//       onMouseLeave={() => setHovering(false)}
-//       style={{ position: "relative" }}
-//     >
-//       <img
-//         onClick={(e) => onClick && onClick(e, { photo: photo, index } as any)}
-//         // key={key}
-//         width={photo.width}
-//         height={photo.height}
-//         // {...photo}
-//         src={photo.src}
-//         style={{
-//           filter: item.hidden === true ? "blur(3px)" : "none",
-//           left,
-//           top,
-//           margin: isSelected ? 8 : 2,
-//           opacity: item.hidden === true ? 0.5 : 1,
-//         }}
-//       />
-
-//       <div
-//         style={{
-//           position: "absolute",
-//           left: 12,
-//           bottom: 16,
-//           opacity: hovering ? 1 : 0.1,
-//           transition: "opacity 0.2s ease-in-out",
-//         }}
-//       >
-//         <Group
-//           spacing="xs"
-//           onMouseOver={() => setHovering(true)}
-//           onMouseLeave={() => setHovering(false)}
-//           style={
-//             {
-//               // opacity: hovering ? 1 : 0,
-//               // transition: "opacity 0.2s ease-in-out",
-//             }
-//           }
-//         >
-//           <Button
-//             size="xs"
-//             variant="default"
-//             onClick={() =>
-//               setFieldValue(_.items[index]!.hidden._PATH_, !item.hidden)
-//             }
-//             // color="dark"
-//             // variant={item.hidden ? "light" : "filled"}
-//           >
-//             {item.hidden === true ? "Show" : "Hide"}
-//           </Button>
-//           {/* <Checkbox name={_.items[index]!.hidden._PATH_} /> */}
-//           <NumberInput
-//             size="xs"
-//             name={_.items[index]!.dimension.columnSpan._PATH_}
-//             style={{ width: 80 }}
-//           />
-//           <NumberInput
-//             size="xs"
-//             name={_.items[index]!.dimension.rowSpan._PATH_}
-//             style={{ width: 80 }}
-//           />
-//           <Popover width={500} position="bottom" withArrow shadow="md">
-//             <Popover.Target>
-//               <Button size="xs" variant="default">
-//                 i
-//               </Button>
-//             </Popover.Target>
-//             <Popover.Dropdown>
-//               <RenderObject
-//                 dimension={item.dimension}
-//                 size={item.size}
-//                 sx={sx}
-//                 sy={sy}
-//                 width={photo.width}
-//                 height={photo.height}
-//                 size={photo.image.size}
-//                 dim={photo.image.dimension}
-//                 tags={photo.image.file.tags}
-//               />
-//             </Popover.Dropdown>
-//           </Popover>
-//         </Group>
-//       </div>
-//     </div>
-//   )
-// }
 
 function usePagination() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -168,23 +57,23 @@ function usePagination() {
   }
 }
 
-const renderContainer: RenderContainer = ({
-  containerProps,
-  children,
-  containerRef,
-}) => (
-  <div
-    style={{
-      border: "2px solid #eee",
-      borderRadius: "10px",
-      padding: "20px",
-    }}
-  >
-    <div ref={containerRef} {...containerProps}>
-      {children}
-    </div>
-  </div>
-)
+// const renderContainer: RenderContainer = ({
+//   containerProps,
+//   children,
+//   containerRef,
+// }) => (
+//   <div
+//     style={{
+//       border: "2px solid #eee",
+//       borderRadius: "10px",
+//       padding: "20px",
+//     }}
+//   >
+//     <div ref={containerRef} {...containerProps}>
+//       {children}
+//     </div>
+//   </div>
+// )
 
 const renderRowContainer: RenderRowContainer = ({
   rowContainerProps,
@@ -252,8 +141,6 @@ const renderPhoto: RenderPhoto<MyPhoto> = (props) => {
     values: { items },
     setFieldValue,
   } = useFormikContext<UpdateGallery>()
-  const [hovering, setHovering] = React.useState(false)
-  const isSelected = false
 
   const index = photo.index
   const item = items[photo.index]!
@@ -284,12 +171,12 @@ const renderPhoto: RenderPhoto<MyPhoto> = (props) => {
           // textAlign: "center",
         }}
       >
-        <div>
+        {/* <div>
           Layout ={" "}
           {Math.round(layout.width) + " x " + Math.round(layout.height)}
-        </div>
+        </div> */}
         <div>
-          photo.width/height = {photo.width} x {photo.height}
+          Dim = {photo.width} x {photo.height}
         </div>
 
         <Group>
@@ -305,16 +192,60 @@ const renderPhoto: RenderPhoto<MyPhoto> = (props) => {
             {item.hidden === true ? "Show" : "Hide"}
           </Button>
           {/* <Checkbox name={_.items[index]!.hidden._PATH_} /> */}
-          <NumberInput
+          {/* <NumberInput
             size="xs"
+            label="Colspan"
             name={_.items[index]!.dimension.columnSpan._PATH_}
             style={{ width: 80 }}
           />
           <NumberInput
             size="xs"
+            label="Rowspan"
             name={_.items[index]!.dimension.rowSpan._PATH_}
             style={{ width: 80 }}
+          /> */}
+          <NumberInput
+            size="xs"
+            label="Width"
+            name={_.items[index]!.size.width._PATH_}
+            style={{ width: 80 }}
           />
+          <NumberInput
+            size="xs"
+            label="Height"
+            name={_.items[index]!.size.height._PATH_}
+            style={{ width: 80 }}
+          />
+          <NumberInput
+            size="xs"
+            label="Left"
+            name={_.items[index]!.dimensionAdjustment.left._PATH_}
+            style={{ width: 80 }}
+          />
+          <NumberInput
+            size="xs"
+            label="Top"
+            name={_.items[index]!.dimensionAdjustment.top._PATH_}
+            style={{ width: 80 }}
+          />
+          <NumberInput
+            size="xs"
+            label="Width"
+            name={_.items[index]!.dimensionAdjustment.width._PATH_}
+            style={{ width: 80 }}
+          />
+          <NumberInput
+            size="xs"
+            label="Height"
+            name={_.items[index]!.dimensionAdjustment.height._PATH_}
+            style={{ width: 80 }}
+          />
+          <AsyncButton
+            action="/api/features/gallery/remove-item"
+            values={{ fileId: photo.id, galleryId: photo.galleryId }}
+          >
+            Remove
+          </AsyncButton>
         </Group>
 
         <RenderExifData data={props.photo.image.file.exifData || []} />
@@ -326,6 +257,8 @@ const renderPhoto: RenderPhoto<MyPhoto> = (props) => {
 
 type MyPhoto = {
   src: string
+  id: FileId
+  galleryId: GalleryId
   // width,
   // height,
   width: number
@@ -335,6 +268,32 @@ type MyPhoto = {
   image: Image
   srcSet: PhotoAlbumImage[]
   index: number
+}
+
+function AddImagesFromTag({ galleryId }: { galleryId: GalleryId }) {
+  return (
+    <Box>
+      <TypedForm
+        actionName="/api/features/gallery/add-images-on-base"
+        initialValues={{
+          galleryId,
+          basedOn: { Case: "Tagged", Fields: [] },
+        }}
+      >
+        {(f, _) => (
+          <Box>
+            <Stack spacing="xs">
+              <TagAutoComplete f={f} _={_} />
+
+              <Button loading={f.isSubmitting} onClick={f.submitForm}>
+                Add images
+              </Button>
+            </Stack>
+          </Box>
+        )}
+      </TypedForm>
+    </Box>
+  )
 }
 
 export function EditGalleryView() {
@@ -374,21 +333,22 @@ export function EditGalleryView() {
 
   const photos = galleryItems.map((v, i) => {
     console.log({ v })
-    const width = v.dimension.columnSpan
-    const height = v.dimension.rowSpan
-    // const width = v.size.width
-    // const height = v.size.height
+    // const width = v.dimension.columnSpan
+    // const height = v.dimension.rowSpan
+    const { width, height } = v.size
     const ratio = width / height
     const dim =
       width > height ? { width: 3, height: 2 } : { width: 2, height: 3 }
 
     return {
+      id: v.file.id,
+      galleryId: id,
       index: i,
       src: v.file.lowresVersions[0]?.url || v.file.url, // 'http://example.com/example/img1.jpg',
-      // width,
-      // height,
-      width: dim.width,
-      height: dim.height,
+      width,
+      height,
+      // width: dim.width,
+      // height: dim.height,
       createdAt: v.file.fileDateOrCreatedAt,
       selected: false,
       image: v,
@@ -423,6 +383,13 @@ export function EditGalleryView() {
         .with({ Case: "Ok" }, ({ Fields: gallery }) => (
           <>
             <h1>Edit gallery {gallery.name}</h1>
+            <AsyncButton
+              action="/api/features/gallery/delete-gallery"
+              values={{ id: gallery.id }}
+            >
+              delete
+            </AsyncButton>
+            <AddImagesFromTag galleryId={gallery.id} />
             <TypedForm
               actionName="/api/features/gallery/update-gallery"
               initialValues={{ id: id!, items: galleryItems }}

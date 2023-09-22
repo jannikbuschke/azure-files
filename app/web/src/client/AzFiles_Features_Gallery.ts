@@ -2,12 +2,22 @@
 //   This file is auto generated   //
 //////////////////////////////////////
 
+import * as AzFiles_Galleries from "./AzFiles_Galleries"
+import * as AzFiles from "./AzFiles"
 import * as AzFiles_Features from "./AzFiles_Features"
 import * as System from "./System"
-import * as AzFiles_Galleries from "./AzFiles_Galleries"
 import * as Microsoft_FSharp_Collections from "./Microsoft_FSharp_Collections"
 import * as Microsoft_FSharp_Core from "./Microsoft_FSharp_Core"
 import * as System_Collections_Generic from "./System_Collections_Generic"
+
+export type RemoveItemFromGallery = {
+  galleryId: AzFiles_Galleries.GalleryId
+  fileId: AzFiles.FileId
+}
+export var defaultRemoveItemFromGallery: RemoveItemFromGallery = {
+  galleryId: AzFiles_Galleries.defaultGalleryId,
+  fileId: AzFiles.defaultFileId
+}
 
 export type GalleryBasedOn_Case_Filter = AzFiles_Features.ImageFilter
 export type GalleryBasedOn = GalleryBasedOn_Case_Filter
@@ -27,6 +37,15 @@ export var defaultCreateGallery: CreateGallery = {
   description: ''
 }
 
+export type AddImagesOnBasedOn = {
+  galleryId: AzFiles_Galleries.GalleryId
+  basedOn: GalleryBasedOn
+}
+export var defaultAddImagesOnBasedOn: AddImagesOnBasedOn = {
+  galleryId: AzFiles_Galleries.defaultGalleryId,
+  basedOn: defaultGalleryBasedOn
+}
+
 export type UpdateGallery = {
   id: AzFiles_Galleries.GalleryId
   items: Microsoft_FSharp_Collections.FSharpList<AzFiles_Galleries.Image>
@@ -39,6 +58,13 @@ export var defaultUpdateGallery: UpdateGallery = {
 export type GetGalleries = {
 }
 export var defaultGetGalleries: GetGalleries = {
+}
+
+export type DeleteGallery = {
+  id: AzFiles_Galleries.GalleryId
+}
+export var defaultDeleteGallery: DeleteGallery = {
+  id: AzFiles_Galleries.defaultGalleryId
 }
 
 export type GetGalleryParameter_Case_Id = { Case: "Id", Fields: AzFiles_Galleries.GalleryId }
