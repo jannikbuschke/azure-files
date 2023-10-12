@@ -1,24 +1,24 @@
 import * as React from "react"
 import { Route, Routes, Outlet } from "react-router"
 import { BlobItemDetail } from "./blob-container/blob-detail"
-import { Inbox, IndexedFileDetail } from "./blob-container/inbox"
+// import { IndexedFileDetail } from "./blob-container/inbox"
 import { BlobContainerDetail, BlobContainerList } from "./blob-container/list"
-import { UploadFile } from "./blob-container/upload-file"
+import { UploadFile } from "./upload/upload-file"
 import { GenerateBlogActions } from "./my-actions/generate-blog"
-import { UntaggedFilesView } from "./untagged-files"
+// import { UntaggedFilesView } from "./untagged-files-2"
 import { DebugViews } from "./debug-views/debug-views"
 import { EsEventList } from "./debug-views/event-list"
 import { EsEventListWithoutValidation } from "./debug-views/event-list-without-validation"
 import { PgsqlActivities } from "./debug-views/pgsql"
 import { Nav } from "glow-mantine/lib/nav"
-import { ImagesGallery } from "./blob-container/images"
+import { ImagesGallery } from "./images/images"
 import { PdfPage } from "./blob-container/pdf-viewer"
 import { Fsi } from "./fsi/fsi-view"
-import { DynamicGalleryPage } from "./my-actions/get-dynamic-gallery"
-import { CreateGalleryView } from "./my-actions/create-gallery"
-import { EditGalleryView } from "./my-actions/edit-gallery"
-import { GalleriesListView } from "./my-actions/galleries-list"
-import { ViewGallery } from "./my-actions/view-gallery"
+import { DynamicGalleryPage } from "./gallery/get-dynamic-gallery"
+import { CreateGalleryView } from "./gallery/create-gallery"
+import { EditGalleryView } from "./gallery/edit-gallery"
+import { GalleriesListView } from "./gallery/galleries-list"
+import { InboxMaisonry, IndexedFileDetail } from "./inbox/inbox-maisonry"
 
 export function AllContentRoutes() {
   return (
@@ -29,8 +29,8 @@ export function AllContentRoutes() {
         </Route>
       </Route>
       <Route path="/upload-file" element={<UploadFile />} />
-      <Route path="/untagged-files" element={<UntaggedFilesView />} />
-      <Route path="/inbox" element={<Inbox />}>
+      {/* <Route path="/untagged-files" element={<UntaggedFilesView />} /> */}
+      <Route path="/inbox" element={<InboxMaisonry />}>
         <Route
           path=":id"
           element={

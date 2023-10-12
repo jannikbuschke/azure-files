@@ -28,28 +28,70 @@ module PersistentGallery =
       return result.Result |> List.filter (fun v -> v.FileInfo.Type = FileType.Image)
     }
 
-  let mapFileViewmodelToGalleryImage v =
+  type ImageType =
+    | Square
+    | Landscape
+    | Portrait
+
+  let getImageType width height =
+    if width > height then Landscape
+    else if width < height then Portrait
+    else Square
+
+  let getDesiredDimension (el: FileViewmodel) =
+    let exif = el.ExifData |> Skippable.defaultValue []
+
+    let width = exif |> Exif.tryGetWidth |> Option.defaultValue 99
+
+    let isHighlight = el.Tags |> List.contains "⭐"
+
+    let height = exif |> Exif.tryGetHeight |> Option.defaultValue -1
+
+    let imageType = getImageType width height
+
+    (match imageType with
+     | Square -> if isHighlight then (2, 2) else (1, 1)
+     | Landscape -> if isHighlight then (2, 1) else (1, 1)
+     | Portrait -> if isHighlight then (1, 2) else (1, 1))
+    |> fun (colSpan, rowSpan) ->
+         { ColumnSpan = ColSpan.create colSpan
+           RowSpan = RowSpan.create rowSpan }
+
+  let mapFileViewmodelToGalleryImage (v: FileViewmodel) =
     let exifData = (v.ExifData |> Skippable.defaultValue [])
 
     let width = exifData |> Exif.tryGetWidth |> Option.defaultValue -1
 
     let height = exifData |> Exif.tryGetHeight |> Option.defaultValue -1
 
-    let dim = GetDynamicGallery.getDesiredDimension v
+    let dim = getDesiredDimension v
 
     printfn "image %A" v.Filename
 
     { Dimension = dim
       Size = { Width = width; Height = height }
       DimensionAdjustment = Skip
-      File = v
+      File = v |> Image.galleryFileFromFileViewmodel
       Hidden = Include false }
 
   let gridColumns = 3
 
-  type PositionedImage =
+  type PositionedImage2 =
     { Image: Image
       Placement: GridPlacement }
+
+  type PositionedImage0 =
+    { Id: FileId
+      OriginalUrl: string
+      Variants: ImageVariant list
+      Size: Size
+      DimensionAdjustment: DimensionAdjustment }
+
+  [<Action(Route = "api/get-images-on-date", AllowAnonymous = true)>]
+  type GetImagesOnDate =
+    { Date: string }
+
+    interface IRequest<ApiResult<PositionedImage0 list>>
 
   [<Action(Route = "api/features/gallery/remove-item", AllowAnonymous = true)>]
   type RemoveItemFromGallery =
@@ -112,6 +154,39 @@ module PersistentGallery =
     interface IRequest<ApiResult<PaginatedResult<Image>>>
 
   type GalleryHandler(ctx: IWebRequestContext) =
+    interface IRequestHandler<GetImagesOnDate, ApiResult<PositionedImage0 list>> with
+
+      member this.Handle(request, _) =
+        taskResult {
+
+          let! files = ctx.DocumentSession.GetFiles(Filter.RangeFilter("2023-06-04", "2022-06-09"))
+
+          let files =
+            files
+            |> Seq.choose (fun v ->
+              let variant = v.LowresVersions |> List.tryLast
+
+              match variant with
+              | Some variant ->
+                Some
+                  { PositionedImage0.Id = v.Key()
+                    OriginalUrl = variant.Url
+                    Variants = v.LowresVersions
+                    Size =
+                      { Width = variant.Dimension.Width
+                        Height = variant.Dimension.Height }
+                    DimensionAdjustment =
+                      { Top = Skip
+                        Left = Skip
+                        Width = Skip
+                        Height = Skip } }
+
+              | None -> None)
+            |> Seq.toList
+
+          return files
+        }
+
     interface IRequestHandler<DeleteGallery, ApiResult<unit>> with
       member this.Handle(request, _) =
         taskResult {
@@ -166,6 +241,7 @@ module PersistentGallery =
       member this.Handle(request, _) =
         taskResult {
           let! gallery = request.GalleryId.value () |> ctx.DocumentSession.LoadAsync<Gallery>
+
           let! result = getImagesOnBase request.BasedOn ctx
 
           let filtered =
@@ -194,13 +270,23 @@ module PersistentGallery =
             |> List.map (fun v ->
               let updatedItem = request.Items |> List.tryFind (fun x -> x.File.Id = v.File.Id)
 
+              let v =
+                { v with
+                    File =
+                      { v.File with
+                          Orientation =
+                            v.File.Orientation
+                            |> Skippable.defaultValue (
+                              (v.File.ExifData |> Skippable.defaultValue []) |> Exif.tryGetOrientation
+                            )
+                            |> Include } }
+
               match updatedItem with
               | Some updatedItem ->
                 { v with
                     Hidden = updatedItem.Hidden
                     File = v.File
                     Dimension = updatedItem.Dimension
-                    // Size = updatedItem.Size
                     DimensionAdjustment = updatedItem.DimensionAdjustment }
               | None -> v)
 
@@ -239,10 +325,7 @@ module PersistentGallery =
                 return values |> Seq.head
               }
 
-          let gallery =
-            { gallery with Items = gallery.Items
-            //                                  |> List.map Image.fixWidthAndHeightAccordingToOrientation
-             }
+          let gallery = { gallery with Items = gallery.Items }
 
           return
             match request.Pagination with

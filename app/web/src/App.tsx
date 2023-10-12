@@ -1,31 +1,14 @@
-import {
-  AppShell,
-  Burger,
-  Card,
-  Header,
-  MantineProvider,
-  MediaQuery,
-  Navbar,
-} from "@mantine/core"
-import { Group, Text } from "@mantine/core"
+import { AppShell, Card, Navbar } from "@mantine/core"
 import { AllContentRoutes } from "./navigation"
-import { BrowserRouter, Route, Routes, useSearchParams } from "react-router-dom"
-import { QueryClient, QueryClientProvider } from "react-query"
-import { NotificationsProvider } from "@mantine/notifications"
+import { Route, Routes, useSearchParams } from "react-router-dom"
 import { VscAzure, VscCloudUpload } from "react-icons/vsc"
 import { FiChevronsRight } from "react-icons/fi"
 import { TbInbox, TbPolaroid } from "react-icons/tb"
 import { MainLinks, MainLinkProps } from "glow-mantine"
-import {
-  GlowProvider,
-  NotificationsProvider as GlowNotificationProvider,
-  VnextAuthenticationProvider,
-} from "glow-core"
-import { TypedNotificationsProvider } from "glow-core/lib/notifications/type-notifications"
 import React from "react"
 import { useTypedQuery } from "./client/api"
-import { DynamicGalleryPage } from "./my-actions/get-dynamic-gallery"
-import { ViewGallery } from "./my-actions/view-gallery"
+import { DynamicGalleryPage } from "./gallery/get-dynamic-gallery"
+import { ViewGallery } from "./gallery/view-gallery"
 import "yet-another-react-lightbox/styles.css"
 
 const navbarLinks: MainLinkProps[] = [
@@ -78,34 +61,6 @@ const navbarLinks: MainLinkProps[] = [
     to: "/debug/events",
   },
 ]
-
-// const client = new QueryClient()
-
-// export function Provider({ children }: { children: React.ReactNode }) {
-//   return (
-//     <BrowserRouter>
-//       <QueryClientProvider client={client}>
-//         <VnextAuthenticationProvider>
-//           <GlowProvider value={{ componentLibrary: "mantine" }}>
-//             <GlowNotificationProvider>
-//               <TypedNotificationsProvider>
-//                 <MantineProvider
-//                   theme={{
-//                     colorScheme: "light",
-//                   }}
-//                 >
-//                   <NotificationsProvider position="bottom-center">
-//                     {children}
-//                   </NotificationsProvider>
-//                 </MantineProvider>
-//               </TypedNotificationsProvider>
-//             </GlowNotificationProvider>
-//           </GlowProvider>
-//         </VnextAuthenticationProvider>
-//       </QueryClientProvider>
-//     </BrowserRouter>
-//   )
-// }
 
 export function App() {
   const [opened, setOpened] = React.useState(false)

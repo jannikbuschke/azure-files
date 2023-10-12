@@ -322,7 +322,7 @@ module Program =
 
     Log.Logger.Information("Starting application")
 
-    let app = buildAppAsync (args) |> Async.AwaitTask |> Async.RunSynchronously
+    let app = buildAppAsync args |> Async.AwaitTask |> Async.RunSynchronously
 
     match app with
     | None -> 0

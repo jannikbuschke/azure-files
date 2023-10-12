@@ -3,12 +3,12 @@
 //////////////////////////////////////
 
 import * as System from "./System"
-import * as NodaTime from "./NodaTime"
-import * as Microsoft_FSharp_Core from "./Microsoft_FSharp_Core"
-import * as Microsoft_FSharp_Collections from "./Microsoft_FSharp_Collections"
-import * as System_Text_Json_Serialization from "./System_Text_Json_Serialization"
 import * as AzFiles_Galleries from "./AzFiles_Galleries"
+import * as System_Text_Json_Serialization from "./System_Text_Json_Serialization"
+import * as Microsoft_FSharp_Core from "./Microsoft_FSharp_Core"
 import * as Azure_Storage_Blobs_Models from "./Azure_Storage_Blobs_Models"
+import * as NodaTime from "./NodaTime"
+import * as Microsoft_FSharp_Collections from "./Microsoft_FSharp_Collections"
 import * as System_Collections_Generic from "./System_Collections_Generic"
 
 export type GetBlobFile = {
@@ -106,13 +106,6 @@ export var defaultProperty: Property = {
   name: defaultPropertyName,
   value: ''
 }
-
-export type Checksum_Case_Checksum = System.String
-export type Checksum = Checksum_Case_Checksum
-export type Checksum_Case = "Checksum"
-export var Checksum_AllCases = [ "Checksum" ] as const
-export var defaultChecksum_Case_Checksum = ''
-export var defaultChecksum = defaultChecksum_Case_Checksum as Checksum
 
 export type Dimension = {
   width: System.Int32
@@ -619,74 +612,6 @@ export var defaultExifValue_Case_TimeZoneOffset = { Case: "TimeZoneOffset", Fiel
 export var defaultExifValue_Case_SubIFDs = { Case: "SubIFDs", Fields: [] }
 export var defaultExifValue = defaultExifValue_Case_XPosition as ExifValue
 
-export type Extension_Case_Extension = System.String
-export type Extension = Extension_Case_Extension
-export type Extension_Case = "Extension"
-export var Extension_AllCases = [ "Extension" ] as const
-export var defaultExtension_Case_Extension = ''
-export var defaultExtension = defaultExtension_Case_Extension as Extension
-
-export type FileType_Case_Image = { Case: "Image" }
-export type FileType_Case_Video = { Case: "Video" }
-export type FileType_Case_Pdf = { Case: "Pdf" }
-export type FileType_Case_Other = { Case: "Other" }
-export type FileType = FileType_Case_Image | FileType_Case_Video | FileType_Case_Pdf | FileType_Case_Other
-export type FileType_Case = "Image" | "Video" | "Pdf" | "Other"
-export var FileType_AllCases = [ "Image", "Video", "Pdf", "Other" ] as const
-export var defaultFileType_Case_Image = { Case: "Image" }
-export var defaultFileType_Case_Video = { Case: "Video" }
-export var defaultFileType_Case_Pdf = { Case: "Pdf" }
-export var defaultFileType_Case_Other = { Case: "Other" }
-export var defaultFileType = defaultFileType_Case_Image as FileType
-
-export type FileInfo = {
-  extension: Extension
-  type: FileType
-}
-export var defaultFileInfo: FileInfo = {
-  extension: defaultExtension,
-  type: defaultFileType
-}
-
-export type FileViewmodel = {
-  id: FileId
-  createdAt: NodaTime.Instant
-  url: System.String
-  filename: System.String
-  md5Hash: System_Collections_Generic.IEnumerable<System.Byte>
-  removedFromInboxAt: Microsoft_FSharp_Core.FSharpOption<NodaTime.Instant>
-  localMd5Hash: Microsoft_FSharp_Core.FSharpOption<Checksum>
-  tags: Microsoft_FSharp_Collections.FSharpList<System.String>
-  properties: Microsoft_FSharp_Collections.FSharpList<Property>
-  lowresVersions: Microsoft_FSharp_Collections.FSharpList<ImageVariant>
-  exifData: System_Text_Json_Serialization.Skippable<Microsoft_FSharp_Collections.FSharpList<ExifValue>>
-  dateTimeOriginal: Microsoft_FSharp_Core.FSharpOption<NodaTime.Instant>
-  dateTime: Microsoft_FSharp_Core.FSharpOption<NodaTime.Instant>
-  dateTimeDigitized: Microsoft_FSharp_Core.FSharpOption<NodaTime.Instant>
-  fileDateOrCreatedAt: NodaTime.Instant
-  location: Microsoft_FSharp_Core.FSharpOption<System.Tuple<System.DecimalArray,System.DecimalArray>>
-  fileInfo: FileInfo
-}
-export var defaultFileViewmodel: FileViewmodel = {
-  id: defaultFileId,
-  createdAt: "9999-12-31T23:59:59.999999999Z",
-  url: '',
-  filename: '',
-  md5Hash: [],
-  removedFromInboxAt: null,
-  localMd5Hash: null,
-  tags: [] ,
-  properties: [] ,
-  lowresVersions: [] ,
-  exifData: undefined,
-  dateTimeOriginal: null,
-  dateTime: null,
-  dateTimeDigitized: null,
-  fileDateOrCreatedAt: "9999-12-31T23:59:59.999999999Z",
-  location: null,
-  fileInfo: defaultFileInfo
-}
-
 export type GenerateStaticGallery = {
   galleryId: AzFiles_Galleries.GalleryId
 }
@@ -723,6 +648,13 @@ export var defaultAzureFilesBlobProperties: AzureFilesBlobProperties = {
   properties: Azure_Storage_Blobs_Models.defaultBlobProperties,
   tags: Azure_Storage_Blobs_Models.defaultGetBlobTagResult
 }
+
+export type Checksum_Case_Checksum = System.String
+export type Checksum = Checksum_Case_Checksum
+export type Checksum_Case = "Checksum"
+export var Checksum_AllCases = [ "Checksum" ] as const
+export var defaultChecksum_Case_Checksum = ''
+export var defaultChecksum = defaultChecksum_Case_Checksum as Checksum
 
 export type FileProjection = {
   id: System.Guid
@@ -838,6 +770,74 @@ export type ApiError = {
 export var defaultApiError: ApiError = {
   message: '',
   info: null
+}
+
+export type Extension_Case_Extension = System.String
+export type Extension = Extension_Case_Extension
+export type Extension_Case = "Extension"
+export var Extension_AllCases = [ "Extension" ] as const
+export var defaultExtension_Case_Extension = ''
+export var defaultExtension = defaultExtension_Case_Extension as Extension
+
+export type FileType_Case_Image = { Case: "Image" }
+export type FileType_Case_Video = { Case: "Video" }
+export type FileType_Case_Pdf = { Case: "Pdf" }
+export type FileType_Case_Other = { Case: "Other" }
+export type FileType = FileType_Case_Image | FileType_Case_Video | FileType_Case_Pdf | FileType_Case_Other
+export type FileType_Case = "Image" | "Video" | "Pdf" | "Other"
+export var FileType_AllCases = [ "Image", "Video", "Pdf", "Other" ] as const
+export var defaultFileType_Case_Image = { Case: "Image" }
+export var defaultFileType_Case_Video = { Case: "Video" }
+export var defaultFileType_Case_Pdf = { Case: "Pdf" }
+export var defaultFileType_Case_Other = { Case: "Other" }
+export var defaultFileType = defaultFileType_Case_Image as FileType
+
+export type FileInfo = {
+  extension: Extension
+  type: FileType
+}
+export var defaultFileInfo: FileInfo = {
+  extension: defaultExtension,
+  type: defaultFileType
+}
+
+export type FileViewmodel = {
+  id: FileId
+  createdAt: NodaTime.Instant
+  url: System.String
+  filename: System.String
+  md5Hash: System_Collections_Generic.IEnumerable<System.Byte>
+  removedFromInboxAt: Microsoft_FSharp_Core.FSharpOption<NodaTime.Instant>
+  localMd5Hash: Microsoft_FSharp_Core.FSharpOption<Checksum>
+  tags: Microsoft_FSharp_Collections.FSharpList<System.String>
+  properties: Microsoft_FSharp_Collections.FSharpList<Property>
+  lowresVersions: Microsoft_FSharp_Collections.FSharpList<ImageVariant>
+  exifData: System_Text_Json_Serialization.Skippable<Microsoft_FSharp_Collections.FSharpList<ExifValue>>
+  dateTimeOriginal: Microsoft_FSharp_Core.FSharpOption<NodaTime.Instant>
+  dateTime: Microsoft_FSharp_Core.FSharpOption<NodaTime.Instant>
+  dateTimeDigitized: Microsoft_FSharp_Core.FSharpOption<NodaTime.Instant>
+  fileDateOrCreatedAt: NodaTime.Instant
+  location: Microsoft_FSharp_Core.FSharpOption<System.Tuple<System.DecimalArray,System.DecimalArray>>
+  fileInfo: FileInfo
+}
+export var defaultFileViewmodel: FileViewmodel = {
+  id: defaultFileId,
+  createdAt: "9999-12-31T23:59:59.999999999Z",
+  url: '',
+  filename: '',
+  md5Hash: [],
+  removedFromInboxAt: null,
+  localMd5Hash: null,
+  tags: [] ,
+  properties: [] ,
+  lowresVersions: [] ,
+  exifData: undefined,
+  dateTimeOriginal: null,
+  dateTime: null,
+  dateTimeDigitized: null,
+  fileDateOrCreatedAt: "9999-12-31T23:59:59.999999999Z",
+  location: null,
+  fileInfo: defaultFileInfo
 }
 
 export type DuplicateCheckResult_Case_IsNew = { Case: "IsNew" }

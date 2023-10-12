@@ -64,6 +64,10 @@ type OriginalFileUploaded =
 
 type Dimension = { Width: int; Height: int }
 
+module Dimension =
+  let pixels d =
+    d.Width*d.Height
+
 type LowresVersionCreated =
   {
     // remove id

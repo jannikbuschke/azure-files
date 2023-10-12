@@ -92,13 +92,6 @@ export var defaultGetGalleryItems: GetGalleryItems = {
   pagination: AzFiles_Features.defaultPagination
 }
 
-export type GetDynamicGallery = {
-  filter: AzFiles_Features.ImageFilter
-}
-export var defaultGetDynamicGallery: GetDynamicGallery = {
-  filter: AzFiles_Features.defaultImageFilter
-}
-
 export type Gallery = {
   id: System.Guid
   name: System.String
@@ -121,22 +114,4 @@ export var defaultPaginatedResult: <a>(defaulta:a) => PaginatedResult<a> = <a>(d
   value: [] ,
   count: 0
 })
-
-export type PositionedImage = {
-  image: AzFiles_Galleries.Image
-  placement: AzFiles_Galleries.GridPlacement
-}
-export var defaultPositionedImage: PositionedImage = {
-  image: AzFiles_Galleries.defaultImage,
-  placement: AzFiles_Galleries.defaultGridPlacement
-}
-
-export type GalleryViewmodel = {
-  positionedImages: Microsoft_FSharp_Collections.FSharpList<PositionedImage>
-  positions: Microsoft_FSharp_Collections.FSharpList<Microsoft_FSharp_Collections.FSharpList<System.Int32>>
-}
-export var defaultGalleryViewmodel: GalleryViewmodel = {
-  positionedImages: [] ,
-  positions: [] 
-}
 

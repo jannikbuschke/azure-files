@@ -34,25 +34,26 @@ export function DynamicGalleryPage() {
           },
         }
       : { Case: "All" }
-  const [items] = useTypedQuery("/api/features/gallery/get-dynamic-gallery", {
-    input: {
-      filter,
-    },
-    placeholder: {
-      Case: "Ok",
-      Fields: { positionedImages: [], positions: [] },
-    },
-    queryOptions: { enabled: false },
-  })
+  // const [items] = useTypedQuery("/api/features/gallery/get-dynamic-gallery", {
+  //   input: {
+  //     filter,
+  //   },
+  //   placeholder: {
+  //     Case: "Ok",
+  //     Fields: { positionedImages: [], positions: [] },
+  //   },
+  //   queryOptions: { enabled: false },
+  // })
 
   const { notifySuccess } = useNotify()
   const [currentImage, setCurrentImage] = React.useState(0)
   const [basicExampleOpen, setBasicExampleOpen] = React.useState(false)
-  if (items.Case === "Error") {
-    return <div>error</div>
-  }
-  const { positionedImages } = items.Fields
+  // if (items.Case === "Error") {
+  //   return <div>error</div>
+  // }
+  // const { positionedImages } = items.Fields
 
+  const positionedImages = [] as any[]
   const photos = positionedImages.map((v) => {
     console.log({ v })
     const width = v.placement.dimension.columnSpan

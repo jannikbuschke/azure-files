@@ -1,7 +1,6 @@
 import React from "react"
 import ReactDOM from "react-dom"
 import "./index.css"
-// import "antd/dist/antd.css"
 import { App } from "./App"
 import * as serviceWorker from "./serviceWorker"
 import dayjs from "dayjs"
@@ -21,6 +20,47 @@ dayjs.extend(relativeTime)
 dayjs.extend(utc)
 dayjs.extend(timezone)
 
+function ImageWithArea() {
+  return (
+    <div style={{ position: "relative" }}>
+      <img src={"./background.jpg"} />^
+      <div
+        style={{
+          top: 0,
+          left: 0,
+          zIndex: 10,
+          width: 100,
+          height: 100,
+          border: "8px solid red",
+          position: "absolute",
+        }}
+      />
+      <div
+        style={{
+          zIndex: 10,
+          width: "100%",
+          height: "100%",
+          background: "rgba(1,0,0,0.5)",
+          backdropFilter: "blur(10px)",
+          position: "absolute",
+          top: 0,
+          left: 0,
+        }}
+      />
+      <div
+        style={{
+          zIndex: 11,
+          width: "100%",
+          height: "100%",
+          position: "absolute",
+          top: 0,
+          left: 0,
+        }}
+      />
+    </div>
+  )
+}
+
 ReactDOM.render(
   <ErrorBoundary>
     <React.Suspense fallback="Loading...">
@@ -29,6 +69,7 @@ ReactDOM.render(
       </RootProvider>
     </React.Suspense>
   </ErrorBoundary>,
+  // <ImageWithArea />,
   document.getElementById("root"),
 )
 

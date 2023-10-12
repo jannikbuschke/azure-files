@@ -15,7 +15,14 @@ import { tags } from "./blob-container/tag-values"
 import { Stack } from "@mantine/core"
 import { TypedForm, useTypedQuery } from "./client/api"
 
-export function UntaggedFilesView() {
+const tags = [
+  { label: "Keep", value: "keep", icon: <FaArchive /> },
+  { label: "Stage for blob", value: "stage-for-blog", icon: null },
+  { label: "publish", value: "publish", icon: <FaArrowUp /> },
+  { label: "trash", value: "trash", icon: <FaTrash /> },
+]
+
+function UntaggedFilesView() {
   const { data, refetch } = useTypedQuery("/api/file/get-all-untagged", {
     input: {},
     placeholder: [],

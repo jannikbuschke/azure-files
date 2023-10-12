@@ -353,12 +353,10 @@ type FileViewmodel =
 
 namespace AzFiles
 
-open System
 open System.Runtime.CompilerServices
 open Marten
 open FsToolkit.ErrorHandling
 open Npgsql.FSharp
-open Npgsql
 
 type Filter =
   | Date of string
@@ -370,7 +368,7 @@ type Extensions2() =
   [<Extension>]
   static member GetFiles(ty: IDocumentSession, filter: Filter) =
     task {
-      let (where, parameters) =
+      let where, parameters =
         match filter with
         | Date date -> "data ->> 'OriginalDateTime' = @date", [ "@date", Sql.string date ]
         | RangeFilter (from, until) ->
@@ -381,7 +379,7 @@ type Extensions2() =
       let! result =
         ty.Connection
         |> Sql.existingConnection
-        |> Sql.query ($"SELECT * FROM mt_doc_file WHERE {where}")
+        |> Sql.query $"SELECT * FROM mt_doc_file WHERE {where}"
         |> Sql.parameters parameters
         |> Sql.executeAsync (fun row -> {| Id = row.uuid "id" |})
 
@@ -393,12 +391,12 @@ type Extensions2() =
   [<Extension>]
   static member GetFilesOfDate(ty: IDocumentSession, date: string) =
     task {
-      let serializer = ty.DocumentStore.Options.Serializer()
+//      let serializer = ty.DocumentStore.Options.Serializer()
 
       let! result =
         ty.Connection
         |> Sql.existingConnection
-        |> Sql.query ("SELECT * FROM mt_doc_file WHERE data ->> 'OriginalDateTime' = @date")
+        |> Sql.query "SELECT * FROM mt_doc_file WHERE data ->> 'OriginalDateTime' = @date"
         |> Sql.parameters [ "@date", Sql.string date ]
         |> Sql.executeAsync (fun row -> {| Id = row.uuid "id" |}
         // Data = "data" |> row.string |>  |> serializer.FromJson<FileProjection>

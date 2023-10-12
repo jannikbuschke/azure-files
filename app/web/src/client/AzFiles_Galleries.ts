@@ -3,8 +3,11 @@
 //////////////////////////////////////
 
 import * as System from "./System"
-import * as System_Text_Json_Serialization from "./System_Text_Json_Serialization"
 import * as AzFiles from "./AzFiles"
+import * as NodaTime from "./NodaTime"
+import * as Microsoft_FSharp_Collections from "./Microsoft_FSharp_Collections"
+import * as Microsoft_FSharp_Core from "./Microsoft_FSharp_Core"
+import * as System_Text_Json_Serialization from "./System_Text_Json_Serialization"
 import * as System_Collections_Generic from "./System_Collections_Generic"
 
 export type GalleryId_Case_GalleryId = System.Guid
@@ -21,6 +24,31 @@ export type Size = {
 export var defaultSize: Size = {
   width: 0,
   height: 0
+}
+
+export type GalleryFile = {
+  id: AzFiles.FileId
+  createdAt: NodaTime.Instant
+  url: System.String
+  filename: System.String
+  tags: Microsoft_FSharp_Collections.FSharpList<System.String>
+  lowresVersions: Microsoft_FSharp_Collections.FSharpList<AzFiles.ImageVariant>
+  fileDateOrCreatedAt: NodaTime.Instant
+  location: Microsoft_FSharp_Core.FSharpOption<System.Tuple<System.DecimalArray,System.DecimalArray>>
+  orientation: System_Text_Json_Serialization.Skippable<Microsoft_FSharp_Core.FSharpOption<System.UInt16>>
+  exifData: System_Text_Json_Serialization.Skippable<Microsoft_FSharp_Collections.FSharpList<AzFiles.ExifValue>>
+}
+export var defaultGalleryFile: GalleryFile = {
+  id: AzFiles.defaultFileId,
+  createdAt: "9999-12-31T23:59:59.999999999Z",
+  url: '',
+  filename: '',
+  tags: [] ,
+  lowresVersions: [] ,
+  fileDateOrCreatedAt: "9999-12-31T23:59:59.999999999Z",
+  location: null,
+  orientation: undefined,
+  exifData: undefined
 }
 
 export type ColSpan_Case_Colspan = System.Int32
@@ -61,48 +89,16 @@ export var defaultDimensionAdjustment: DimensionAdjustment = {
 
 export type Image = {
   size: Size
-  file: AzFiles.FileViewmodel
+  file: GalleryFile
   dimension: GridPlacementDimension
   dimensionAdjustment: System_Text_Json_Serialization.Skippable<DimensionAdjustment>
   hidden: System_Text_Json_Serialization.Skippable<System.Boolean>
 }
 export var defaultImage: Image = {
   size: defaultSize,
-  file: AzFiles.defaultFileViewmodel,
+  file: defaultGalleryFile,
   dimension: defaultGridPlacementDimension,
   dimensionAdjustment: undefined,
   hidden: undefined
-}
-
-export type Row_Case_Row = System.Int32
-export type Row = Row_Case_Row
-export type Row_Case = "Row"
-export var Row_AllCases = [ "Row" ] as const
-export var defaultRow_Case_Row = 0
-export var defaultRow = defaultRow_Case_Row as Row
-
-export type Col_Case_Col = System.Int32
-export type Col = Col_Case_Col
-export type Col_Case = "Col"
-export var Col_AllCases = [ "Col" ] as const
-export var defaultCol_Case_Col = 0
-export var defaultCol = defaultCol_Case_Col as Col
-
-export type GridPosition = {
-  row: Row
-  column: Col
-}
-export var defaultGridPosition: GridPosition = {
-  row: defaultRow,
-  column: defaultCol
-}
-
-export type GridPlacement = {
-  position: GridPosition
-  dimension: GridPlacementDimension
-}
-export var defaultGridPlacement: GridPlacement = {
-  position: defaultGridPosition,
-  dimension: defaultGridPlacementDimension
 }
 

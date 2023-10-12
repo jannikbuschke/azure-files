@@ -1,22 +1,9 @@
 import * as React from "react"
-import {
-  Group,
-  Text,
-  useMantineTheme,
-  MantineTheme,
-  Paper,
-} from "@mantine/core"
+import { Group, Text, useMantineTheme, MantineTheme } from "@mantine/core"
 import { updateNotification, showNotification } from "@mantine/notifications"
 import { Dropzone } from "@mantine/dropzone"
-import { ErrorBanner, useNotify } from "glow-core"
-import { FSharpList } from "../client/Microsoft_FSharp_Collections"
+import { useNotify } from "glow-core"
 import { FSharpResult, Unit } from "../client/Microsoft_FSharp_Core"
-import {
-  ApiError,
-  ApiErrorInfo_Case_ErrorResult,
-  ErrorResult,
-  FileSavedToStorage,
-} from "../client/AzureFiles"
 import { useSubscription } from "../client/subscriptions"
 import {
   TbUpload as IconUpload,
@@ -25,10 +12,8 @@ import {
   TbFileCheck,
   TbFileUnknown,
 } from "react-icons/tb"
-import { Query, QueryWithBoundary } from "../query"
 import { useTypedQuery } from "../client/api"
-import { useQuery } from "react-query"
-import { AsyncButton } from "../typed-api/ActionButton"
+import { ApiError } from "../client/AzFiles"
 
 // function getIconColor(status: DropzoneStatus, theme: MantineTheme) {
 //   return status.accepted
