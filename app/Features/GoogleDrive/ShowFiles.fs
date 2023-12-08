@@ -27,13 +27,8 @@ module Google =
   let scopes = [| DriveService.Scope.Drive |]
   let applicationName = "Google Drive API Sample"
 
-  // 106942588162844880639
-  let clientid =
-    "237488411962-lfuk9tmbg7u96t57kpelpvuvhgcnnrcm.apps.googleusercontent.com"
-
-  let clientSecret = "xxx"
-
-  // let key = "AIzaSyDc6iJVK3ZRwyppe3yXKYAsEmn1Usd5T8E"
+  let clientid = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID")
+  let clientSecret = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_SECRET")
 
   let credential =
     GoogleWebAuthorizationBroker.AuthorizeAsync(
