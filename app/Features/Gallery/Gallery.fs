@@ -25,7 +25,9 @@ module PersistentGallery =
               ChronologicalSortDirection = Asc
               Pagination = NoPagination }
 
-      return result.Result |> List.filter (fun v -> v.FileInfo.Type = FileType.Image)
+      return
+        result.Result
+        |> List.filter (fun v -> v.FileInfo.Type = FileType.Image)
     }
 
   type ImageType =
@@ -45,7 +47,10 @@ module PersistentGallery =
 
     let isHighlight = el.Tags |> List.contains "⭐"
 
-    let height = exif |> Exif.tryGetHeight |> Option.defaultValue -1
+    let height =
+      exif
+      |> Exif.tryGetHeight
+      |> Option.defaultValue -1
 
     let imageType = getImageType width height
 
@@ -60,9 +65,15 @@ module PersistentGallery =
   let mapFileViewmodelToGalleryImage (v: FileViewmodel) =
     let exifData = (v.ExifData |> Skippable.defaultValue [])
 
-    let width = exifData |> Exif.tryGetWidth |> Option.defaultValue -1
+    let width =
+      exifData
+      |> Exif.tryGetWidth
+      |> Option.defaultValue -1
 
-    let height = exifData |> Exif.tryGetHeight |> Option.defaultValue -1
+    let height =
+      exifData
+      |> Exif.tryGetHeight
+      |> Option.defaultValue -1
 
     let dim = getDesiredDimension v
 
@@ -156,7 +167,7 @@ module PersistentGallery =
   type GalleryHandler(ctx: IWebRequestContext) =
     interface IRequestHandler<GetImagesOnDate, ApiResult<PositionedImage0 list>> with
 
-      member this.Handle(request, _) =
+      member this.Handle(_, _) =
         taskResult {
 
           let! files = ctx.DocumentSession.GetFiles(Filter.RangeFilter("2023-06-04", "2022-06-09"))
@@ -198,10 +209,15 @@ module PersistentGallery =
     interface IRequestHandler<RemoveItemFromGallery, ApiResult<unit>> with
       member this.Handle(request, _) =
         taskResult {
-          let! gallery = request.GalleryId.value () |> ctx.DocumentSession.LoadAsync<Gallery>
+          let! gallery =
+            request.GalleryId.value ()
+            |> ctx.DocumentSession.LoadAsync<Gallery>
 
           let gallery =
-            { gallery with Items = gallery.Items |> List.filter (fun v -> v.File.Id <> request.FileId) }
+            { gallery with
+                Items =
+                  gallery.Items
+                  |> List.filter (fun v -> v.File.Id <> request.FileId) }
 
           ctx.DocumentSession.Store gallery
           do! ctx.DocumentSession.SaveChangesAsync()
@@ -232,7 +248,11 @@ module PersistentGallery =
     interface IRequestHandler<GetGalleries, ApiResult<Gallery list>> with
       member this.Handle(_, cancellationToken) =
         taskResult {
-          let! x = ctx.DocumentSession.Query<Gallery>().ToListAsync(cancellationToken)
+          let! x =
+            ctx
+              .DocumentSession
+              .Query<Gallery>()
+              .ToListAsync(cancellationToken)
 
           return x |> Seq.toList
         }
@@ -240,13 +260,19 @@ module PersistentGallery =
     interface IRequestHandler<AddImagesOnBasedOn, ApiResult<unit>> with
       member this.Handle(request, _) =
         taskResult {
-          let! gallery = request.GalleryId.value () |> ctx.DocumentSession.LoadAsync<Gallery>
+          let! gallery =
+            request.GalleryId.value ()
+            |> ctx.DocumentSession.LoadAsync<Gallery>
 
           let! result = getImagesOnBase request.BasedOn ctx
 
           let filtered =
             result
-            |> List.filter (fun v -> not (gallery.Items |> List.exists (fun i -> i.File.Id = v.Id)))
+            |> List.filter (fun v ->
+              not (
+                gallery.Items
+                |> List.exists (fun i -> i.File.Id = v.Id)
+              ))
             |> List.map mapFileViewmodelToGalleryImage
 
           let g =
@@ -263,12 +289,16 @@ module PersistentGallery =
     interface IRequestHandler<UpdateGallery, ApiResult<unit>> with
       member this.Handle(request, _) =
         taskResult {
-          let! gallery = request.Id.value () |> ctx.DocumentSession.LoadAsync<Gallery>
+          let! gallery =
+            request.Id.value ()
+            |> ctx.DocumentSession.LoadAsync<Gallery>
 
           let items =
             gallery.Items
             |> List.map (fun v ->
-              let updatedItem = request.Items |> List.tryFind (fun x -> x.File.Id = v.File.Id)
+              let updatedItem =
+                request.Items
+                |> List.tryFind (fun x -> x.File.Id = v.File.Id)
 
               let v =
                 { v with
@@ -277,7 +307,8 @@ module PersistentGallery =
                           Orientation =
                             v.File.Orientation
                             |> Skippable.defaultValue (
-                              (v.File.ExifData |> Skippable.defaultValue []) |> Exif.tryGetOrientation
+                              (v.File.ExifData |> Skippable.defaultValue [])
+                              |> Exif.tryGetOrientation
                             )
                             |> Include } }
 
@@ -301,10 +332,17 @@ module PersistentGallery =
         taskResult {
           let! gallery =
             match request.Argument with
-            | Id id -> id.value () |> ctx.DocumentSession.LoadAsync<Gallery>
+            | Id id ->
+              id.value ()
+              |> ctx.DocumentSession.LoadAsync<Gallery>
             | Name name ->
               task {
-                let! values = ctx.DocumentSession.Query<Gallery>().Where(fun v -> v.Name = name).ToListAsync()
+                let! values =
+                  ctx
+                    .DocumentSession
+                    .Query<Gallery>()
+                    .Where(fun v -> v.Name = name)
+                    .ToListAsync()
 
                 return values |> Seq.head
               }
@@ -317,10 +355,17 @@ module PersistentGallery =
         taskResult {
           let! gallery =
             match request.Argument with
-            | Id id -> id.value () |> ctx.DocumentSession.LoadAsync<Gallery>
+            | Id id ->
+              id.value ()
+              |> ctx.DocumentSession.LoadAsync<Gallery>
             | Name name ->
               task {
-                let! values = ctx.DocumentSession.Query<Gallery>().Where(fun v -> v.Name = name).ToListAsync()
+                let! values =
+                  ctx
+                    .DocumentSession
+                    .Query<Gallery>()
+                    .Where(fun v -> v.Name = name)
+                    .ToListAsync()
 
                 return values |> Seq.head
               }

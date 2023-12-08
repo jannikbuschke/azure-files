@@ -41,7 +41,7 @@
     <Compile Include="GalleryDomain.fs" />
     <Compile Include="generate-blog-data.fs" />
     <Compile Include="Features\Gallery\DynamicGallery.fs" />
-    <Compile Include="Features\Gallery\CreateGallery.fs" />
+    <Compile Include="Features\Gallery\Gallery.fs" />
     <Compile Include="generat-obsidian-notes.fs" />
     <Compile Include="UploadController.fs" />
     <Compile Include="Program.fs" />
