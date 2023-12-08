@@ -31,6 +31,7 @@ open Weasel.Core
 open Glow.Core.Notifications
 open FsToolkit.ErrorHandling
 open Glow.Azure.AzureKeyVault
+open System
 
 #nowarn "20"
 
@@ -183,7 +184,33 @@ module Program =
 
     services.AddGlowNotifications<NotificationHub>()
 
-    Glow.Core.TsGen.Generate2.renderTsTypesFromAssemblies assemblies "./web/src/client/"
+    printfn "getting apis"
+    let apis: TsGen.ApiEndpoint list =
+        Glow.Core.TsGen.GetTypes.getRequests assemblies
+        |> Seq.map(fun v ->
+            { TsGen.ApiEndpoint.Request = v.Input
+              TsGen.ApiEndpoint.Response = v.Output
+              TsGen.ApiEndpoint.Method = TsGen.HttpVerb.POST
+              TsGen.ApiEndpoint.Route = v.ActionAttribute.Route }
+        )
+        |> Seq.toList
+    
+    let types = apis |> List.collect(fun x -> [x.Request;x.Response])
+    // Glow.Core.TsGen.Generate2.renderTsTypesFromAssemblies assemblies "./web/src/client/"
+
+    printfn "configuring ts build"
+    let gen =
+        TsGen.Config.withDefaults ()
+        |> TsGen.Config.withJsonUnionEncoding TsGen.Gen.defaultJsonUnionEncoding
+        |> TsGen.Config.forTypes types
+        |> TsGen.Config.withEndpoints apis
+        |> TsGen.Config.build
+
+    [
+     // "./client/svelte-without-kit/src/client/"
+     "./svelte-client/src/client-new/"] |> Seq.map IO.Path.GetFullPath |> Seq.iter gen.renderTypesToDirectory
+
+    gen.renderApiToFile "./svelte-client/src/client-new/api.ts"
 
     let authScheme = CookieAuthenticationDefaults.AuthenticationScheme
 

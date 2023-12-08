@@ -77,13 +77,6 @@ module GetInboxFiles =
         |> Seq.filter (fun v -> v.Inbox = true)
         |> sortBy (fun v -> v.FileDateOrCreatedAt)
         |> Seq.toList
-    // let result =
-    //   entities
-    //     .Where(fun v -> v.Inbox = true)
-    //     .OrderByDescending(fun v -> v.FileDateOrCreatedAt)
-    //   |> Seq.toList
-    //
-    // return result
     }
 
 type InboxFileResult =
