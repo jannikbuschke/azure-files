@@ -1,17 +1,11 @@
 import {
   Box,
   Button,
-  Grid,
   LoadingOverlay,
-  Paper,
-  Title,
   Image,
-  ScrollArea,
   Center,
   Group,
-  NavLink as MantineNavLink,
   Text,
-  ThemeIcon,
   ActionIcon,
   Badge,
   Popover,
@@ -27,35 +21,22 @@ import {
   useHotkeys,
   useViewportSize,
 } from "@mantine/hooks"
-import { ErrorBanner, RenderObject, useAction, useNotify } from "glow-core"
+import { ErrorBanner, RenderObject, useNotify } from "glow-core"
 import * as React from "react"
-import {
-  Outlet,
-  useMatch,
-  useNavigate,
-  useParams,
-  useResolvedPath,
-} from "react-router"
-import { NavLink, useSearchParams } from "react-router-dom"
-import { TypedForm, useTypedAction, useTypedQuery } from "../client/api"
+import { useNavigate, useParams } from "react-router"
+import { useSearchParams } from "react-router-dom"
+import { TypedForm, useTypedAction } from "../client/api"
 import { Guid } from "../client/System"
 import { TiArrowLeft, TiArrowRight } from "react-icons/ti"
 import { QueryWithBoundary, updateQueryData } from "../query"
 import dayjs from "dayjs"
 import { FSharpOption } from "../client/Microsoft_FSharp_Core"
 import { AsyncActionIcon, AsyncButton } from "../typed-api/ActionButton"
-import { defaultInboxFileResult, SetTags } from "../client/AzFiles_Features"
+import { SetTags } from "../client/AzFiles_Features"
 import { FileId, FileViewmodel } from "../client/AzFiles"
 import { FiSun } from "react-icons/fi"
-import {
-  FaFileInvoiceDollar,
-  FaInbox,
-  FaRecycle,
-  FaCloudRain,
-  FaTrash,
-} from "react-icons/fa"
-import { useKeyPress } from "react-use"
-import { Input, Textarea, TextInput } from "formik-mantine"
+import { FaInbox, FaRecycle, FaTrash } from "react-icons/fa"
+import { Textarea, TextInput } from "formik-mantine"
 import { Formik } from "formik"
 import Masonry from "react-masonry-css"
 import { useQueryClient } from "react-query"
@@ -135,11 +116,11 @@ function ImageComponent({ v, input }: { v: FileViewmodel; input: any }) {
   const [setTags, , { submitting }] = useTypedAction("/api/file/set-tags")
   const queryClient = useQueryClient()
 
-  const { notifyInfo } = useNotify()
+  // const { notifyInfo } = useNotify()
   const isMarkedForCleanup = v.tags.some((v) => v === "mark-for-cleanup")
 
   async function addTag(tag: string, fileId: FileId) {
-    notifyInfo("Tagging")
+    // notifyInfo("Tagging")
     await setTags({ fileId, tags: [tag] })
     console.log("update query data")
     updateQueryData({
@@ -160,184 +141,140 @@ function ImageComponent({ v, input }: { v: FileViewmodel; input: any }) {
   const thumbnail = v.lowresVersions?.find((v) => v.name === "thumbnail")
   const [hovering, setHovering] = React.useState(false)
   return (
-    <div
-      style={{
-        // width: "100%",
-        position: "relative",
-      }}
+    <Card
+      shadow="sm"
+      radius="md"
+      withBorder={true}
+      opacity={isMarkedForCleanup ? 0.3 : undefined}
     >
-      <Card
-        shadow="sm"
-        radius="md"
-        withBorder={true}
-        opacity={isMarkedForCleanup ? 0.3 : undefined}
+      <Card.Section
+        style={
+          {
+            //  maxHeight: 500, maxWidth: 500
+          }
+        }
       >
-        <Card.Section>
-          {match(v.fileInfo.type)
-            .with({ Case: "Image" }, () => (
-              <div style={{ position: "relative" }}>
-                <Image
-                  onMouseOver={() => {
-                    setHovering(true)
-                  }}
-                  onMouseLeave={() => {
-                    setHovering(false)
-                  }}
-                  src={thumbnail?.url || v.url!}
-                  imageProps={{ loading: "lazy" }}
-                />
-                <ActionIcon
-                  component="a"
-                  href={`./photos/${v.id}`}
-                  referrerPolicy="no-referrer"
-                  target="_blank"
-                  style={{
-                    position: "absolute",
-                    top: "10px",
-                    right: "10px",
-                    opacity: hovering ? 0.4 : 0.1,
-                  }}
-                >
-                  <TbScreenShare size="1.125rem" />
-                </ActionIcon>
-                {/* <a
-                  style={{
-                    position: "absolute",
-                    top: "10px",
-                    right: "10px",
-                    opacity: 0.1,
-                  }}
-                  href={`./photos/${v.id}`}
-                  referrerPolicy="no-referrer"
-                  target="_blank"
-                >
-                  Show source image
-                </a> */}
-              </div>
-            ))
-            .otherwise((x) => (
-              <Group pt="xs" px="md">
-                <Text>
-                  {x.Case} {v.filename}
-                </Text>
-              </Group>
-            ))}
-          <Group px="md" pt="xs" position="apart">
-            {v.dateTime ? (
-              <Badge size="xs" radius={"xl"} variant="light" color="gray">
-                <Tooltip
-                  label={v.dateTime ? dayjs(v.dateTime).format("LT") : ""}
-                >
-                  <div>{dayjs(v.dateTime).format("MMM YYYY")}</div>
-                </Tooltip>
-              </Badge>
-            ) : null}
-            {v.tags.map((v) => (
-              <Badge
-                size="xs"
-                radius={"xl"}
-                variant={v === "mark-for-cleanup" ? "filled" : "light"}
-                color={v === "mark-for-cleanup" ? "red" : "blue"}
-              >
-                {v}
-              </Badge>
-            ))}
-            <ShowMoreOptions v={v} />
-          </Group>
-        </Card.Section>
         {match(v.fileInfo.type)
           .with({ Case: "Image" }, () => (
-            <Card.Section>
-              <MantineProvider
-                theme={{
-                  components: {
-                    Chip: {
-                      defaultProps: { size: "xs", variant: "filled" },
-                    },
-                    ActionIcon: { defaultProps: { size: "xs" } },
-                    Button: { defaultProps: { size: "xs" } },
-                  },
+            <div style={{ position: "relative" }}>
+              <Image
+                // style={{ maxHeight: 500, maxWidth: 500 }}
+                onMouseOver={() => {
+                  setHovering(true)
+                }}
+                onMouseLeave={() => {
+                  setHovering(false)
+                }}
+                src={thumbnail?.url || v.url!}
+                imageProps={{
+                  loading: "lazy",
+                }}
+                style={{
+                  maxHeight: 500,
+                  maxWidth: 500,
+                }}
+              />
+              <ActionIcon
+                component="a"
+                href={`./photos/${v.id}`}
+                referrerPolicy="no-referrer"
+                target="_blank"
+                style={{
+                  position: "absolute",
+                  top: "10px",
+                  right: "10px",
+                  opacity: hovering ? 0.4 : 0.1,
                 }}
               >
-                <Chip.Group p="md">
-                  {[
-                    "PKM",
-                    "⭐",
-                    "@lena",
-                    "@wilma",
-                    "@ronja",
-                    "@me",
-                    "@yaren",
-                    "info-tafel",
-                  ].map((tag) => (
-                    <Chip
-                      size="xl"
-                      checked={v.tags.some((t) => t === tag)}
-                      color="blue"
-                      onClick={() => addTag(tag, v.id)}
-                    >
-                      {tag}
-                    </Chip>
-                  ))}
-                  {/* <Chip
-                  size="xl"
-                  checked={v.tags.some((t) => t === "PKM")}
-                  color="blue"
-                  onClick={() => addTag("PKM", v.id)}
-                >
-                  PKM
-                </Chip> */}
-                </Chip.Group>
-
-                <Group p="md" position="right">
-                  <Chip
-                    mt="xs"
-                    disabled={v.tags.some((v) => v === "mark-for-cleanup")}
-                    checked={false}
-                    size="xl"
-                    variant="filled"
-                    onClick={() => {
-                      notifyInfo("Marked for cleanup")
-                      addTag("mark-for-cleanup", v.id)
-                    }}
-                  >
-                    <FaTrash />
-                    {/* <FaTrash /> */}
-                  </Chip>
-                </Group>
-              </MantineProvider>
-            </Card.Section>
+                <TbScreenShare size="1.125rem" />
+              </ActionIcon>
+            </div>
           ))
-          .otherwise(() => null)}
-        {/* {Math.random() < 0.5 ? (
-                    <Text size="sm" color="dimmed">
-                      With Fjord Tours you can explore more of the magical fjord
-                      landscapes with tours and activities on and around the
-                      fjords of Norway
-                    </Text>
-                  ) : null}
-                  <Group position="apart" mt="xs" mb="xs">
-                    <Button
-                      size="xs"
-                      mt="md"
-                      radius="md"
-                      variant="light"
-                      color="blue"
-                    >
-                      Tag
-                    </Button>
-                    <Button
-                      size="xs"
-                      mt="md"
-                      radius="md"
-                      variant="light"
-                      color="red"
-                    >
-                      Delete
-                    </Button>
-                  </Group> */}
-      </Card>
-    </div>
+          .otherwise((x) => (
+            <Group pt="xs" px="md">
+              <Text>
+                {x.Case} {v.filename}
+              </Text>
+            </Group>
+          ))}
+        <Group px="md" pt="xs" position="apart">
+          {v.dateTime ? (
+            <Badge size="xs" radius={"xl"} variant="light" color="gray">
+              <Tooltip label={v.dateTime ? dayjs(v.dateTime).format("LT") : ""}>
+                <div>{dayjs(v.dateTime).format("MMM YYYY")}</div>
+              </Tooltip>
+            </Badge>
+          ) : null}
+          {v.tags.map((v) => (
+            <Badge
+              size="xs"
+              radius={"xl"}
+              variant={v === "mark-for-cleanup" ? "filled" : "light"}
+              color={v === "mark-for-cleanup" ? "red" : "blue"}
+            >
+              {v}
+            </Badge>
+          ))}
+          <ShowMoreOptions v={v} />
+        </Group>
+      </Card.Section>
+      {match(v.fileInfo.type)
+        .with({ Case: "Image" }, () => (
+          <Card.Section>
+            <MantineProvider
+              theme={{
+                components: {
+                  Chip: {
+                    defaultProps: { size: "xs", variant: "filled" },
+                  },
+                  ActionIcon: { defaultProps: { size: "xs" } },
+                  Button: { defaultProps: { size: "xs" } },
+                },
+              }}
+            >
+              <Chip.Group p="md">
+                {[
+                  "PKM",
+                  "⭐",
+                  "@lena",
+                  "@wilma",
+                  "@ronja",
+                  "@me",
+                  "@yaren",
+                  "info-tafel",
+                ].map((tag) => (
+                  <Chip
+                    size="xs"
+                    checked={v.tags.some((t) => t === tag)}
+                    color="blue"
+                    onClick={() => addTag(tag, v.id)}
+                  >
+                    {tag}
+                  </Chip>
+                ))}
+              </Chip.Group>
+
+              <Group p="xs" position="right">
+                <Chip
+                  mt="xs"
+                  disabled={v.tags.some((v) => v === "mark-for-cleanup")}
+                  checked={false}
+                  size="xs"
+                  variant="filled"
+                  onClick={() => {
+                    // notifyInfo("Marked for cleanup")
+                    addTag("mark-for-cleanup", v.id)
+                  }}
+                >
+                  <FaTrash />
+                  {/* <FaTrash /> */}
+                </Chip>
+              </Group>
+            </MantineProvider>
+          </Card.Section>
+        ))
+        .otherwise(() => null)}
+    </Card>
   )
 }
 
@@ -391,9 +328,6 @@ export function InboxMaisonry() {
             columnClassName="my-masonry-grid_column"
           >
             {data.values.map((v, i) => {
-              // const thumbnail = v.lowresVersions?.find(
-              //   (v) => v.name === "thumbnail",
-              // )
               return <ImageComponent v={v} input={input} />
             })}
           </Masonry>
