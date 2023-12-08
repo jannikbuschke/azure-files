@@ -33,10 +33,8 @@ export type Tuple<T1,T2> = [T1,T2]
 export var defaultTuple: <T1,T2>(defaultT1:T1,defaultT2:T2) => Tuple<T1,T2> = <T1,T2>(defaultT1:T1,defaultT2:T2) => [defaultT1,defaultT2]
 
 export type Decimal = {
-  scale: Byte
 }
 export var defaultDecimal: Decimal = {
-  scale: 0
 }
 
 export type DecimalArray<T> = Array<T> // fullname System.Decimal[]

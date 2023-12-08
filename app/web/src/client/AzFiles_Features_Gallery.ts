@@ -2,13 +2,20 @@
 //   This file is auto generated   //
 //////////////////////////////////////
 
+import * as System from "./System"
 import * as AzFiles_Galleries from "./AzFiles_Galleries"
 import * as AzFiles from "./AzFiles"
 import * as AzFiles_Features from "./AzFiles_Features"
-import * as System from "./System"
 import * as Microsoft_FSharp_Collections from "./Microsoft_FSharp_Collections"
 import * as Microsoft_FSharp_Core from "./Microsoft_FSharp_Core"
 import * as System_Collections_Generic from "./System_Collections_Generic"
+
+export type GetImagesOnDate = {
+  date: System.String
+}
+export var defaultGetImagesOnDate: GetImagesOnDate = {
+  date: ''
+}
 
 export type RemoveItemFromGallery = {
   galleryId: AzFiles_Galleries.GalleryId
@@ -90,6 +97,21 @@ export type GetGalleryItems = {
 export var defaultGetGalleryItems: GetGalleryItems = {
   argument: defaultGetGalleryParameter,
   pagination: AzFiles_Features.defaultPagination
+}
+
+export type PositionedImage0 = {
+  id: AzFiles.FileId
+  originalUrl: System.String
+  variants: Microsoft_FSharp_Collections.FSharpList<AzFiles.ImageVariant>
+  size: AzFiles_Galleries.Size
+  dimensionAdjustment: AzFiles_Galleries.DimensionAdjustment
+}
+export var defaultPositionedImage0: PositionedImage0 = {
+  id: AzFiles.defaultFileId,
+  originalUrl: '',
+  variants: [] ,
+  size: AzFiles_Galleries.defaultSize,
+  dimensionAdjustment: AzFiles_Galleries.defaultDimensionAdjustment
 }
 
 export type Gallery = {
