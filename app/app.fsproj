@@ -47,6 +47,7 @@
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="TinyTypeGen" Version="0.1.6"/>
     <PackageReference Include="Dapper" Version="1.50.5" />
     <PackageReference Include="Npgsql.FSharp" Version="5.7.0" />
     <PackageReference Include="FSharp.Control.AsyncSeq" Version="3.2.1" />
