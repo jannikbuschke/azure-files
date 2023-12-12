@@ -186,7 +186,8 @@ type GetBlobContainersHandler
   interface IRequestHandler<DeleteAllBlobs, Unit> with
     member this.Handle(request, token) =
       task {
-        let! container = getBlobContainerClient connectionStrings.AzureBlob request.ContainerName
+        let container =
+          getBlobContainerClient connectionStrings.AzureBlob request.ContainerName
 
         do!
           deleteAllBlobsInContainer container

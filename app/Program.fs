@@ -249,14 +249,17 @@ module Program =
       let getBlobServiceClient () =
         BlobService.getBlobServiceClient connectionStrings.AzureBlob
 
+      // TODO remove task
       let getSrcContainer () =
-        BlobService.getBlobContainerClientByName connectionStrings.AzureBlob "src"
+        task { return BlobService.getBlobContainerClientByName connectionStrings.AzureBlob "src" }
 
+      // TODO remove task
       let getInboxContainer () =
-        BlobService.getBlobContainerClientByName connectionStrings.AzureBlob "inbox"
+        task { return BlobService.getBlobContainerClientByName connectionStrings.AzureBlob "inbox" }
 
+      // TODO remove task
       let getVariantsContainer () =
-        BlobService.getBlobContainerClientByName connectionStrings.AzureBlob "img-variants"
+        task { return BlobService.getBlobContainerClientByName connectionStrings.AzureBlob "img-variants" }
 
       { new IWebRequestContext with
           member this.GetLogger<'T>() = v.GetRequiredService<ILogger<'T>>()
@@ -325,16 +328,23 @@ module Program =
 
     builder
 
+  let connectionStrings (environmentName: string) (configuration: IConfiguration) =
+    configuration
+      .GetSection("ConnectionStrings")
+      .GetSection(environmentName)
+      .Get<ConnectionStrings>()
+
   let buildAppAsync (args: string array) =
     printfn "Args = %A" args
     let builder = WebApplication.CreateBuilder(args)
 
     let connectionStrings =
-      builder
-        .Configuration
-        .GetSection("ConnectionStrings")
-        .GetSection(builder.Environment.EnvironmentName)
-        .Get<ConnectionStrings>()
+      connectionStrings builder.Environment.EnvironmentName builder.Configuration
+    // builder
+    //   .Configuration
+    //   .GetSection("ConnectionStrings")
+    //   .GetSection(builder.Environment.EnvironmentName)
+    //   .Get<ConnectionStrings>()
 
     task {
       if args |> Seq.contains "--migrate-only" then
@@ -599,7 +609,14 @@ img {{ {imgStyle} }}</style></head>
 
       let martenStore = app.Services.GetService<IDocumentStore>()
 
+      let connectionStrings =
+        connectionStrings app.Environment.EnvironmentName app.Configuration
+
       task {
+        do! BlobService.ensureBlobContainerClientExists connectionStrings.AzureBlob "src"
+        do! BlobService.ensureBlobContainerClientExists connectionStrings.AzureBlob "inbox"
+        do! BlobService.ensureBlobContainerClientExists connectionStrings.AzureBlob "img-variants"
+
         if env.IsDevelopment() && false then
           do! martenStore.Advanced.Clean.CompletelyRemoveAllAsync()
           do! martenStore.Storage.ApplyAllConfiguredChangesToDatabaseAsync()

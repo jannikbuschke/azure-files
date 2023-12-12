@@ -45,14 +45,27 @@ module Workflow =
 
       return ()
     }
-    
+
+  let createSasUri
+    (ctx: IWebRequestContext)
+    (fileId: FileId)
+    (permission: BlobSasPermissions)
+    (until: System.DateTimeOffset)
+    =
+    task {
+      let! containerClient = ctx.GetSrcContainer()
+      let blobClient = containerClient.GetBlobClient(fileId.value().ToString())
+      let uri = blobClient.GenerateSasUri(BlobSasBuilder(permission, until))
+      printfn "Uri %s" (uri.ToString())
+      return uri
+    }
+
   let createPublicUrl (ctx: IWebRequestContext) (fileId: FileId) =
     taskResult {
-      let! file = ctx.DocumentSession.LoadFile fileId
-      let blobServiceClient = ctx.GetBlobServiceClient()// new BlobServiceClient(connectionString);
-      let! containerClient = ctx.GetSrcContainer()
-      let blobClient = containerClient.GetBlobClient(file.Id.ToString());
-      let uri = blobClient.GenerateSasUri(BlobSasBuilder(BlobSasPermissions.Read, System.DateTimeOffset.UtcNow.AddDays(5)))
+      // let! file = ctx.DocumentSession.LoadFile fileId
+      // let blobServiceClient = ctx.GetBlobServiceClient()// new BlobServiceClient(connectionString);
+
+      let! uri = createSasUri ctx fileId BlobSasPermissions.Read (System.DateTimeOffset.UtcNow.AddDays(5))
       printfn "public uri %s" (uri.ToString())
 
       (fileId,

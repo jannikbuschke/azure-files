@@ -137,30 +137,39 @@ module BlobService =
 
     result
 
-  let getBlobContainerClientByName (connectionString: string) (containerName: string) =
+  let ensureBlobContainerClientExists (connectionString: string)( containerName:string)=
     task {
       let blobServiceClient = getBlobServiceClient connectionString
 
       let blobContainerClient = blobServiceClient.GetBlobContainerClient(containerName)
 
       let! _ = blobContainerClient.CreateIfNotExistsAsync()
-      return blobContainerClient
+      return ()
     }
-
-  let getBlobContainerClient (connectionString: string) (containerName: string) =
-    async {
+  let getBlobContainerClientByName (connectionString: string) (containerName: string) =
+    // task {
       let blobServiceClient = getBlobServiceClient connectionString
 
       let blobContainerClient = blobServiceClient.GetBlobContainerClient(containerName)
 
-      task {
-        let! container = blobContainerClient.CreateIfNotExistsAsync()
-        ()
-      }
-      |> ignore
+      // let! _ = blobContainerClient.CreateIfNotExistsAsync()
+      blobContainerClient
+    // }
 
-      return blobContainerClient
-    }
+  let getBlobContainerClient (connectionString: string) (containerName: string) =
+    // async {
+      let blobServiceClient = getBlobServiceClient connectionString
+
+      let blobContainerClient = blobServiceClient.GetBlobContainerClient(containerName)
+
+      // task {
+      //   let! container = blobContainerClient.CreateIfNotExistsAsync()
+      //   ()
+      // }
+      // |> ignore
+
+      blobContainerClient
+    // }
 
   let getBlobContainerSourceFiles (connectionString: string) =
     getBlobContainerClient connectionString "src"
