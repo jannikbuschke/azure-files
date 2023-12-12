@@ -67,7 +67,8 @@ export function ImagesGallery() {
                         <Image
                           style={{}}
                           fit="contain"
-                          src={thumbnail?.url || v.url!}
+                          src={`/api/photos/src/${v.id}`}
+                          // src={thumbnail?.url || v.url!}
                           imageProps={{ loading: "lazy" }}
                         />
                         <Group position="apart" m="xs">

@@ -165,7 +165,8 @@ function ImageComponent({ v, input }: { v: FileViewmodel; input: any }) {
                 onMouseLeave={() => {
                   setHovering(false)
                 }}
-                src={thumbnail?.url || v.url!}
+                src={`/api/photos/inbox/${v.id}`}
+                // src={thumbnail?.url || v.url!}
                 imageProps={{
                   loading: "lazy",
                 }}

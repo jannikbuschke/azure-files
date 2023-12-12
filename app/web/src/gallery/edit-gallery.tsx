@@ -278,7 +278,8 @@ const renderPhoto: RenderPhoto<MyPhoto> = (props) => {
       <img
         alt={alt}
         style={{ ...style, width: "100%", padding: 0 }}
-        {...restImageProps}
+        // {...restImageProps}
+        src={`/api/photos/src/${item.file.id}`}
       />
       <div
         style={{

@@ -3,6 +3,7 @@
 open System
 open System.Text.Json
 open System.Text.Json.Serialization
+open System.Web
 open AzFiles
 open Marten
 open MediatR
@@ -44,10 +45,11 @@ let getHighestLowresResolutionOrOriginal v =
 let getHighestLowresResolutionOrOriginal2 (v: FileProjection) =
   v.LowresVersions
   |> tryGetHighestResolutionVariant
-  |> Option.map (fun v -> v.Url)
-  |> Option.defaultValue v.Url
+  |> Option.map (fun v -> v.PublicUrl |> Skippable.defaultValue None)
+  |> Option.flatten
+  |> Option.defaultValue ((v.PublicUrl|> Skippable.defaultValue None)|>Option.defaultValue v.Url)
 
-let rec ensureAllImagesHaveHighresVariant (ctx: IWebRequestContext) (galleryId: GalleryId) =
+let ensureAllImagesHaveHighresVariant (ctx: IWebRequestContext) (galleryId: GalleryId) =
   async {
     let! gallery = ctx.DocumentSession.LoadAsync<Gallery>(galleryId.value ()) |> Async.AwaitTask
 
@@ -97,9 +99,41 @@ let rec ensureAllImagesHaveHighresVariant (ctx: IWebRequestContext) (galleryId: 
     ()
   }
 
+let ensurePublicUrlsExist (ctx: IWebRequestContext) (galleryId: GalleryId) =
+  async {
+    let! gallery = ctx.DocumentSession.LoadAsync<Gallery>(galleryId.value ()) |> Async.AwaitTask
+
+    let! items =
+      gallery.Items
+      |> List.filter (fun v -> not (v.Hidden |> Skippable.defaultValue false))
+      |> List.map (fun v -> v.File.Id.value ())
+      |> List.toSeq
+      |> ctx.DocumentSession.LoadManyAsync<FileProjection>
+      |> Async.AwaitTask
+
+    let hasNoPublicUrl (file: FileProjection) =
+        file.PublicUrl |> Skippable.map(fun url -> url = None) |> Skippable.defaultValue true
+    // 
+    let! _ =
+      items
+      // |> Seq.filter hasNoPublicUrl
+      |> Seq.map (fun v ->
+        async {
+          let! result = Workflow.createPublicUrl ctx (v.Key()) |> Async.AwaitTask
+          
+          // let! _ = Workflow.createVariant ctx 1000 "gallery-1000" (v.Key()) |> Async.AwaitTask
+          do! ctx.DocumentSession.SaveChangesAsync() |> Async.AwaitTask
+          return ()
+        })
+      |> Async.Sequential
+
+    ()
+  }
+
 let getFiles ctx (request: GenerateStaticGallery) =
   task {
-    do! ensureAllImagesHaveHighresVariant ctx request.GalleryId
+    // do! ensureAllImagesHaveHighresVariant ctx request.GalleryId
+    do! ensurePublicUrlsExist ctx request.GalleryId
     let! gallery = ctx.DocumentSession.LoadAsync<Gallery>(request.GalleryId.value ())
 
     let! items =
@@ -117,7 +151,7 @@ let getFiles ctx (request: GenerateStaticGallery) =
         let v = items |> Seq.find (fun file -> file.Key() = x.File.Id)
 
         {| Id = v.Key()
-           OriginalUrl = v |> getHighestLowresResolutionOrOriginal2
+           OriginalUrl = v |> getHighestLowresResolutionOrOriginal2 |> HttpUtility.UrlDecode
            Variants = v.LowresVersions
            Size = x.Size
            DimensionAdjustment =
@@ -151,13 +185,15 @@ let generateStaticGallery (ctx: IWebRequestContext) request =
 
     options.Converters.Add(JsonFSharpConverter())
 
-    let serialized = System.Text.Json.JsonSerializer.Serialize(data, options)
+    let serialized = JsonSerializer.Serialize(data, options)
 
     let serialized = $"""export const gallery = {serialized} as const"""
 
+    let path = $".\\svelte-client\\src\\gallery-{gallery.Name}.ts"
+    printfn "write %s " path
     do!
       System.IO.File.WriteAllTextAsync(
-        $".\\svelte-client\\src\\gallery-{gallery.Name}.ts",
+        path,
         // $"C:\\home\\jannik\\repos\\travel-photo-blog-vite\\src\\gallery-{gallery.Name}.json",
         serialized
       )

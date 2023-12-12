@@ -77,6 +77,12 @@ type LowresVersionCreated =
     // blob id?
     VariantName: string }
 
+type Variant = | Root | VariantName of string
+type PublicUrlCreated = {
+  Url: string
+  Variant: Variant
+}
+
 type Location =
   { Latitude: decimal
     Longitude: decimal }
@@ -114,6 +120,7 @@ type FileDeleted = EmptyRecord
 
 type FileEvent =
   | LowresVersionCreated of LowresVersionCreated
+  | PublicUrlCreated of PublicUrlCreated
   | TagAdded of TagAdded
   | TagRemoved of TagRemoved
   | Deleted of EmptyRecord
@@ -123,11 +130,13 @@ type FileEvent =
   | PropertiesChanged of PropertyChanged list
 
 type GetContainer = unit -> Task<BlobContainerClient>
+type GetServiceClient = unit -> BlobServiceClient
 
 type IWebRequestContext =
   abstract HttpContext: HttpContext
   abstract UserId: string option
   abstract DocumentSession: IDocumentSession
+  abstract GetBlobServiceClient: GetServiceClient
   abstract GetSrcContainer: GetContainer
   abstract GetInboxContainer: GetContainer
   abstract GetVariantsContainer: GetContainer
@@ -135,15 +144,26 @@ type IWebRequestContext =
   abstract GetLogger<'T> : unit -> ILogger<'T>
 
 module WebRequestContext =
-  let getBlobContentStreamAsync (ctx: IWebRequestContext) (fileId: FileId) =
-    fun () ->
+  let getBlobContentStreamAsync (container: BlobContainerClient) (fileId: FileId) =
       task {
-        let! container = ctx.GetSrcContainer()
-
         let blobClient = container.GetBlobClient(fileId.value().ToString())
 
         let! s = blobClient.DownloadStreamingAsync()
         return s.Value.Content
+      }
+
+  let getInboxBlobContentStreamAsync (ctx: IWebRequestContext) (fileId: FileId) =
+      task {
+        let! container = ctx.GetInboxContainer()
+        let! stream = getBlobContentStreamAsync container fileId
+        return stream
+      }
+  let getSrcBlobContentStreamAsync (ctx: IWebRequestContext) (fileId: FileId) =
+    fun () ->
+      task {
+        let! container = ctx.GetSrcContainer()
+        let! stream = getBlobContentStreamAsync container fileId
+        return stream
       }
 
 type ApiErrorInfo = ErrorResult of ErrorResult

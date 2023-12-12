@@ -2,13 +2,14 @@
 
 open AzFiles
 open System.IO
+open Azure.Storage.Sas
 open Microsoft.AspNetCore.Http
 open FsToolkit.ErrorHandling
 
 module Workflow =
 
   let readExifDataFromCacheOrBlob (ctx: IWebRequestContext) (fileId: FileId) =
-    let getStreamAsync = WebRequestContext.getBlobContentStreamAsync ctx fileId
+    let getStreamAsync = WebRequestContext.getSrcBlobContentStreamAsync ctx fileId
     Exif.readExifData (ctx.GetLogger<obj>(), fileId, getStreamAsync)
 
   let initiallyHandleFormFile (file: IFormFile) : FormFileScanned =
@@ -23,7 +24,7 @@ module Workflow =
 
   let createVariant (ctx: IWebRequestContext) (width: int32) (variantName: string) (fileId: FileId) =
     taskResult {
-      let! fileStream = (WebRequestContext.getBlobContentStreamAsync ctx fileId) ()
+      let! fileStream = (WebRequestContext.getSrcBlobContentStreamAsync ctx fileId) ()
       let! dimension, variantData = AzFiles.ImageProcessing.resizeImage fileStream width
       let filename = $"{fileId.value().ToString()}-{variantName}"
       let! imgVariantsClient = ctx.GetVariantsContainer()
@@ -41,6 +42,26 @@ module Workflow =
            Dimension = dimension
            VariantName = variantName })
       |> ctx.DocumentSession.Events.AppendFileStream
+
+      return ()
+    }
+    
+  let createPublicUrl (ctx: IWebRequestContext) (fileId: FileId) =
+    taskResult {
+      let! file = ctx.DocumentSession.LoadFile fileId
+      let blobServiceClient = ctx.GetBlobServiceClient()// new BlobServiceClient(connectionString);
+      let! containerClient = ctx.GetSrcContainer()
+      let blobClient = containerClient.GetBlobClient(file.Id.ToString());
+      let uri = blobClient.GenerateSasUri(BlobSasBuilder(BlobSasPermissions.Read, System.DateTimeOffset.UtcNow.AddDays(5)))
+      printfn "public uri %s" (uri.ToString())
+
+      (fileId,
+       FileEvent.PublicUrlCreated
+         { Url = uri.ToString()
+           Variant = Variant.Root })
+      |> ctx.DocumentSession.Events.AppendFileStream
+
+      printfn "Sas Uri created = %s" (result.ToString())
 
       return ()
     }
