@@ -158,7 +158,6 @@ function ImageComponent({ v, input }: { v: FileViewmodel; input: any }) {
           .with({ Case: "Image" }, () => (
             <div style={{ position: "relative" }}>
               <Image
-                // style={{ maxHeight: 500, maxWidth: 500 }}
                 onMouseOver={() => {
                   setHovering(true)
                 }}
@@ -170,10 +169,10 @@ function ImageComponent({ v, input }: { v: FileViewmodel; input: any }) {
                 imageProps={{
                   loading: "lazy",
                 }}
-                style={{
-                  maxHeight: 500,
-                  maxWidth: 500,
-                }}
+                // style={{
+                //   maxHeight: 500,
+                //   maxWidth: 500,
+                // }}
               />
               <ActionIcon
                 component="a"
@@ -361,16 +360,6 @@ export function FileContent({
   const shouldFullscreen = params.get("fullscreen")
   const { notifyError, notifyInfo } = useNotify()
 
-  // const { data: exif, error } = useTypedQuery(
-  //   "/api/blob/get-exif-data-from-blob-file",
-  //   { input: { blobId: id }, placeholder: [] },
-  // )
-  // const { data: metadata } = useTypedQuery("/api/blob/get-blob-metadata", {
-  //   input: { blobId: id },
-  //   placeholder: null as any,
-  //   queryOptions: { suspense: true, useErrorBoundary: true },
-  // })
-
   const [setTags, , { submitting }] = useTypedAction("/api/file/set-tags")
   const { ref, toggle, fullscreen } = useFullscreen()
   React.useEffect(() => {
@@ -399,7 +388,6 @@ export function FileContent({
     if (disabled) {
       return
     }
-    // notifyInfo(tags.tags.join(", "))
     await setTags(tags)
     navNext && navNext()
   }
@@ -438,13 +426,6 @@ export function FileContent({
         disabled={navPrev === undefined}
         onClick={navPrev}
       />
-      {/* <Button
-        size="xs"
-        variant="default"
-        onClick={() => setTagsAndNavigate({ fileId: id, tags: ["Stage"] })}
-      >
-        Stage
-      </Button> */}
       <Button
         size="xs"
         variant="default"
@@ -483,20 +464,7 @@ export function FileContent({
           </Button>
         </Popover.Target>
       </Popover>
-      {/* <Button
-        size="xs"
-        variant="default"
-        onClick={() => setTagsAndNavigate({ fileId: id, tags: ["Publish"] })}
-      >
-        Publish
-      </Button>
-      <Button
-        size="xs"
-        variant="default"
-        onClick={() => setTagsAndNavigate({ fileId: id, tags: ["Keep"] })}
-      >
-        Keep
-      </Button> */}
+
       <Button
         size="xs"
         color="dark"
