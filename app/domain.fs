@@ -24,17 +24,6 @@ type PropertyChanged =
   | PropertyRemoved of PropertyName
   | PropertyUpdated of Property
 
-type DuplicateCheckResult =
-  | IsNew
-  | IsDuplicate of FileId
-
-type FileIsDuplicate = { FileId: FileId; Filename: string }
-
-type ErrorResult =
-  | FileIsDuplicate of FileIsDuplicate
-  | NetworkError of string
-  | FileNotFound of FileId
-
 type Checksum =
   | Checksum of string
 
@@ -65,8 +54,7 @@ type OriginalFileUploaded =
 type Dimension = { Width: int; Height: int }
 
 module Dimension =
-  let pixels d =
-    d.Width*d.Height
+  let pixels d = d.Width * d.Height
 
 type LowresVersionCreated =
   {
@@ -77,11 +65,11 @@ type LowresVersionCreated =
     // blob id?
     VariantName: string }
 
-type Variant = | Root | VariantName of string
-type PublicUrlCreated = {
-  Url: string
-  Variant: Variant
-}
+type Variant =
+  | Root
+  | VariantName of string
+
+type PublicUrlCreated = { Url: string; Variant: Variant }
 
 type Location =
   { Latitude: decimal
@@ -129,7 +117,8 @@ type FileEvent =
   | PropertyChanged of PropertyChanged
   | PropertiesChanged of PropertyChanged list
 
-type GetContainer = unit -> Task<BlobContainerClient>
+type GetContainerAsync = unit -> Task<BlobContainerClient>
+type GetContainer = unit -> BlobContainerClient
 type GetServiceClient = unit -> BlobServiceClient
 
 type IWebRequestContext =
@@ -137,6 +126,9 @@ type IWebRequestContext =
   abstract UserId: string option
   abstract DocumentSession: IDocumentSession
   abstract GetBlobServiceClient: GetServiceClient
+  abstract GetSrcContainerAsync: GetContainerAsync
+  abstract GetInboxContainerAsync: GetContainerAsync
+  abstract GetVariantsContainerAsync: GetContainerAsync
   abstract GetSrcContainer: GetContainer
   abstract GetInboxContainer: GetContainer
   abstract GetVariantsContainer: GetContainer
@@ -145,23 +137,29 @@ type IWebRequestContext =
 
 module WebRequestContext =
   let getBlobContentStreamAsync (container: BlobContainerClient) (fileId: FileId) =
-      task {
-        let blobClient = container.GetBlobClient(fileId.value().ToString())
+    task {
+      let fileId = fileId.value().ToString()
+      let blobClient = container.GetBlobClient(fileId)
 
+      try
         let! s = blobClient.DownloadStreamingAsync()
-        return s.Value.Content
-      }
+        return Result.Ok s.Value.Content
+      with
+      | ex ->
+        return Result.Error(NetworkError(sprintf "Could not get blob for file '%s'. Message = %s" fileId ex.Message))
+    }
 
   let getInboxBlobContentStreamAsync (ctx: IWebRequestContext) (fileId: FileId) =
-      task {
-        let! container = ctx.GetInboxContainer()
-        let! stream = getBlobContentStreamAsync container fileId
-        return stream
-      }
+    task {
+      let! container = ctx.GetInboxContainerAsync()
+      let! stream = getBlobContentStreamAsync container fileId
+      return stream
+    }
+
   let getSrcBlobContentStreamAsync (ctx: IWebRequestContext) (fileId: FileId) =
     fun () ->
       task {
-        let! container = ctx.GetSrcContainer()
+        let container = ctx.GetSrcContainer()
         let! stream = getBlobContentStreamAsync container fileId
         return stream
       }

@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* alert component */
+
+.grid-stack-item-content{
+  @apply bg-white rounded-lg shadow-md p-6;
+}
+.alert {
+  @apply py-2 px-6 max-w-sm mx-auto rounded shadow flex items-center space-x-4 border-l-4;
+}
+
+.alert-success {
+  @apply alert bg-green-200 border-green-600;
+}
+
+.alert-danger {
+  @apply alert bg-red-200 border-red-600;
+}
+
+.alert-warning {
+  @apply alert bg-yellow-200 border-yellow-500;
+}
+
+.alert-info {
+  @apply alert bg-blue-100 border-blue-400;
+}
+
+.alert-light {
+  @apply alert bg-gray-100 border-gray-400;
+}
+
+.alert-dark {
+  @apply alert bg-slate-800 border-slate-600 text-white;
+}
+
+:root {
+  --shadow-color: 0deg 0% 0%;
+  --shadow-elevation-low: 0px 0.1px 0.1px hsl(var(--shadow-color) / 0.17),
+    0.1px 0.3px 0.4px -2.1px hsl(var(--shadow-color) / 0.21);
+  --shadow-elevation-medium: 0px 0.1px 0.1px hsl(var(--shadow-color) / 0.24),
+    0.5px 1.3px 1.7px -2.1px hsl(var(--shadow-color) / 0.29);
+  --shadow-elevation-high: 0px 0.1px 0.1px hsl(var(--shadow-color) / 0.22),
+    0.4px 1.1px 1.4px -0.7px hsl(var(--shadow-color) / 0.25),
+    1px 3px 3.7px -1.4px hsl(var(--shadow-color) / 0.27),
+    2.6px 7.5px 9.4px -2.1px hsl(var(--shadow-color) / 0.29);
+}

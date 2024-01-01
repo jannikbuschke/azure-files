@@ -121,7 +121,7 @@ type Handler(ctx: IWebRequestContext) =
 
         stream.Position <- 0L
 
-        let! inbox = ctx.GetInboxContainer()
+        let! inbox = ctx.GetInboxContainerAsync()
 
         let! result5 =
           inbox.UploadBlobAsync(blobName = result2.Name, content = stream, cancellationToken = CancellationToken.None)

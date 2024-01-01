@@ -21,7 +21,7 @@ module Rotate =
                 taskResult {
                     let! file = ctx.DocumentSession.LoadFile request.Id
 
-                    let! container = ctx.GetSrcContainer()
+                    let! container = ctx.GetSrcContainerAsync()
 
                     let client =
                         container.GetBlobClient(file.Id.ToString())

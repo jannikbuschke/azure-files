@@ -102,7 +102,7 @@ module BlobService =
     asyncResult {
       let logger = ctx.GetLogger<obj>()
       // let! container = ctx.GetSrcContainer()
-      let! container = ctx.GetInboxContainer()
+      let! container = ctx.GetInboxContainerAsync()
 
       let fileId = FileId.value localFile.Id
       let targetFilename = fileId.ToString()

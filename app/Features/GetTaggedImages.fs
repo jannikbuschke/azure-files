@@ -44,13 +44,15 @@ module GetImages =
 
   let private memoryCacheProvider =
     Polly.Caching.Memory.MemoryCacheProvider(memoryCache)
-  // Create a Polly cache policy using that Polly.Caching.Memory.MemoryCacheProvider instance.
-  let cachePolicy = Policy.CacheAsync(memoryCacheProvider, TimeSpan.FromSeconds(10))
+
+  let cachePolicy = Policy.CacheAsync(memoryCacheProvider, TimeSpan.FromMinutes(10))
 
   let resetTaggedFiles () = memoryCache.Remove("get-taged-files")
 
   let getFiles (ctx: IWebRequestContext) (request: GetImages) (cacheContext: Context) =
     task {
+      printfn "querying database...."
+
       let! entities =
         ctx
           .DocumentSession
@@ -71,8 +73,18 @@ module GetImages =
             // v.FileDateOrCreatedAt
             v.FileDateOrCreatedAt >= start
             && v.FileDateOrCreatedAt <= until
-          | ImageFilter.And (left, right) -> true
-          | ImageFilter.Or (left, right) -> true)
+          | ImageFilter.And (left, right) ->
+            let result0 = applyFilter seq left
+            let result1 = applyFilter seq right
+
+            result0 |> Seq.contains v
+            && result1 |> Seq.contains v
+          | ImageFilter.Or (left, right) ->
+            let result0 = applyFilter seq left
+            let result1 = applyFilter seq right
+
+            result0 |> Seq.contains v
+            || result1 |> Seq.contains v)
 
       return
         applyFilter entities request.Filter
@@ -101,17 +113,29 @@ module GetImages =
   let getCachedTaggedFiles (ctx: IWebRequestContext) (request: GetImages) =
     cachePolicy.ExecuteAndCaptureAsync((getFiles ctx request), Context("get-tagged-files"))
 
+  let rec getFilterKey (filter: ImageFilter) =
+    match filter with
+    | ImageFilter.All -> "all"
+    | ImageFilter.Tagged tags -> "tagged-" + (tags |> String.concat "or")
+    | ImageFilter.DateRange (start, until) ->
+      "date-range-"
+      + (start.ToString())
+      + "-"
+      + (until.ToString())
+    | ImageFilter.And (left, right) ->
+      let leftKey = getFilterKey left
+      let rightKey = getFilterKey right
+
+      "(" + leftKey + "-and-" + rightKey + ")"
+    | ImageFilter.Or (left, right) ->
+      let leftKey = getFilterKey left
+      let rightKey = getFilterKey right
+
+      "(" + leftKey + "-pr-" + rightKey + ")"
+
   let getFilesByFilter (ctx: IWebRequestContext) (request: GetImages) =
-    let filterKey =
-      match request.Filter with
-      | ImageFilter.All -> "all"
-      | ImageFilter.Tagged tags -> "tagged-" + (tags |> String.concat "-")
-      | ImageFilter.DateRange (start, until) ->
-        "date-range-"
-        + (start.ToString())
-        + "-"
-        + (until.ToString())
-      | _ -> failwith ("Not handled")
+    let filterKey = getFilterKey request.Filter
+    printfn "get files by filter key %s" filterKey
 
     cachePolicy.ExecuteAndCaptureAsync((getFiles ctx request), Context("filter-" + filterKey))
 

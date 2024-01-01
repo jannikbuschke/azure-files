@@ -11,22 +11,6 @@ open Polly
 
 type Page<'T> = { Values: 'T list; Count: int }
 
-// type FileListViewmodel =
-//   { Id: FileId
-//     Filename: string
-//     Url: string
-//     FileDateOrCreatedAt: NodaTime.Instant
-//     Inbox: bool
-//     Tags: string list }
-//
-//   static member FromFileProjection(projection: FileProjection) =
-//     { Id = projection.Key()
-//       Filename = projection.Filename
-//       Url = projection.Url
-//       FileDateOrCreatedAt = projection.FileDateOrCreatedAt
-//       Tags = projection.Tags
-//       Inbox = projection.Inbox }
-
 type EmptyRecord =
   { Skip: Skippable<unit> }
 
@@ -53,7 +37,7 @@ module GetInboxFiles =
 
   let private memoryCacheProvider =
     Polly.Caching.Memory.MemoryCacheProvider(memoryCache)
-  // Create a Polly cache policy using that Polly.Caching.Memory.MemoryCacheProvider instance.
+
   let cachePolicy = Policy.CacheAsync(memoryCacheProvider, TimeSpan.FromMinutes(30))
 
   let resetInboxFilesCache () = memoryCache.Remove("get-inbox-files")

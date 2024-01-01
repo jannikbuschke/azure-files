@@ -17,7 +17,7 @@ type GetBlobMetadataHandler(ctx: IWebRequestContext) =
   interface IRequestHandler<GetBlobMetadata, IDictionary<string, string>> with
     member this.Handle(request, _) =
       task {
-        let! container = ctx.GetSrcContainer()
+        let! container = ctx.GetSrcContainerAsync()
         let client = container.GetBlobClient request.BlobId
         let! response = client.GetPropertiesAsync()
         return response.Value.Metadata
@@ -31,27 +31,22 @@ type GetExifDataFromBlobFile =
 
 type GetExifDataFromBlobFileHandler(ctx: IWebRequestContext) =
   interface IRequestHandler<GetExifDataFromBlobFile, ExifValue list option> with
-    member this.Handle(request, token) =
-      task {
-
-        let stopWatch = System.Diagnostics.Stopwatch.StartNew()
-
-        let getStream () =
-          task {
-            let! container = ctx.GetSrcContainer()
-            let client = container.GetBlobClient(request.BlobId.value().ToString())
-
-            let! s = client.DownloadStreamingAsync()
-            return s.Value.Content
-          }
-
-        let! result = Exif.readExifData (ctx.GetLogger<obj>(), request.BlobId, getStream)
-        //
-        // let exif =
-        //   Exif.readExifFromStream s.Value.Content
-        //   |> Option.map Seq.toList
-
-        stopWatch.Stop()
-        printfn "%f" stopWatch.Elapsed.TotalMilliseconds
-        return result.Result
-      }
+    member this.Handle(request, token) = failwith "Not implemented"
+// task {
+// let stopWatch = System.Diagnostics.Stopwatch.StartNew()
+//
+// let getStream () =
+//   task {
+//     let! container = ctx.GetSrcContainerAsync()
+//     let client = container.GetBlobClient(request.BlobId.value().ToString())
+//
+//     let! s = client.DownloadStreamingAsync()
+//     return s.Value.Content
+//   }
+//
+// let! result = Exif.readExifData (ctx.GetLogger<obj>(), request.BlobId, getStream)
+//
+// stopWatch.Stop()
+// printfn "%f" stopWatch.Elapsed.TotalMilliseconds
+// return result.Result
+// }

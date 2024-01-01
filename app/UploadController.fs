@@ -44,7 +44,10 @@ module FileUploads =
         Exif.readExifData (
           ctx.GetLogger<obj>(),
           file.Id,
-          fun () -> fileStream |> System.Threading.Tasks.Task.FromResult
+          fun () ->
+            fileStream
+            |> Result.Ok
+            |> System.Threading.Tasks.Task.FromResult
         )
 
       fileStream.Position <- 0
@@ -60,16 +63,8 @@ module FileUploads =
       return result
     }
 
-open System
-open AzFiles
-open Microsoft.AspNetCore.Cors
 open Microsoft.AspNetCore.Mvc
 open Microsoft.Extensions.Logging
-open BlobService
-open System.IO
-open FsToolkit.ErrorHandling
-open Microsoft.Extensions.DependencyInjection
-open SixLabors.ImageSharp
 open System.Threading.Tasks
 
 [<Route("api")>]
@@ -114,7 +109,8 @@ type TestControlle2r(logger: ILogger<TestControlle2r>, ctx: IWebRequestContext, 
               |> Seq.toList
           }
           |> Async.AwaitTask
-        with e ->
+        with
+        | e ->
           [ Error(
               { ApiError.Message = e.Message
                 Info = None }

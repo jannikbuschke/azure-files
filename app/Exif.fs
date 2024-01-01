@@ -1008,7 +1008,14 @@ module ExifCache =
   let cachePolicy = Policy.CacheAsync(memoryCacheProvider, TimeSpan.FromSeconds(30))
 
 
-let readExifData (logger: ILogger<obj>, blobId: FileId, getStreamAsync: unit -> Task<System.IO.Stream>) =
+open FsToolkit.ErrorHandling
+
+let readExifData
+  (
+    logger: ILogger<obj>,
+    blobId: FileId,
+    getStreamAsync: unit -> Task<Result<System.IO.Stream, ErrorResult>>
+  ) =
   task {
 
     let f ctx =
@@ -1016,9 +1023,13 @@ let readExifData (logger: ILogger<obj>, blobId: FileId, getStreamAsync: unit -> 
         logger.LogInformation "Reading exif data"
 
         let! stream = getStreamAsync ()
-        let! result = stream |> readExifFromStream
-
-        return result
+        match stream with
+        | Result.Ok stream ->
+          let! result = stream |> readExifFromStream
+          return result
+        | Result.Error err ->
+          failwith err.Message
+          return None
       }
 
     let! result = ExifCache.cachePolicy.ExecuteAndCaptureAsync(f, Context(blobId.value().ToString()))

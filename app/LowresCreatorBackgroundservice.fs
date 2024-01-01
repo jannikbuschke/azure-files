@@ -22,7 +22,9 @@ let addExifDataIfNotExisting ctx (logger: ILogger) files =
       |> Seq.truncate 10
       |> Seq.map (fun v ->
         async {
-          let! exifData = Workflow.readExifDataFromCacheOrBlob ctx v.Id |> Async.AwaitTask
+          let! exifData =
+            Workflow.readExifDataFromCacheOrBlob ctx v.Id
+            |> Async.AwaitTask
 
           return v, exifData
         })
@@ -52,31 +54,63 @@ type VariantCreatorBackgroundService(factory: IServiceScopeFactory) =
         let ctx = scope.ServiceProvider.GetRequiredService<IWebRequestContext>()
         let logger = ctx.GetLogger<VariantCreatorBackgroundService>()
         logger.LogInformation "running variant creator background service"
-        let! files = ctx.DocumentSession.Query<FileProjection>().ToListAsync() |> Async.AwaitTask
+
+        let! files =
+          ctx
+            .DocumentSession
+            .Query<FileProjection>()
+            .ToListAsync()
+          |> Async.AwaitTask
 
         do! addExifDataIfNotExisting ctx logger files
 
-        let! filesWithoutLowResVersion =
+        let createVariants predicate width name concurrent =
+          let files = files |> Seq.filter predicate
+          printfn "files without '%s' version %A" name (files |> Seq.length)
+
           files
-          |> Seq.filter (fun v -> v.LowresVersions |> List.isEmpty)
           |> Seq.map FileViewmodel.FromFileProjection
           |> Seq.choose (fun v ->
             match v.FileInfo.Type with
             | FileType.Image -> Some v
             | _ -> None)
-          |> Seq.truncate 5
+          |> Seq.truncate concurrent
           |> Seq.map (fun v -> v.Id)
-          |> Seq.map (fun v -> Workflow.createVariant ctx 500 "thumbnail" v |> Async.AwaitTask)
-          |> fun v -> Async.Parallel(v, 5)
+          |> Seq.map (fun v ->
+            Workflow.createVariant ctx width name v
+            |> Async.AwaitTask)
+          |> fun v -> Async.Parallel(v, concurrent)
+
+        let! filesWithoutLowResVersion = createVariants (fun v -> v.LowresVersions |> List.isEmpty) 500 "thumbnail" 5
+
+        let withoutHdVariant =
+          (fun (v: FileProjection) ->
+            not (v.Tags |> List.isEmpty)
+            && not (v.Tags |> List.contains SpecialTag.MarkForCleanup)
+            && not (
+              v.LowresVersions
+              |> List.exists (fun x -> x.Name = "hd")
+            ))
+
+        let! filesWithoutHdVersion = createVariants withoutHdVariant 1200 "hd" 30
+
+        filesWithoutHdVersion
+        |> Seq.iter (fun v ->
+          match v with
+          | Ok o -> logger.LogInformation(sprintf "Ok")
+          | Error e -> logger.LogInformation(sprintf "Error %s" e.Message))
 
         filesWithoutLowResVersion
         |> Seq.iter (fun v ->
           match v with
-          | Ok o -> logger.LogInformation("ok")
+          | Ok o -> ()
           | Error e -> logger.LogInformation(sprintf "Error %s" e.Message))
 
-        do! ctx.DocumentSession.SaveChangesAsync() |> Async.AwaitTask
-        do! Async.Sleep(TimeSpan.FromSeconds(30.0))
+        do!
+          ctx.DocumentSession.SaveChangesAsync()
+          |> Async.AwaitTask
+
+        do! Async.Sleep(TimeSpan.FromSeconds(55.0))
     }
     |> Async.StartAsTask
     |> Task.ignore

@@ -9,7 +9,7 @@ type DownloadFileController(ctx: IWebRequestContext) =
   [<HttpGet("/content/inbox/{filename}")>]
   member this.Get(filename: string) =
     task {
-      let! container = ctx.GetInboxContainer()
+      let! container = ctx.GetInboxContainerAsync()
       printfn "trying to get blob %s" filename
       let client = container.GetBlobClient(filename)
       let! result = client.DownloadAsync()
@@ -21,7 +21,7 @@ type DownloadFileController(ctx: IWebRequestContext) =
   [<HttpGet("/content/src/{id}")>]
   member this.GetSourcefile(id: string) =
     task {
-      let! container = ctx.GetSrcContainer()
+      let! container = ctx.GetSrcContainerAsync()
       let client = container.GetBlobClient(id)
       let! result = client.DownloadAsync()
       let info = result.Value

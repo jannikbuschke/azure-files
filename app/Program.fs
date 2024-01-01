@@ -32,6 +32,7 @@ open Glow.Core.Notifications
 open FsToolkit.ErrorHandling
 open Glow.Azure.AzureKeyVault
 open System
+open Giraffe
 
 #nowarn "20"
 
@@ -160,6 +161,8 @@ module Program =
 
     let services = builder.Services
 
+    services.AddGiraffe()
+
     services.AddCors (fun c ->
 
       c.AddPolicy(
@@ -199,7 +202,6 @@ module Program =
     let types =
       apis
       |> List.collect (fun x -> [ x.Request; x.Response ])
-    // Glow.Core.TsGen.Generate2.renderTsTypesFromAssemblies assemblies "./web/src/client/"
 
     printfn "configuring ts build"
 
@@ -250,16 +252,23 @@ module Program =
         BlobService.getBlobServiceClient connectionStrings.AzureBlob
 
       // TODO remove task
-      let getSrcContainer () =
+      let getSrcContainerAsync () =
         task { return BlobService.getBlobContainerClientByName connectionStrings.AzureBlob "src" }
 
+      let getSrcContainer () =
+        BlobService.getBlobContainerClientByName connectionStrings.AzureBlob "src"
       // TODO remove task
-      let getInboxContainer () =
+      let getInboxContainerAsync () =
         task { return BlobService.getBlobContainerClientByName connectionStrings.AzureBlob "inbox" }
 
+      let getInboxContainer () =
+        BlobService.getBlobContainerClientByName connectionStrings.AzureBlob "inbox"
       // TODO remove task
-      let getVariantsContainer () =
+      let getVariantsContainerAsync () =
         task { return BlobService.getBlobContainerClientByName connectionStrings.AzureBlob "img-variants" }
+
+      let getVariantsContainer () =
+        BlobService.getBlobContainerClientByName connectionStrings.AzureBlob "img-variants"
 
       { new IWebRequestContext with
           member this.GetLogger<'T>() = v.GetRequiredService<ILogger<'T>>()
@@ -267,8 +276,11 @@ module Program =
           member this.UserId = None
           member this.DocumentSession = session
           member this.GetBlobServiceClient = getBlobServiceClient
+          member this.GetSrcContainerAsync = getSrcContainerAsync
           member this.GetSrcContainer = getSrcContainer
+          member this.GetInboxContainerAsync = getInboxContainerAsync
           member this.GetInboxContainer = getInboxContainer
+          member this.GetVariantsContainerAsync = getVariantsContainerAsync
           member this.GetVariantsContainer = getVariantsContainer
           member this.Configuration = configuration })
     //services.AddHostedService<LobbyBackgroundService>()
@@ -284,8 +296,6 @@ module Program =
 
     persistenceSerializer.Customize (fun v ->
       v.WriteIndented <- false
-
-      let settings = Glow.JsonSerializationSettings.JsonDefaultSerializationUnionEncoding
 
       v.Converters.Add(
         System.Text.Json.Serialization.JsonFSharpConverter(
@@ -403,6 +413,7 @@ module Program =
 
       app.UseCors("AllowAll")
 
+      configureGiraffeApp app
       app.UseEndpoints(fun routes -> routes.MapControllers() |> ignore)
 
       // app.Map(
@@ -428,46 +439,11 @@ module Program =
               spa.UseProxyToSpaDevelopmentServer("http://localhost:5173/svelte"))
       )
 
-
-      //            app.UseSpa
-      //                (fun spa ->
-      //                    spa.Options.SourcePath <- "svelte-client"
+      // app.UseSpa (fun spa ->
+      //   spa.Options.SourcePath <- "web"
       //
-      //                    if (env.IsDevelopment()) then
-      //                        spa.UseProxyToSpaDevelopmentServer("http://localhost:5173/svelte"))
-      app.UseSpa (fun spa ->
-        spa.Options.SourcePath <- "web"
-
-        if env.IsDevelopment() then
-          spa.UseProxyToSpaDevelopmentServer("http://localhost:3000"))
-
-      app.MapGet(
-        "/api/photos/inbox/{id}",
-        Func<HttpContext, Task<IResult>> (fun (http: HttpContext) ->
-          task {
-            let ctx = http.RequestServices.GetRequiredService<IWebRequestContext>()
-
-            let id = http.Request.RouteValues.["id"] :?> string
-            let fileId = id |> Guid.Parse |> FileId
-
-            let! stream = WebRequestContext.getSrcBlobContentStreamAsync ctx fileId ()
-            return Results.Stream stream
-          })
-      )
-
-      app.MapGet(
-        "/api/photos/src/{id}",
-        Func<HttpContext, Task<IResult>> (fun (http: HttpContext) ->
-          task {
-            let ctx = http.RequestServices.GetRequiredService<IWebRequestContext>()
-
-            let id = http.Request.RouteValues.["id"] :?> string
-            let fileId = id |> Guid.Parse |> FileId
-
-            let! stream = WebRequestContext.getSrcBlobContentStreamAsync ctx fileId ()
-            return Results.Stream stream
-          })
-      )
+      //   if env.IsDevelopment() then
+      //     spa.UseProxyToSpaDevelopmentServer("http://localhost:3000"))
 
       app.MapGet(
         "/photos/{id}",

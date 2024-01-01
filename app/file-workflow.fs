@@ -9,8 +9,11 @@ open FsToolkit.ErrorHandling
 module Workflow =
 
   let readExifDataFromCacheOrBlob (ctx: IWebRequestContext) (fileId: FileId) =
-    let getStreamAsync = WebRequestContext.getSrcBlobContentStreamAsync ctx fileId
-    Exif.readExifData (ctx.GetLogger<obj>(), fileId, getStreamAsync)
+    task{
+      let getStreamAsync = WebRequestContext.getSrcBlobContentStreamAsync ctx fileId
+      let! result = Exif.readExifData (ctx.GetLogger<obj>(), fileId, getStreamAsync)
+      return result
+    }
 
   let initiallyHandleFormFile (file: IFormFile) : FormFileScanned =
 
@@ -27,7 +30,7 @@ module Workflow =
       let! fileStream = (WebRequestContext.getSrcBlobContentStreamAsync ctx fileId) ()
       let! dimension, variantData = AzFiles.ImageProcessing.resizeImage fileStream width
       let filename = $"{fileId.value().ToString()}-{variantName}"
-      let! imgVariantsClient = ctx.GetVariantsContainer()
+      let imgVariantsClient = ctx.GetVariantsContainer()
 
       let uploadVariant (stream: MemoryStream) (filename: string) =
         let client = imgVariantsClient.GetBlobClient(filename)
@@ -46,6 +49,17 @@ module Workflow =
       return ()
     }
 
+  let createSasUri0
+    (container: Azure.Storage.Blobs.BlobContainerClient)
+    (fileId: string)
+    (permission: BlobSasPermissions)
+    (until: System.DateTimeOffset)
+    =
+      let blobClient = container.GetBlobClient(fileId)
+      let uri = blobClient.GenerateSasUri(BlobSasBuilder(permission, until))
+      printfn "Uri %s" (uri.ToString())
+      uri
+
   let createSasUri
     (ctx: IWebRequestContext)
     (fileId: FileId)
@@ -53,7 +67,7 @@ module Workflow =
     (until: System.DateTimeOffset)
     =
     task {
-      let! containerClient = ctx.GetSrcContainer()
+      let containerClient = ctx.GetSrcContainer()
       let blobClient = containerClient.GetBlobClient(fileId.value().ToString())
       let uri = blobClient.GenerateSasUri(BlobSasBuilder(permission, until))
       printfn "Uri %s" (uri.ToString())
